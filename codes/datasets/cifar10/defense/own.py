@@ -15,16 +15,16 @@ from torch.utils.data import DataLoader,Dataset
 
 
 # from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_BadNets_dict_state
-# from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Blended_dict_state
+from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Blended_dict_state
 # from codes.datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import PoisonedTrainDataset, PurePoisonedTrainDataset, PureCleanTrainDataset, PoisonedTestSet, TargetClassCleanTrainDataset,  get_dict_state as get_IAD_dict_state
 # from codes.datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_LabelConsist_dict_state
-from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Refool_dict_state
+# from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Refool_dict_state
 # from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_WaNet_dict_state
 
 
 from codes.utils import entropy
 # 从攻击脚本中获得配置
-origin_dict_state = get_Refool_dict_state()
+origin_dict_state = get_Blended_dict_state()
 # 本脚本全局变量
 # 后门模型
 backdoor_model = origin_dict_state["backdoor_model"]
@@ -57,9 +57,9 @@ pureTargetClassCleanTrainset = PureTargetClassCleanTrainset(pureCleanTrainDatase
 # 变异模型数量
 mutated_model_num =10
 # 变异模型权重存储目录
-mutated_model_dir = "experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/Refool"
+mutated_model_dir = "experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/Blended"
 # 脚本工作目录
-work_dir = "experiments/CIFAR10/resnet18_nopretrain_32_32_3/defense/gf/Refool"
+work_dir = "experiments/CIFAR10/resnet18_nopretrain_32_32_3/defense/gf/Blended"
 
 # 设备
 device = torch.device('cuda:1')
@@ -396,9 +396,9 @@ def defense_step_2():
 
 if __name__ == "__main__":
 
-    target_label = identify_target_label()
+    # target_label = identify_target_label()
 
     # defense_step_1()
     # defense_step_2()
-    # detect(threshold=0.01)
+    # detect(threshold=0.8)
     pass
