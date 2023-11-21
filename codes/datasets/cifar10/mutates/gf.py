@@ -17,17 +17,29 @@ from torch.utils.data import DataLoader,Dataset
 from codes import utils
 
 
-# from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_BadNets_dict_state
-# from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Blended_dict_state
-# from codes.datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import PoisonedTrainDataset, PurePoisonedTrainDataset, PureCleanTrainDataset, PoisonedTestSet, TargetClassCleanTrainDataset,  get_dict_state as get_IAD_dict_state
-# from codes.datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_LabelConsist_dict_state
-from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Refool_dict_state
-# from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_WaNet_dict_state
+attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 
-origin_dict_state = get_Refool_dict_state()
+if attack_method == "BadNets":
+    from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+elif attack_method == "Blended":
+    from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+elif attack_method == "IAD":
+    from codes.datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import PoisonedTrainDataset, PurePoisonedTrainDataset, PureCleanTrainDataset, PoisonedTestSet, TargetClassCleanTrainDataset,  get_dict_state
+elif attack_method == "LabelConsistent":
+    from codes.datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+elif attack_method == "Refool":
+    from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+elif attack_method == "WaNet":
+    from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+
+
+
+origin_dict_state = get_dict_state()
 global_seed = 666
 deterministic = True
 torch.manual_seed(global_seed)
+np.random.seed(global_seed)
+random.seed(global_seed)
 # 本脚本全局变量
 # 待变异的后门模型
 back_door_model = origin_dict_state["backdoor_model"]
@@ -36,11 +48,15 @@ poisoned_testset = origin_dict_state["poisoned_testset"]
 pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
-work_dir = "experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/Refool"
-mutation_ratio = 0.2
-mutation_num =10
-
-device = torch.device('cuda:1')
+mutation_ratio = 0.05
+scale = 1.0
+mutation_num = 50
+attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_num}/{attack_method}"
+# 保存变异模型权重
+save_dir = work_dir
+utils.create_dir(save_dir)
+device = torch.device('cuda:4')
 
 def _seed_worker():
     worker_seed =  666 # torch.initial_seed() % 2**32
@@ -94,7 +110,7 @@ def mutate():
                 # 根据变异率确定扰动数量
                 disturb_num = math.ceil(weight_num * mutation_ratio)
                 # 生成扰动的高斯分布
-                disturb_array = np.random.normal(scale=0.02, size=disturb_num) 
+                disturb_array = np.random.normal(scale=0.05, size=disturb_num) 
                 # 遍历每个扰动值
                 for i in range(disturb_num):
                     # 获得一个扰动值
@@ -104,11 +120,8 @@ def mutate():
                     # 该位置权重+扰动值
                     if isinstance(layer, nn.Conv2d):
                         weight[position[0],position[1],position[2],position[3]] = weight[position[0],position[1],position[2],position[3]] + disturb_value
-                    # elif isinstance(layer, nn.Linear):
-                    #     weight[position[0],position[1]] = weight[position[0],position[1]] + disturb_value
-        # 保存变异模型权重
-        save_dir = work_dir
-        utils.create_dir(save_dir)
+                    elif isinstance(layer, nn.Linear):
+                        weight[position[0],position[1]] = weight[position[0],position[1]] + disturb_value
         file_name = f"model_mutated_{count+1}.pth"
         save_path = os.path.join(save_dir, file_name)
         torch.save(model_copy.state_dict(), save_path)
@@ -154,10 +167,10 @@ def eval(m_i, testset):
 
 
 if __name__ == "__main__":
-    mutate()
+    # mutate()
     asr_list = []
     acc_list = []
-    for m_i in range(10):
+    for m_i in range(mutation_num):
         asr = eval(m_i+1, purePoisonedTrainDataset)
         acc = eval(m_i+1, pureCleanTrainDataset)
         asr_list.append(asr)

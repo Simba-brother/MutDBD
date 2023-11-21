@@ -1,17 +1,22 @@
 import sys
 sys.path.append("./")
-import time
-import os
 import copy
 import math
+import time
 import random
 import numpy as np
 import torch.nn as nn
 import torch
-from torch.utils.data import DataLoader,Dataset
+import os
 from codes import utils
+from torch.utils.data import DataLoader,Dataset
 
-
+# from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_BadNets_dict_state
+# from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Blended_dict_state
+# from codes.datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import PoisonedTrainDataset, PurePoisonedTrainDataset, PureCleanTrainDataset, PoisonedTestSet, TargetClassCleanTrainDataset,  get_dict_state as get_IAD_dict_state
+# from codes.datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_LabelConsist_dict_state
+# from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_Refool_dict_state
+# from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state as get_WaNet_dict_state
 
 attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 
@@ -27,8 +32,6 @@ elif attack_method == "Refool":
     from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "WaNet":
     from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
-
-
 global_seed = 666
 deterministic = True
 torch.manual_seed(global_seed)
@@ -44,31 +47,19 @@ poisoned_testset = origin_dict_state["poisoned_testset"]
 pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
-mutate_ratio = 0.01
+mutation_ratio = 0.01
 mutation_num = 50
-attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/weight_shuffle/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
+
+work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_effect_block/ratio_{mutation_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)
-device = torch.device('cuda:7')
+device = torch.device('cuda:1')
 
 def _seed_worker():
     worker_seed =  666 # torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
-
-def shuffle_conv2d_weights(weight, neuron_id):
-    o_c, in_c, h, w =  weight.shape
-    weight_copy = copy.deepcopy(weight)
-    weight_copy = weight_copy.reshape(o_c, in_c * h * w)
-    row = weight_copy[neuron_id]
-    idx = torch.randperm(row.nelement())
-    row = row.view(-1)[idx].view(row.size())
-    row.requires_grad_()
-    weight_copy[neuron_id] = row
-    weight_copy = weight_copy.reshape(o_c, in_c, h, w)
-    return weight_copy
 
 def mutate(model, mutate_ratio):
     for count in range(mutation_num):
@@ -81,13 +72,11 @@ def mutate(model, mutate_ratio):
                     weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
                     in_channels = layer.in_channels
                     out_channels = layer.out_channels
-                    cur_layer_neuron_num = out_channels
-                    last_layer_neuron_num = in_channels
-                    mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                    selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
-                    for neuron_id in selected_cur_layer_neuron_ids:
-                        weight_copy = shuffle_conv2d_weights(weight, neuron_id)
-                        weight[neuron_id] = weight_copy[neuron_id]
+                    mutate_num = math.ceil(in_channels*mutate_ratio)
+                    selected_in_channels_id = random.sample(list(range(in_channels)),mutate_num)
+                    for neuron_id in selected_in_channels_id:
+                        weight[:,neuron_id,:,:] = 0
+                        weight[:,neuron_id,:,:].requires_grad_()
                 # if isinstance(layer, nn.Linear):
                 #     weight = layer.weight # weight shape:output, input
                 #     out_features, in_features = weight.shape
@@ -145,7 +134,7 @@ def eval(m_i, testset):
     return acc
 
 if __name__ == "__main__":
-    # mutate(backdoor_model, mutate_ratio)
+    mutate(backdoor_model, mutation_ratio)
     asr_list = []
     acc_list = []
     for m_i in range(mutation_num):

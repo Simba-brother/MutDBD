@@ -1,15 +1,15 @@
 import sys
 sys.path.append("./")
-import time
-import os
 import copy
 import math
+import time
 import random
 import numpy as np
 import torch.nn as nn
 import torch
-from torch.utils.data import DataLoader,Dataset
+import os
 from codes import utils
+from torch.utils.data import DataLoader,Dataset
 
 
 
@@ -27,6 +27,7 @@ elif attack_method == "Refool":
     from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "WaNet":
     from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+
 
 
 global_seed = 666
@@ -47,28 +48,35 @@ purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 mutate_ratio = 0.01
 mutation_num = 50
 attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/weight_shuffle/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
+work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_switch/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)
-device = torch.device('cuda:7')
+device = torch.device('cuda:0')
 
 def _seed_worker():
     worker_seed =  666 # torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
-def shuffle_conv2d_weights(weight, neuron_id):
-    o_c, in_c, h, w =  weight.shape
-    weight_copy = copy.deepcopy(weight)
-    weight_copy = weight_copy.reshape(o_c, in_c * h * w)
-    row = weight_copy[neuron_id]
-    idx = torch.randperm(row.nelement())
-    row = row.view(-1)[idx].view(row.size())
-    row.requires_grad_()
-    weight_copy[neuron_id] = row
-    weight_copy = weight_copy.reshape(o_c, in_c, h, w)
-    return weight_copy
+def switch_conv2d_weights(weight, neuron_ids):
+    # o_c, in_c, h, w =  weight.shape
+    
+    weight_copy_1 = copy.deepcopy(weight)
+    weight_copy_2 = copy.deepcopy(weight)
+    shuffled_neuron_ids = np.random.permutation(neuron_ids)
+    for neuron_id, shuffled_neuron_id in zip(neuron_ids,shuffled_neuron_ids):
+        weight_copy_1[:, neuron_id, :, :] = weight_copy_2[:,shuffled_neuron_id,:,:]
+    return weight_copy_1
+
+def switch_linear_weights(weight, neuron_ids):
+    # out_features, in_features =  weight.shape
+    weight_copy_1 = copy.deepcopy(weight)
+    weight_copy_2 = copy.deepcopy(weight)
+    shuffled_neuron_ids = np.random.permutation(neuron_ids)
+    for neuron_id, shuffled_neuron_id in zip(neuron_ids,shuffled_neuron_ids):
+        weight_copy_1[:, neuron_id] = weight_copy_2[:,shuffled_neuron_id]
+    return weight_copy_1
 
 def mutate(model, mutate_ratio):
     for count in range(mutation_num):
@@ -78,34 +86,30 @@ def mutate(model, mutate_ratio):
         with torch.no_grad():
             for layer in layers[1:]:
                 if isinstance(layer, nn.Conv2d):
-                    weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
+                    weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0, kernel_size_1
                     in_channels = layer.in_channels
                     out_channels = layer.out_channels
                     cur_layer_neuron_num = out_channels
                     last_layer_neuron_num = in_channels
-                    mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                    selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
-                    for neuron_id in selected_cur_layer_neuron_ids:
-                        weight_copy = shuffle_conv2d_weights(weight, neuron_id)
-                        weight[neuron_id] = weight_copy[neuron_id]
-                # if isinstance(layer, nn.Linear):
-                #     weight = layer.weight # weight shape:output, input
-                #     out_features, in_features = weight.shape
-                #     cur_layer_neuron_num = out_features
-                #     last_layer_neuron_num = in_features
-                #     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                #     selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
-                #     for neuron_id in selected_cur_layer_neuron_ids:
-                #         row = weight[neuron_id]
-                #         idx = torch.randperm(row.nelement())
-                #         row = row.view(-1)[idx].view(row.size())
-                #         row.requires_grad_()
-                #         weight[neuron_id] = row
+                    mutate_num = math.ceil(last_layer_neuron_num*mutate_ratio)
+                    selected_last_layer_neuron_ids = random.sample(list(range(last_layer_neuron_num)),mutate_num)
+                    weight_copy = switch_conv2d_weights(weight, selected_last_layer_neuron_ids)
+                    weight = weight_copy
+                if isinstance(layer, nn.Linear):
+                    weight = layer.weight # weight shape:output, input
+                    out_features, in_features = weight.shape
+                    cur_layer_neuron_num = out_features
+                    last_layer_neuron_num = in_features
+                    mutate_num = math.ceil(last_layer_neuron_num*mutate_ratio)
+                    selected_last_layer_neuron_ids = random.sample(list(range(last_layer_neuron_num)),mutate_num)
+                    weight_copy = switch_linear_weights(weight, selected_last_layer_neuron_ids)
+                    weight = weight_copy
         file_name = f"model_mutated_{count+1}.pth"
         save_path = os.path.join(save_dir, file_name)
         torch.save(model_copy.state_dict(), save_path)
         print(f"变异模型:{file_name}保存成功, 保存位置:{save_path}")
     print("mutate() success")
+
 
 def eval(m_i, testset):
     # 得到模型结构
@@ -146,6 +150,7 @@ def eval(m_i, testset):
 
 if __name__ == "__main__":
     # mutate(backdoor_model, mutate_ratio)
+
     asr_list = []
     acc_list = []
     for m_i in range(mutation_num):

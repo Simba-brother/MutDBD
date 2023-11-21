@@ -128,11 +128,16 @@ class ModifyTarget:
         self.target_label = target_label
 
     def __call__(self, target_label):
-        return self.target_label
+       
+         return self.target_label
+    
+def test15():
+    x_list = np.random.permutation(20)
+    print(x_list)
 
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
     # test_13()
-    test_14()
+    test15()
     pass
