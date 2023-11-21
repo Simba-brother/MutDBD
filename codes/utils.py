@@ -48,6 +48,21 @@ class Log:
         with open(self.log_path,'a') as f:
             f.write(msg)
 
+class ModelReview(object):
+    def __init__(self):
+        self.model = None
+    def set_model(self, model):
+        self.model = model
+    def get_model(self, model):
+        return self.model
+    def see_layers(self):
+        model = self.model
+        layers = [module for module in model.modules()]
+        print(f"总共层数:{len(layers)}")
+        print("="*20)
+        for layer in layers:
+            print(layer,"\n")
+        print("="*20)
 if __name__ == "__main__":
 
     pass

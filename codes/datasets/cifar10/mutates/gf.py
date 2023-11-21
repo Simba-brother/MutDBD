@@ -168,15 +168,15 @@ def eval(m_i, testset):
 
 if __name__ == "__main__":
     # mutate()
-    asr_list = []
     acc_list = []
+    asr_list = []
     for m_i in range(mutation_num):
-        asr = eval(m_i+1, purePoisonedTrainDataset)
         acc = eval(m_i+1, pureCleanTrainDataset)
-        asr_list.append(asr)
+        asr = eval(m_i+1, purePoisonedTrainDataset)
         acc_list.append(acc)
-    print(asr_list)
-    print(f"asr mean:{np.mean(asr_list)}")
-    print(acc_list)
-    print(f"acc mean:{np.mean(acc_list)}")
+        asr_list.append(asr)
+    print(acc_list,"\n")
+    print(f"ACC mean:{np.mean(acc_list)}","\n")
+    print(asr_list,"\n")
+    print(f"ASR mean:{np.mean(asr_list)}", "\n")
     pass

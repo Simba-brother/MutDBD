@@ -133,6 +133,9 @@ class ModifyTarget:
     
 def test15():
     x_list = np.random.permutation(20)
+    y_list = np.random.permutation([1,4,5,8,10])
+    print(y_list,"\n")
+    print("jflakjfla", "\n")
     print(x_list)
 
 if __name__ == "__main__":
