@@ -301,17 +301,20 @@ def attack():
 
 
 def process_eval():
-    backdoor_weight = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/best_model.pth", map_location="cpu")
-    model.load_state_dict(backdoor_weight)
-    benign_testset_acc = eval(model,testset)
+    dict_state = get_dict_state()
+    backdoor_model = dict_state["backdoor_model"]
+    clean_testset = dict_state["clean_testset"]
+    poisoned_testset = dict_state["poisoned_testset"]
+    pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
+    purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+    clean_testset_acc = eval(model,clean_testset)
     poisoned_testset_acc = eval(model, poisoned_testset)
     pure_clean_trainset_acc = eval(model, pureCleanTrainDataset)
     pure_poisoned_trainset_acc = eval(model, purePoisonedTrainDataset)
-    print("benign_testset_acc", benign_testset_acc)
+    print("clean_testset_acc", clean_testset_acc)
     print("poisoned_testset_acc", poisoned_testset_acc)
     print("pure_clean_trainset_acc", pure_clean_trainset_acc)
     print("pure_poisoned_trainset_acc", pure_poisoned_trainset_acc)
-
 
 
 def get_dict_state():
