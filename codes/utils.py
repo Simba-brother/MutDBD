@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import math
 import random
+import torch.nn
 
 def create_dir(dir_path):
     if os.path.exists(dir_path):
@@ -62,6 +63,7 @@ class ModelReview(object):
         print("="*20)
         for layer in layers:
             print(layer,"\n")
+            # print(isinstance(layer, torch.nn.Linear))
         print("="*20)
 if __name__ == "__main__":
 

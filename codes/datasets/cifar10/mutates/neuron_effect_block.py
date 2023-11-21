@@ -64,25 +64,19 @@ def mutate(model, mutate_ratio):
                 if isinstance(layer, nn.Conv2d):
                     weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
                     in_channels = layer.in_channels
-                    out_channels = layer.out_channels
                     mutate_num = math.ceil(in_channels*mutate_ratio)
                     selected_in_channels_id = random.sample(list(range(in_channels)),mutate_num)
                     for neuron_id in selected_in_channels_id:
                         weight[:,neuron_id,:,:] = 0
                         weight[:,neuron_id,:,:].requires_grad_()
-                # if isinstance(layer, nn.Linear):
-                #     weight = layer.weight # weight shape:output, input
-                #     out_features, in_features = weight.shape
-                #     cur_layer_neuron_num = out_features
-                #     last_layer_neuron_num = in_features
-                #     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                #     selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
-                #     for neuron_id in selected_cur_layer_neuron_ids:
-                #         row = weight[neuron_id]
-                #         idx = torch.randperm(row.nelement())
-                #         row = row.view(-1)[idx].view(row.size())
-                #         row.requires_grad_()
-                #         weight[neuron_id] = row
+                if isinstance(layer, nn.Linear):
+                    weight = layer.weight # weight shape:output, input
+                    out_features, in_features = weight.shape
+                    last_layer_neuron_num = in_features
+                    mutate_num = math.ceil(last_layer_neuron_num*mutate_ratio)
+                    selected_cur_layer_neuron_ids = random.sample(list(range(last_layer_neuron_num)),mutate_num)
+                    for neuron_id in selected_cur_layer_neuron_ids:
+                        weight[:,neuron_id] = 0
         file_name = f"model_mutated_{count+1}.pth"
         save_path = os.path.join(save_dir, file_name)
         torch.save(model_copy.state_dict(), save_path)
@@ -127,7 +121,7 @@ def eval(m_i, testset):
     return acc
 
 if __name__ == "__main__":
-    # mutate(backdoor_model, mutation_ratio)
+    mutate(backdoor_model, mutation_ratio)
     acc_list = []
     asr_list = []
     for m_i in range(mutation_num):

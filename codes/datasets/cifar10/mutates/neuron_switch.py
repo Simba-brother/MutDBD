@@ -13,8 +13,8 @@ from torch.utils.data import DataLoader,Dataset
 
 
 
-attack_method = "LabelConsistent" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-device = torch.device('cuda:2')
+attack_method = "BadNets" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+device = torch.device('cuda:0')
 
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
@@ -44,7 +44,7 @@ poisoned_testset = origin_dict_state["poisoned_testset"]
 pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
-mutate_ratio = 0.05
+mutate_ratio = 0.01
 mutation_num = 50
 work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_switch/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
@@ -169,18 +169,18 @@ def review_model():
 
 
 if __name__ == "__main__":
-    # review_model()
+    review_model()
     
-    mutate(backdoor_model, mutate_ratio)
-    acc_list = []
-    asr_list = []
-    for m_i in range(mutation_num):
-        acc = eval(m_i+1, pureCleanTrainDataset)
-        asr = eval(m_i+1, purePoisonedTrainDataset)
-        acc_list.append(acc)
-        asr_list.append(asr)
-    print(acc_list,"\n")
-    print(f"ACC mean:{np.mean(acc_list)}","\n")
-    print(asr_list,"\n")
-    print(f"ASR mean:{np.mean(asr_list)}", "\n")
-    pass
+    # mutate(backdoor_model, mutate_ratio)
+    # acc_list = []
+    # asr_list = []
+    # for m_i in range(mutation_num):
+    #     acc = eval(m_i+1, pureCleanTrainDataset)
+    #     asr = eval(m_i+1, purePoisonedTrainDataset)
+    #     acc_list.append(acc)
+    #     asr_list.append(asr)
+    # print(acc_list,"\n")
+    # print(f"ACC mean:{np.mean(acc_list)}","\n")
+    # print(asr_list,"\n")
+    # print(f"ASR mean:{np.mean(asr_list)}", "\n")
+    # pass

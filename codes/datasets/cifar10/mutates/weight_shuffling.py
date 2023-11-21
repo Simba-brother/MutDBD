@@ -14,7 +14,7 @@ from codes import utils
 
 
 attack_method = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-device = torch.device('cuda:6')
+device = torch.device('cuda:5')
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "Blended":
@@ -59,15 +59,14 @@ def _seed_worker():
 
 def shuffle_conv2d_weights(weight, neuron_id):
     o_c, in_c, h, w =  weight.shape
-    weight_copy = copy.deepcopy(weight)
-    weight_copy = weight_copy.reshape(o_c, in_c * h * w)
-    row = weight_copy[neuron_id]
+    weight = weight.reshape(o_c, in_c * h * w)
+    row = weight[neuron_id]
     idx = torch.randperm(row.nelement())
     row = row.view(-1)[idx].view(row.size())
     row.requires_grad_()
-    weight_copy[neuron_id] = row
-    weight_copy = weight_copy.reshape(o_c, in_c, h, w)
-    return weight_copy
+    weight[neuron_id] = row
+    weight = weight.reshape(o_c, in_c, h, w)
+    return weight
 
 def mutate(model, mutate_ratio):
     for count in range(mutation_num):
@@ -78,28 +77,26 @@ def mutate(model, mutate_ratio):
             for layer in layers[1:]:
                 if isinstance(layer, nn.Conv2d):
                     weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
-                    in_channels = layer.in_channels
                     out_channels = layer.out_channels
                     cur_layer_neuron_num = out_channels
-                    last_layer_neuron_num = in_channels
                     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                    selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
+                    cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
+                    selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
                     for neuron_id in selected_cur_layer_neuron_ids:
-                        weight_copy = shuffle_conv2d_weights(weight, neuron_id)
-                        weight[neuron_id] = weight_copy[neuron_id]
-                # if isinstance(layer, nn.Linear):
-                #     weight = layer.weight # weight shape:output, input
-                #     out_features, in_features = weight.shape
-                #     cur_layer_neuron_num = out_features
-                #     last_layer_neuron_num = in_features
-                #     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                #     selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
-                #     for neuron_id in selected_cur_layer_neuron_ids:
-                #         row = weight[neuron_id]
-                #         idx = torch.randperm(row.nelement())
-                #         row = row.view(-1)[idx].view(row.size())
-                #         row.requires_grad_()
-                #         weight[neuron_id] = row
+                        shuffle_conv2d_weights(weight, neuron_id)
+                if isinstance(layer, nn.Linear):
+                    weight = layer.weight # weight shape:output, input
+                    out_features, in_features = weight.shape
+                    cur_layer_neuron_num = out_features
+                    mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
+                    cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
+                    selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
+                    for neuron_id in selected_cur_layer_neuron_ids:
+                        row = weight[neuron_id]
+                        idx = torch.randperm(row.nelement())
+                        row = row.view(-1)[idx].view(row.size())
+                        row.requires_grad_()
+                        weight[neuron_id] = row
         file_name = f"model_mutated_{count+1}.pth"
         save_path = os.path.join(save_dir, file_name)
         torch.save(model_copy.state_dict(), save_path)

@@ -138,9 +138,15 @@ def test15():
     print("jflakjfla", "\n")
     print(x_list)
 
+def test16():
+
+    conv_layer = torch.nn.Conv2d(in_channels=10, out_channels=5, kernel_size = 3)
+    print(conv_layer.weight.shape)
+
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
     # test_13()
-    test15()
+    # test15()
+    test16()
     pass

@@ -17,8 +17,8 @@ from torch.utils.data import DataLoader,Dataset
 from codes import utils
 
 
-attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-
+attack_method = "BadNets" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+device = torch.device('cuda:0')
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "Blended":
@@ -42,21 +42,19 @@ np.random.seed(global_seed)
 random.seed(global_seed)
 # 本脚本全局变量
 # 待变异的后门模型
-back_door_model = origin_dict_state["backdoor_model"]
+backdoor_model = origin_dict_state["backdoor_model"]
 clean_testset = origin_dict_state["clean_testset"]
 poisoned_testset = origin_dict_state["poisoned_testset"]
 pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
-mutation_ratio = 0.05
-scale = 1.0
+mutation_ratio = 0.03
+scale = 0.1
 mutation_num = 50
-attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)
-device = torch.device('cuda:4')
 
 def _seed_worker():
     worker_seed =  666 # torch.initial_seed() % 2**32
@@ -82,11 +80,10 @@ def gen_random_position(weight):
         position.append(random.randint(0,dim_len-1))
     return position
     
-def mutate():
+def mutate(model, mutation_ratio):
     '''
     对模型进行变异
     '''
-    model = back_door_model
     for count in range(mutation_num):
         # copy模型
         model_copy = copy.deepcopy(model)
@@ -110,7 +107,7 @@ def mutate():
                 # 根据变异率确定扰动数量
                 disturb_num = math.ceil(weight_num * mutation_ratio)
                 # 生成扰动的高斯分布
-                disturb_array = np.random.normal(scale=0.05, size=disturb_num) 
+                disturb_array = np.random.normal(scale=scale, size=disturb_num) 
                 # 遍历每个扰动值
                 for i in range(disturb_num):
                     # 获得一个扰动值
@@ -130,7 +127,7 @@ def mutate():
 
 def eval(m_i, testset):
     # 得到模型结构
-    model = back_door_model
+    model = backdoor_model
     # 加载backdoor weights
     state_dict = torch.load(os.path.join(work_dir, f"model_mutated_{m_i}.pth"), map_location="cpu")
     model.load_state_dict(state_dict)
@@ -167,7 +164,7 @@ def eval(m_i, testset):
 
 
 if __name__ == "__main__":
-    # mutate()
+    # mutate(backdoor_model, mutation_ratio)
     acc_list = []
     asr_list = []
     for m_i in range(mutation_num):

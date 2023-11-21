@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader,Dataset
 
 
 attack_method = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-device = torch.device('cuda:5')
+device = torch.device('cuda:0')
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "Blended":
@@ -68,9 +68,9 @@ def mutate(model, mutate_ratio):
                     in_channels = layer.in_channels
                     out_channels = layer.out_channels
                     cur_layer_neuron_num = out_channels
-                    last_layer_neuron_num = in_channels
                     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                    selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
+                    cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
+                    selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
                     for cur_layer_neuron_id in selected_cur_layer_neuron_ids:
                         weight[cur_layer_neuron_id,:,:,:] *= -1
                 if isinstance(layer, nn.Linear):
@@ -79,7 +79,8 @@ def mutate(model, mutate_ratio):
                     cur_layer_neuron_num = out_features
                     last_layer_neuron_num = in_features
                     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                    selected_cur_layer_neuron_ids = random.sample(list(range(cur_layer_neuron_num)),mutate_num)
+                    cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
+                    selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
                     for neuron_id in selected_cur_layer_neuron_ids:
                         weight[neuron_id] *= -1
         file_name = f"model_mutated_{count+1}.pth"
