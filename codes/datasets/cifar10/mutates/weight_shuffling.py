@@ -13,8 +13,8 @@ from codes import utils
 
 
 
-attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-
+attack_method = "Blended" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+device = torch.device('cuda:2')
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "Blended":
@@ -44,14 +44,13 @@ poisoned_testset = origin_dict_state["poisoned_testset"]
 pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
-mutate_ratio = 0.01
+mutate_ratio = 0.05
 mutation_num = 50
-attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/weight_shuffle/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)
-device = torch.device('cuda:7')
+
 
 def _seed_worker():
     worker_seed =  666 # torch.initial_seed() % 2**32
@@ -145,7 +144,7 @@ def eval(m_i, testset):
     return acc
 
 if __name__ == "__main__":
-    # mutate(backdoor_model, mutate_ratio)
+    mutate(backdoor_model, mutate_ratio)
     asr_list = []
     acc_list = []
     for m_i in range(mutation_num):
