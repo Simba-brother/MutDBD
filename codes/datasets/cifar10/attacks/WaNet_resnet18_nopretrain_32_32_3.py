@@ -60,7 +60,7 @@ transform_test = Compose([
 ])
 # 获得数据集
 trainset = DatasetFolder(
-    root='./dataset/cifar10/train',
+    root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
@@ -68,7 +68,7 @@ trainset = DatasetFolder(
     is_valid_file=None)
 
 testset = DatasetFolder(
-    root='./dataset/cifar10/test',
+    root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -215,7 +215,7 @@ schedule = {
     'test_epoch_interval': 10, # 每经过10个epoch,去测试下model效果
     'save_epoch_interval': 10, # 每经过10个epoch,保存下训练的model ckpt
 
-    'save_dir': 'experiments',
+    'save_dir': '/data/mml/backdoor_detect/experiments',
     'experiment_name': 'cifar10_resnet18_nopretrained_32_32_18_WaNet'
 }
 
@@ -277,7 +277,7 @@ def attack():
 
 
     work_dir = wanet.work_dir
-    backdoor_weight = torch.load("experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/best_model.pth", map_location="cpu")
+    backdoor_weight = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/best_model.pth", map_location="cpu")
     model.load_state_dict(backdoor_weight)
     dict_state = {}
     # 中毒训练集
@@ -301,7 +301,7 @@ def attack():
 
 
 def process_eval():
-    backdoor_weight = torch.load("experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/best_model.pth", map_location="cpu")
+    backdoor_weight = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/best_model.pth", map_location="cpu")
     model.load_state_dict(backdoor_weight)
     benign_testset_acc = eval(model,testset)
     poisoned_testset_acc = eval(model, poisoned_testset)
@@ -315,7 +315,7 @@ def process_eval():
 
 
 def get_dict_state():
-    dict_state = torch.load("experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/dict_state.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/dict_state.pth", map_location="cpu")
     return dict_state
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader,Dataset
 
 
 attack_method = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-device = torch.device('cuda:3')
+device = torch.device('cuda:7')
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "Blended":
@@ -47,7 +47,7 @@ purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
 mutate_ratio = 0.05
 mutation_num = 50
-work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_switch/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
+work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_switch/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         acc = eval(m_i+1, pureCleanTrainDataset)
         asr_list.append(asr)
         acc_list.append(acc)
-    print(asr_list)
+    print(asr_list+"\n")
     print(f"asr mean:{np.mean(asr_list)}")
     print(acc_list)
     print(f"acc mean:{np.mean(acc_list)}")

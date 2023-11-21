@@ -52,14 +52,14 @@ transform_test = Compose([
 ])
 # 获得数据集
 trainset = DatasetFolder(
-    root='./dataset/cifar10/train',
+    root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
 trainset1 = DatasetFolder(
-    root='./dataset/cifar10/train',
+    root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
@@ -67,14 +67,14 @@ trainset1 = DatasetFolder(
     is_valid_file=None)
 
 testset = DatasetFolder(
-    root='./dataset/cifar10/test',
+    root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
     target_transform=None,
     is_valid_file=None)
 testset1 = DatasetFolder(
-    root='./dataset/cifar10/test',
+    root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -160,7 +160,7 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': 'experiments',
+    'save_dir': '/data/mml/backdoor_detect/experiments',
     'experiment_name': 'cifar10_resnet18_nopretrained_32_32_3_IAD'
 }
 
@@ -388,7 +388,7 @@ def get_data():
     '''
     data = {}
     # 加载
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new.pth", map_location="cpu")
     backdoor_weight = dict_state["model"]
     # backdoor_model
     model.load_state_dict(backdoor_weight)
@@ -420,7 +420,7 @@ def get_data():
 
 
 def temp_update_dict_state():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new.pth", map_location="cpu")
     backdoor_weight = dict_state["model"]
     # backdoor_model
     model.load_state_dict(backdoor_weight)
@@ -450,11 +450,11 @@ def temp_update_dict_state():
     dict_state_new["poisoned_trainset"] = poisoned_trainset
     dict_state_new["purePoisonedTrainDataset"] = pure_poisoned_trainset
     dict_state_new["pureCleanTrainDataset"] = pure_clean_trainset
-    torch.save(dict_state_new,"experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new_new.pth")
+    torch.save(dict_state_new,"/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new_new.pth")
     print("temp_update_dict_state() finished")
 
 def get_dict_state():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new_new.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new_new.pth", map_location="cpu")
     return dict_state
 
 if __name__ == "__main__":

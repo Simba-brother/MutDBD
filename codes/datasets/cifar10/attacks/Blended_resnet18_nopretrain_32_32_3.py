@@ -44,14 +44,14 @@ transform_test = Compose([
 ])
 # testset = dataset('data', train=False, transform=transform_test, download=True)
 trainset = DatasetFolder(
-    root='./dataset/cifar10/train',
+    root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
 testset = DatasetFolder(
-    root='./dataset/cifar10/test',
+    root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -180,7 +180,7 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': 'experiments',
+    'save_dir': '/data/mml/backdoor_detect/experiments',
     # 'experiment_name': 'train_benign_CIFAR10_Blended'
     'experiment_name': 'cifar10_resnet_nopretrained_32_32_3_Blended'
 }
@@ -272,7 +272,7 @@ def process_eval():
 
 
 def get_dict_state():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-11-15_18:07:35/dict_state.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-11-15_18:07:35/dict_state.pth", map_location="cpu")
     return dict_state
 
 if __name__ == "__main__":

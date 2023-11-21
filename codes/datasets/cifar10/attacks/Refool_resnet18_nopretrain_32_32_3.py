@@ -29,7 +29,7 @@ model = ResNet(num=18,num_classes=10)
 # 存储反射照片
 reflection_images = []
 # URL：http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html#devkit
-reflection_data_dir = "dataset/VOCdevkit/VOC2012/JPEGImages" # "/data/ganguanhao/datasets/VOCdevkit/VOC2012/JPEGImages/" # please replace this with path to your desired reflection set
+reflection_data_dir = "/data/mml/backdoor_detect/dataset/VOCdevkit/VOC2012/JPEGImages" # "/data/ganguanhao/datasets/VOCdevkit/VOC2012/JPEGImages/" # please replace this with path to your desired reflection set
 
 def read_image(img_path, type=None):
     '''
@@ -68,14 +68,14 @@ transform_test = Compose([
 ])
 # 获得数据集
 trainset = DatasetFolder(
-    root='./dataset/cifar10/train',
+    root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
 testset = DatasetFolder(
-    root='./dataset/cifar10/test',
+    root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -119,7 +119,7 @@ schedule = {
     'test_epoch_interval': 10, # epoch
     'save_epoch_interval': 10,  # epoch
 
-    'save_dir': 'experiments',
+    'save_dir': '/data/mml/backdoor_detect/experiments',
     'experiment_name': 'cifar10_resnet_nopretrained_32_32_3_Refool'
 }
 
@@ -240,7 +240,7 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
     clean_testset = dict_state["clean_testset"]
@@ -257,7 +257,7 @@ def process_eval():
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
     
 def get_dict_state():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth", map_location="cpu")
     return dict_state
 
 if __name__ == "__main__":

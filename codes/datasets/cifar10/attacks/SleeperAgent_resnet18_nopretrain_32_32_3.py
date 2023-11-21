@@ -56,14 +56,14 @@ transform_test = Compose([
     ToTensor(),
 ])
 trainset = DatasetFolder(
-    root='./dataset/cifar10/train',
+    root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
 testset = DatasetFolder(
-    root='./dataset/cifar10/test',
+    root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -149,7 +149,7 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': 'experiments',
+    'save_dir': '/data/mml/backdoor_detect/experiments',
     'experiment_name': 'cifar10_resnet_nopretrained_32_32_3_SleeperAgent',
 
 

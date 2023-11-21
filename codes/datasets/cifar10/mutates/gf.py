@@ -52,7 +52,7 @@ mutation_ratio = 0.05
 scale = 1.0
 mutation_num = 50
 attack_method = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_num}/{attack_method}"
+work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)

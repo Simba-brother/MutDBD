@@ -45,7 +45,7 @@ purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
 mutate_ratio = 0.05
 mutation_num = 50
-work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_activation_inverse/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
+work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_activation_inverse/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)

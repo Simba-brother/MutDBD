@@ -35,7 +35,7 @@ torch.manual_seed(global_seed)
 victim_model = ResNet(18,num_classes=10)
 adv_model = ResNet(18,num_classes=10)
 # 这个是先通过benign训练得到的clean model weight
-adv_model_weight = torch.load('./experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_clean_2023-11-14_14:36:52/best_model.pth', map_location="cpu")
+adv_model_weight = torch.load('/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_clean_2023-11-14_14:36:52/best_model.pth', map_location="cpu")
 adv_model.load_state_dict(adv_model_weight)
 # 获得数据集
 transform_train = Compose([
@@ -47,14 +47,14 @@ transform_test = Compose([
     ToTensor()
 ])
 trainset = DatasetFolder(
-    root='./dataset/cifar10/train',
+    root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
 testset = DatasetFolder(
-    root='./dataset/cifar10/test',
+    root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -150,7 +150,7 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': 'experiments',
+    'save_dir': '/data/mml/backdoor_detect/experiments',
     'experiment_name': 'cifar10_resnet_nopretrained_32_32_3_labelconsistent'
 }
 
@@ -167,7 +167,7 @@ label_consistent = core.LabelConsistent(
     model=victim_model,
     adv_model=adv_model,
     # The directory to save adversarial dataset
-    adv_dataset_dir=f'experiments/adv_dataset/CIFAR-10_eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}',
+    adv_dataset_dir=f'/data/mml/backdoor_detect/experiments/adv_dataset/CIFAR-10_eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}',
     loss=nn.CrossEntropyLoss(),
     y_target=1,
     poisoned_rate=poisoned_rate,
@@ -213,12 +213,12 @@ def attack():
     print("attack() finished")
 
 def temp():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
     poisoned_trainset = label_consistent.poisoned_train_dataset
     poisoned_ids = poisoned_trainset.poisoned_set
     dict_state["poisoned_trainset"] = poisoned_trainset
     dict_state["poisoned_ids"] = poisoned_ids
-    torch.save(dict_state, "experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth")
+    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth")
 
 def eval(model,testset):
     '''
@@ -260,7 +260,7 @@ def eval(model,testset):
     return acc
 
 def process_eval():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
     clean_testset = dict_state["clean_testset"]
@@ -278,7 +278,7 @@ def process_eval():
     
 
 def get_dict_state():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
     return dict_state
 
 if __name__ == "__main__":

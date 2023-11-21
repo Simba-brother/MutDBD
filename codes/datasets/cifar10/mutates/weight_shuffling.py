@@ -13,8 +13,8 @@ from codes import utils
 
 
 
-attack_method = "Blended" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-device = torch.device('cuda:2')
+attack_method = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+device = torch.device('cuda:6')
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "Blended":
@@ -46,7 +46,7 @@ purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
 mutate_ratio = 0.05
 mutation_num = 50
-work_dir = f"experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/weight_shuffle/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
+work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/weight_shuffle/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)
