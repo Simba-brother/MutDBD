@@ -139,14 +139,26 @@ def test15():
     print(x_list)
 
 def test16():
-
-    conv_layer = torch.nn.Conv2d(in_channels=10, out_channels=5, kernel_size = 3)
-    print(conv_layer.weight.shape)
-
+    with torch.no_grad():
+        conv_layer = torch.nn.Conv2d(in_channels=10, out_channels=5, kernel_size = 3)
+        print(conv_layer.weight.shape)
+        weight = conv_layer.weight
+        weight[0,0,0,0] = torch.tensor(999.0,requires_grad=True)
+        print(conv_layer.weight)
+def test17():
+    x = [1,2,3,4,5]
+    y  = np.random.permutation(x)
+    print("fjal")
+    
+def test18():
+    disturb_array = np.random.normal(scale=7, size=100) 
+    print(disturb_array.std())
+    print()
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
     # test_13()
     # test15()
-    test16()
+    # test16()
+    test18()
     pass

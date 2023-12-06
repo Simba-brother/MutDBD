@@ -7,7 +7,14 @@ Reference:
 '''
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
+import random
+import math
+import numpy as np
+import copy
 
+np.random.seed(666)
+random.seed(666)
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -93,7 +100,36 @@ class _ResNet(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
+    
+    def forword_mutate(self,x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.avg_pool2d(out, 4)
+        out = out.view(out.size(0), -1)
+        out = self.switch(out)
+        out = self.linear(out)
+        return out
 
+    def switch(self,out):
+        out_copy = copy.deepcopy(out)
+        batch_size = out.shape[0]
+        features = out.shape[1]
+        mutate_num = math.ceil(features*self.mutate_ratio)
+        feature_ids = list(range(features))
+        selected_feature_ids = random.sample(feature_ids, mutate_num)
+        shuffled_neuron_ids = np.random.permutation(selected_feature_ids)
+        for id in range(batch_size):
+            feature = out[id]
+            feature_copy = out_copy[id]
+            for id1, id2 in zip(selected_feature_ids, shuffled_neuron_ids):
+                feature[id1] = feature_copy[id2]
+        return out
+    
+    def set_mutate_ratio(self,mutate_ratio):
+        self.mutate_ratio = mutate_ratio
 
 def ResNet(num, num_classes=10):
     if num == 18:
@@ -108,3 +144,9 @@ def ResNet(num, num_classes=10):
         return _ResNet(Bottleneck, [3,8,36,3], num_classes)
     else:
         raise NotImplementedError
+    
+if __name__ == "__main__":
+    model = ResNet(18)
+    input_shape = (2,3,32,32)
+    x = torch.randn(input_shape)
+    model.forword_mutate(x)

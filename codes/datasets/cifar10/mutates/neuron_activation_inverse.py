@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader,Dataset
 
 
 attack_method = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-device = torch.device('cuda:0')
+device = torch.device('cuda:2')
 if attack_method == "BadNets":
     from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 elif attack_method == "Blended":
@@ -43,7 +43,7 @@ poisoned_testset = origin_dict_state["poisoned_testset"]
 pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 # mutated model 保存目录
-mutate_ratio = 0.05
+mutate_ratio = 0.01
 mutation_num = 50
 work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/neuron_activation_inverse/ratio_{mutate_ratio}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
@@ -63,26 +63,26 @@ def mutate(model, mutate_ratio):
         # 遍历各层
         with torch.no_grad():
             for layer in layers[1:]:
-                if isinstance(layer, nn.Conv2d):
-                    weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
-                    in_channels = layer.in_channels
-                    out_channels = layer.out_channels
-                    cur_layer_neuron_num = out_channels
-                    mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                    cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
-                    selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
-                    for cur_layer_neuron_id in selected_cur_layer_neuron_ids:
-                        weight[cur_layer_neuron_id,:,:,:] *= -1
+                # if isinstance(layer, nn.Conv2d):
+                #     weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
+                #     in_channels = layer.in_channels
+                #     out_channels = layer.out_channels
+                #     cur_layer_neuron_num = out_channels
+                #     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
+                #     cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
+                #     selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
+                #     for cur_layer_neuron_id in selected_cur_layer_neuron_ids:
+                #         weight[cur_layer_neuron_id,:,:,:] *= -1
                 if isinstance(layer, nn.Linear):
                     weight = layer.weight # weight shape:output, input
                     out_features, in_features = weight.shape
                     cur_layer_neuron_num = out_features
                     last_layer_neuron_num = in_features
-                    mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                    cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
-                    selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
-                    for neuron_id in selected_cur_layer_neuron_ids:
-                        weight[neuron_id] *= -1
+                    mutate_num = math.ceil(last_layer_neuron_num*mutate_ratio)
+                    last_layer_neuron_ids = list(range(last_layer_neuron_num))
+                    selected_last_layer_neuron_ids = random.sample(last_layer_neuron_ids,mutate_num)
+                    for neuron_id in selected_last_layer_neuron_ids:
+                        weight[:,neuron_id] *= -1
         file_name = f"model_mutated_{count+1}.pth"
         save_path = os.path.join(save_dir, file_name)
         torch.save(model_copy.state_dict(), save_path)
@@ -120,22 +120,32 @@ def eval(m_i, testset):
     acc = correct_num/total_num
     acc = round(acc.item(),3)
     end = time.time()
-    print("acc:",acc)
-    print(f'Total eval time: {end-start:.1f} seconds')
-    print("eval() finished")
     return acc
 if __name__ == "__main__":
     mutate(backdoor_model, mutate_ratio)
-    acc_list = []
+    pure_clean_trainset_acc_list = []
+    pure_poisoned_trainset_asr_list = []
+    clean_testset_acc_list = []
+    poisoned_testset_asr_list = []
     asr_list = []
     for m_i in range(mutation_num):
-        acc = eval(m_i+1, pureCleanTrainDataset)
-        asr = eval(m_i+1, purePoisonedTrainDataset)
-        acc_list.append(acc)
-        asr_list.append(asr)
-    print(acc_list,"\n")
-    print(f"ACC mean:{np.mean(acc_list)}","\n")
-    print(asr_list,"\n")
-    print(f"ASR mean:{np.mean(asr_list)}", "\n")
+        pure_clean_trainset_acc = eval(m_i+1, pureCleanTrainDataset)
+        pure_poisoned_trainset_asr = eval(m_i+1, purePoisonedTrainDataset)
+        clean_testset_acc = eval(m_i+1, clean_testset)
+        poisoned_testset_asr = eval(m_i+1, poisoned_testset)
+        print(f"pure_clean_trainset_acc:{pure_clean_trainset_acc}, pure_poisoned_trainset_asr:{pure_poisoned_trainset_asr}")
+        print(f"clean_testset_acc:{clean_testset_acc}, poisoned_testset_asr:{poisoned_testset_asr}")
+        pure_clean_trainset_acc_list.append(pure_clean_trainset_acc)
+        pure_poisoned_trainset_asr_list.append(pure_poisoned_trainset_asr)
+        clean_testset_acc_list.append(clean_testset_acc)
+        poisoned_testset_asr_list.append(poisoned_testset_asr)
+    print(pure_clean_trainset_acc_list,"\n")
+    print(f"pure_clean_trainset_acc_list mean:{np.mean(pure_clean_trainset_acc_list)}","\n")
+    print(pure_poisoned_trainset_asr_list,"\n")
+    print(f"pure_poisoned_trainset_asr_list mean:{np.mean(pure_poisoned_trainset_asr_list)}", "\n")
+    print(clean_testset_acc_list,"\n")
+    print(f"clean_testset_acc_list mean:{np.mean(clean_testset_acc_list)}","\n")
+    print(poisoned_testset_asr_list,"\n")
+    print(f"poisoned_testset_asr_list mean:{np.mean(poisoned_testset_asr_list)}", "\n")
     pass
 

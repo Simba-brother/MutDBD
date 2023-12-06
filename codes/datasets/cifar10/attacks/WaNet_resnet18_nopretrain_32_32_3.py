@@ -307,10 +307,10 @@ def process_eval():
     poisoned_testset = dict_state["poisoned_testset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
-    clean_testset_acc = eval(model,clean_testset)
-    poisoned_testset_acc = eval(model, poisoned_testset)
-    pure_clean_trainset_acc = eval(model, pureCleanTrainDataset)
-    pure_poisoned_trainset_acc = eval(model, purePoisonedTrainDataset)
+    clean_testset_acc = eval(backdoor_model,clean_testset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    pure_clean_trainset_acc = eval(backdoor_model, pureCleanTrainDataset)
+    pure_poisoned_trainset_acc = eval(backdoor_model, purePoisonedTrainDataset)
     print("clean_testset_acc", clean_testset_acc)
     print("poisoned_testset_acc", poisoned_testset_acc)
     print("pure_clean_trainset_acc", pure_clean_trainset_acc)
@@ -322,9 +322,9 @@ def get_dict_state():
     return dict_state
 
 if __name__ == "__main__":
-    
+    # get_dict_state()
     pass
-    # process_eval()
+    process_eval()
     # attack()
     # infected_model = wanet.get_model()
     

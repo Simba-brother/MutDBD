@@ -254,10 +254,11 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-11-15_18:07:35/dict_state.pth")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-11-15_18:07:35/dict_state_new.pth")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
     clean_testset = dict_state["clean_testset"]
+    clean_testset.root = "/data/mml/backdoor_detect/dataset/cifar10/test"
     poisoned_testset = dict_state["poisoned_testset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
@@ -277,6 +278,7 @@ def get_dict_state():
 
 if __name__ == "__main__":
     # attack()
+    # get_dict_state()
     # process_eval()
     pass
 
