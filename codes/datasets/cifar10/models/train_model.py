@@ -23,7 +23,7 @@ class ModelTrain(object):
         self.transform_train = transform_train
         self.transform_test = transform_test
         self.trainset = trainset
-        self.test_set = testset
+        self.testset = testset
         self.batch_size = batch_size
         self.device = device
         self.loss_fn = loss_fn

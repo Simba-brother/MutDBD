@@ -8,7 +8,10 @@ from torchvision.transforms import Compose,ToTensor,ToPILImage, Resize
 from torch import nn
 from copy import deepcopy
 import cv2
-
+import sys
+sys.path.append("./")
+from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import get_dict_state
+from codes.datasets.cifar10.attacks import Blended_resnet18_nopretrain_32_32_3 
 
 def test_1():
     random.seed(0)
@@ -154,11 +157,15 @@ def test18():
     disturb_array = np.random.normal(scale=7, size=100) 
     print(disturb_array.std())
     print()
+def test19():
+    get_dict_state()
+    Blended_resnet18_nopretrain_32_32_3.get_dict_state()
+    print()
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
     # test_13()
     # test15()
     # test16()
-    test18()
+    test19()
     pass

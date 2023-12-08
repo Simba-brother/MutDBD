@@ -16,21 +16,26 @@ from torch.utils.data import DataLoader,Dataset
 
 from codes import utils
 
+dataset = "CIFAR10"
+model_name = "resnet18_nopretrain_32_32_3"
+attack_method = "BadNets" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 
-attack_method = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 device = torch.device('cuda:7')
-if attack_method == "BadNets":
-    from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
-elif attack_method == "Blended":
-    from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
-elif attack_method == "IAD":
-    from codes.datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import PoisonedTrainDataset, PurePoisonedTrainDataset, PureCleanTrainDataset, PoisonedTestSet, TargetClassCleanTrainDataset,  get_dict_state
-elif attack_method == "LabelConsistent":
-    from codes.datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
-elif attack_method == "Refool":
-    from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
-elif attack_method == "WaNet":
-    from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+if dataset == "CIFAR10":
+    if attack_method == "BadNets":
+        from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+        # from codes.datasets.cifar10.attacks.badnets_vgg19 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+    elif attack_method == "Blended":
+        from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+    elif attack_method == "IAD":
+        from codes.datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import PoisonedTrainDataset, PurePoisonedTrainDataset, PureCleanTrainDataset, PoisonedTestSet, TargetClassCleanTrainDataset,  get_dict_state
+    elif attack_method == "LabelConsistent":
+        from codes.datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+    elif attack_method == "Refool":
+        from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+    elif attack_method == "WaNet":
+        from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
+
 
 
 
@@ -51,7 +56,7 @@ purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
 mutation_ratio = 0.01
 scale = 5
 mutation_num = 50
-work_dir = f"/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_num}/{attack_method}"
+work_dir = f"/data/mml/backdoor_detect/experiments/{dataset}/{model_name}/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_num}/{attack_method}"
 # 保存变异模型权重
 save_dir = work_dir
 utils.create_dir(save_dir)
@@ -185,7 +190,7 @@ def eval(m_i, testset):
 
 
 if __name__ == "__main__":
-    mutate(backdoor_model, mutation_ratio)
+    # mutate(backdoor_model, mutation_ratio)
     pure_clean_trainset_acc_list = []
     pure_poisoned_trainset_asr_list = []
     clean_testset_acc_list = []

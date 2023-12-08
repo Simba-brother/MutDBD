@@ -413,9 +413,10 @@ class IAD(Base):
 
         # The path to save log files and checkpoints
         work_dir = osp.join(self.current_schedule['save_dir'], self.current_schedule['experiment_name'] + '_' + time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()))
+        self.work_dir = work_dir
         os.makedirs(work_dir, exist_ok=True)
         log = Log(osp.join(work_dir, 'log.txt'))
-        self.work_dir = work_dir
+        
 
         # log and output:
         # 1. ouput loss and time
@@ -940,7 +941,7 @@ class IAD(Base):
             modelM (torch.nn.Module): Backdoor trigger mask generator.
         """
         # 修改为bd_target_label
-        self.device = torch.device("cuda:5")
+        self.device = torch.device(self.current_schedule['device'])
         bd_targets = self.create_targets_bd(targets).to(self.device)
         # G model生成pattern
         patterns = modelG(inputs)

@@ -20,8 +20,7 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from codes import core
 
-from codes.core.models.resnet import ResNet
-
+from codes.datasets.cifar10.models.vgg import VGG
 
 # CUDA_VISIBLE_DEVICES = '3'
 # os.environ['CUDA_VISIBLE_DEVICES'] = CUDA_VISIBLE_DEVICES
@@ -32,10 +31,10 @@ def _seed_worker():
 global_seed = 666
 deterministic = True
 torch.manual_seed(global_seed)
-victim_model = ResNet(18,num_classes=10)
-adv_model = ResNet(18,num_classes=10)
+victim_model = VGG("VGG19")
+adv_model =  VGG("VGG19")
 # 这个是先通过benign训练得到的clean model weight
-adv_model_weight = torch.load('/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_clean_2023-11-14_14:36:52/best_model.pth', map_location="cpu")
+adv_model_weight = torch.load('/data/mml/backdoor_detect/experiments/CIFAR10/vgg19/clean/best_model.pth', map_location="cpu")
 adv_model.load_state_dict(adv_model_weight)
 # 获得数据集
 transform_train = Compose([
@@ -132,9 +131,9 @@ class PurePoisonedTrainDataset(Dataset):
         return x,y
 
 schedule = {
-    'device': 'cuda:1',
+    'device': 'cuda:2',
 
-    'benign_training': False, # 先训练处来一benign model
+    'benign_training': False, # 先训练出来个benign model
     'batch_size': 128,
     'num_workers': 1,
 
@@ -151,7 +150,7 @@ schedule = {
     'save_epoch_interval': 10,
 
     'save_dir': '/data/mml/backdoor_detect/experiments',
-    'experiment_name': 'cifar10_resnet_nopretrained_32_32_3_labelconsistent'
+    'experiment_name': 'cifar10_vgg19_labelconsistent'
 }
 
 
@@ -167,7 +166,7 @@ label_consistent = core.LabelConsistent(
     model=victim_model,
     adv_model=adv_model,
     # The directory to save adversarial dataset
-    adv_dataset_dir=f'/data/mml/backdoor_detect/experiments/adv_dataset/CIFAR-10_eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}',
+    adv_dataset_dir=f'/data/mml/backdoor_detect/experiments/adv_dataset/CIFAR-10_eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}_vgg19',
     loss=nn.CrossEntropyLoss(),
     y_target=1,
     poisoned_rate=poisoned_rate,
@@ -185,6 +184,9 @@ label_consistent = core.LabelConsistent(
     deterministic=True
 )
 
+
+def benign_train():
+    label_consistent.train()
 
 def attack():
     print("LabelConsistent开始攻击")
@@ -276,11 +278,13 @@ def process_eval():
     
 
 def get_dict_state():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
-    return dict_state
+    # dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
+    # return dict_state
+    pass
 
 if __name__ == "__main__":
-    # attack()
+    # benign_train()
+    attack()
     # process_eval()
     # get_dict_state()
     # temp()

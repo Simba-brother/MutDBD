@@ -1,15 +1,13 @@
 cur_config = {
-    "dataset":"CIFAR-10", 
-    "model":"ResNet18",
-    "attack":"BadNets",
-    "fangyu":"GF" # // Gaussian Fuzzing
+    "dataset_name":"CIFAR-10", 
+    "model_name":"ResNet18",
+    "attack_name":"BadNets",
+    "mutation_name":"GF" # // Gaussian Fuzzing
 }
 
 
 
-dataset_list:["CIFAR-10", "MNIST", "GTSRB"]
-dataset_list:["resnet18_pretrain", "resnet18_nopretrain_32_32_3"]
-attack:["BadNets","WaNet"]
-defense:{
-    "mutation":['GF']
-}
+if cur_config["dataset_name"] == "CIFAR-10":
+    if cur_config["model_name"] == "ResNet18":
+        if cur_config["attack_name"] == "BadNets":
+            from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
