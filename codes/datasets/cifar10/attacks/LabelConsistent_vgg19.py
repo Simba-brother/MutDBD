@@ -260,7 +260,7 @@ def eval(model,testset):
     return acc
 
 def process_eval():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_labelconsistent_2023-12-08_16:08:30/dict_state.pth")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
     clean_testset = dict_state["clean_testset"]
@@ -284,8 +284,8 @@ def get_dict_state():
 
 if __name__ == "__main__":
     # benign_train()
-    attack()
-    # process_eval()
+    # attack()
+    process_eval()
     # get_dict_state()
     # temp()
     pass

@@ -79,6 +79,7 @@ class ModelMutat(object):
                     for neuron_id in selected_last_layer_neuron_ids:
                         weight[:,neuron_id] *= -1
         return model_copy
+    
     def _neuron_block(self):
         model_copy = copy.deepcopy(self.original_model)
         layers = [module for module in model_copy.modules()]
@@ -101,6 +102,7 @@ class ModelMutat(object):
                     selected_cur_layer_neuron_ids = random.sample(list(range(last_layer_neuron_num)),selected_neuron_num)
                     for neuron_id in selected_cur_layer_neuron_ids:
                         weight[:,neuron_id] = 0
+        return model_copy
     def _neuron_switch(self):
         # 产生一个copy model
         model_copy = copy.deepcopy(self.original_model)
@@ -134,7 +136,8 @@ class ModelMutat(object):
                     selected_last_layer_neuron_ids = random.sample(last_layer_neuron_ids, selected_neuron_num)
                     switch_linear_weights(weight, selected_last_layer_neuron_ids)
         return model_copy
-    def _neuron_shuffling(self):
+    
+    def _weight_shuffling(self):
         model_copy = copy.deepcopy(self.original_model)
         layers = [module for module in model_copy.modules()]
         # 遍历各层

@@ -35,6 +35,7 @@ def draw_box(data,labels,title,save_path):
     plt.tight_layout(pad=0)
     plt.show()
     plt.savefig(save_path,transparent=False,dpi=600)
+    
 if __name__ == "__main__":
 
     all_data = [np.random.normal(0, std, size=100) for std in range(1,4)]

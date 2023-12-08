@@ -14,6 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
 from codes.core.attacks import BadNets
+
 from codes.core.models.resnet import ResNet
 from codes.modelMutat import ModelMutat
 from codes.eval_model import EvalModel
@@ -253,21 +254,103 @@ def gf_mutate():
     scale = 5
     for mutation_ratio in mutation_ratio_list:
         work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_model_num}/{attack_name}"
+        create_dir(work_dir)
         for m_i in range(mutation_model_num):
             muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
             mutated_model = muodel_mutat._gf_mut(scale)    
-            create_dir(work_dir)
             save_file_name = f"model_mutated_{m_i+1}.pth"
             save_path = osp.join(work_dir, save_file_name)
             torch.save(mutated_model.state_dict(), save_path)
             print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
 
-def eval_mutated_model():
-    device = torch.device("cuda:0")
+
+def neuron_activation_inverse_mutate():
     dataset_name = "CIFAR10"
     model_name = "resnet18_nopretrain_32_32_3"
     attack_name = "BadNets"
-    mutation_name = "gf"
+    mutation_name = "neuron_activation_inverse"
+    dict_state = get_dict_state()
+    backdoor_model = dict_state["backdoor_model"]
+    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
+    mutation_model_num = 50
+    for mutation_ratio in mutation_ratio_list:
+        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
+        create_dir(work_dir)
+        for m_i in range(mutation_model_num):
+            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
+            mutated_model = muodel_mutat._neuron_activation_inverse()    
+            save_file_name = f"model_mutated_{m_i+1}.pth"
+            save_path = osp.join(work_dir, save_file_name)
+            torch.save(mutated_model.state_dict(), save_path)
+            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
+
+def neuron_block_mutate():
+    dataset_name = "CIFAR10"
+    model_name = "resnet18_nopretrain_32_32_3"
+    attack_name = "BadNets"
+    mutation_name = "neuron_block"
+    dict_state = get_dict_state()
+    backdoor_model = dict_state["backdoor_model"]
+    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
+    mutation_model_num = 50
+    for mutation_ratio in mutation_ratio_list:
+        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
+        create_dir(work_dir)
+        for m_i in range(mutation_model_num):
+            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
+            mutated_model = muodel_mutat._neuron_block()   
+            save_file_name = f"model_mutated_{m_i+1}.pth"
+            save_path = osp.join(work_dir, save_file_name)
+            torch.save(mutated_model.state_dict(), save_path)
+            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
+
+def neuron_switch_mutate():
+    dataset_name = "CIFAR10"
+    model_name = "resnet18_nopretrain_32_32_3"
+    attack_name = "BadNets"
+    mutation_name = "neuron_switch"
+    dict_state = get_dict_state()
+    backdoor_model = dict_state["backdoor_model"]
+    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
+    mutation_model_num = 50
+    for mutation_ratio in mutation_ratio_list:
+        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
+        create_dir(work_dir)
+        for m_i in range(mutation_model_num):
+            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
+            mutated_model = muodel_mutat._neuron_switch()   
+            save_file_name = f"model_mutated_{m_i+1}.pth"
+            save_path = osp.join(work_dir, save_file_name)
+            torch.save(mutated_model.state_dict(), save_path)
+            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
+
+def weight_shuffling():
+    dataset_name = "CIFAR10"
+    model_name = "resnet18_nopretrain_32_32_3"
+    attack_name = "BadNets"
+    mutation_name = "weight_shuffle"
+    dict_state = get_dict_state()
+    backdoor_model = dict_state["backdoor_model"]
+    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
+    mutation_model_num = 50
+    for mutation_ratio in mutation_ratio_list:
+        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
+        create_dir(work_dir)
+        for m_i in range(mutation_model_num):
+            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
+            mutated_model = muodel_mutat._weight_shuffling()   
+            save_file_name = f"model_mutated_{m_i+1}.pth"
+            save_path = osp.join(work_dir, save_file_name)
+            torch.save(mutated_model.state_dict(), save_path)
+            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
+
+
+def eval_mutated_model():
+    device = torch.device("cuda:2")
+    dataset_name = "CIFAR10"
+    model_name = "resnet18_nopretrain_32_32_3"
+    attack_name = "BadNets"
+    mutation_name = "weight_shuffle"
     dict_state = get_dict_state()
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset = dict_state["poisoned_trainset"]
@@ -279,7 +362,7 @@ def eval_mutated_model():
     save_path = osp.join(base_dir,save_file_name)
     data = defaultdict(list)
     for mutation_ratio in tqdm(mutation_ratio_list):
-        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_model_num}/{attack_name}"        
+        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"        
         for m_i in range(mutation_model_num):
             state_dict = torch.load(osp.join(work_dir, f"model_mutated_{m_i+1}.pth"), map_location="cpu")
             backdoor_model.load_state_dict(state_dict)
@@ -288,6 +371,9 @@ def eval_mutated_model():
             data[mutation_ratio].append(report)
             print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}")
     joblib.dump(data, save_path)
+
+
+
 
 def draw_box():
     device = torch.device("cuda:0")
@@ -305,7 +391,11 @@ def draw_box():
     file_path = osp.join(base_dir,file_name)
     data = joblib.load(file_path)
     mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-    ans = defaultdict(defaultdict(list))
+    ans = {}
+    for mutation_ratio in mutation_ratio_list:
+        ans[mutation_ratio] = {}
+        for class_idx in range(10):
+            ans[mutation_ratio][class_idx] = []
     for mutation_ratio in mutation_ratio_list:
         report_list = data[mutation_ratio]
         for report in report_list:
@@ -315,7 +405,8 @@ def draw_box():
                 dif = round(origin_precison-precision,3)
                 ans[mutation_ratio][class_idx].append(dif)
 
-    
+    save_dir = osp.join(base_dir, "images/box")
+    create_dir(save_dir)
     for mutation_ratio in mutation_ratio_list:
         all_y = []
         labels = []
@@ -323,12 +414,20 @@ def draw_box():
             y_list = ans[mutation_ratio][class_i]
             all_y.append(y_list)
             labels.append(f"Class_{class_i}")
-        draw.draw_box(all_y, labels)
+        title = f"{dataset_name}_{model_name}_{attack_name}_{mutation_name}_{mutation_ratio}"
+        save_file_name = title+".png"
+        save_path = osp.join(save_dir, save_file_name)
+        draw.draw_box(all_y, labels,title,save_path)
             
 if __name__ == "__main__":
     # attack()
     # process_eval()
     # get_dict_state()
     # gf_mutate()
-    eval_mutated_model()
+    # neuron_activation_inverse_mutate()
+    # neuron_block_mutate()
+    # neuron_switch_mutate()
+    # weight_shuffling()
+    # eval_mutated_model()
+    # draw_box()
     pass
