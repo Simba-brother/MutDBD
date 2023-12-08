@@ -8,11 +8,12 @@ sys.path.append("./")
 from codes.modelMutat import ModelMutat
 from codes import draw
 from codes.utils import create_dir
+from codes import config
 
 
-dataset_name = "CIFAR10"
-model_name = "resnet18_nopretrain_32_32_3"
-attack_name = "BadNets"
+dataset_name = config.dataset_name
+model_name = config.model_name
+attack_name = config.attack_name
 
 if dataset_name == "CIFAR10":
     if model_name == "resnet18_nopretrain_32_32_3":
@@ -25,12 +26,11 @@ if dataset_name == "CIFAR10":
 dict_state = get_dict_state()
 backdoor_model = dict_state["backdoor_model"]    
 
-mutation_name = "gf" #| "neuron_block","neuron_switch","weight_shuffle"
+mutation_name = "gf" #| "neuron_activation_inverse","neuron_block","neuron_switch","weight_shuffle"
 mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
 mutation_model_num = 50
 
 base_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/"
-
 device = torch.device("cuda:2")
 
 def gf_mutate():
@@ -150,3 +150,6 @@ def draw_box():
         save_file_name = title+".png"
         save_path = os.path.join(save_dir, save_file_name)
         draw.draw_box(all_y, labels,title,save_path)
+
+if __name__ == "__main__":
+    gf_mutate()
