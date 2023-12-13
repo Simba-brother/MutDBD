@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from matplotlib import rcParams
 
 
 def draw_box(data,labels,title,save_path):
+    # rcParams['font.size'] = 8   # 设置字体大小为14
     fig = plt.figure()
     plt.boxplot(
             x=data, # 需要绘制的数据
@@ -31,7 +32,8 @@ def draw_box(data,labels,title,save_path):
             }
             
         )
-    plt.title(title)
+    
+    plt.title(title, fontsize=10)
     plt.tight_layout(pad=0)
     plt.show()
     plt.savefig(save_path,transparent=False,dpi=600)

@@ -265,7 +265,6 @@ def process_eval():
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
     clean_testset = dict_state["clean_testset"]
-    clean_testset.root = "/data/mml/backdoor_detect/dataset/cifar10/test"
     poisoned_testset = dict_state["poisoned_testset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
@@ -283,184 +282,16 @@ def get_dict_state():
     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-11-15_18:07:35/dict_state.pth", map_location="cpu")
     return dict_state
 
-dataset_name = "CIFAR10"
-model_name = "resnet18_nopretrain_32_32_3"
-attack_name = "Blended"
-base_dir = "/data/mml/backdoor_detect/experiments/"
-mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-mutation_model_num = 50
-
-def gf_mutate():
-    dict_state = get_dict_state()
-    backdoor_model = dict_state["backdoor_model"]
-    scale = 5
-    for mutation_ratio in mutation_ratio_list:
-        work_dir = os.path.join(base_dir,f"{dataset_name}/{model_name}/mutates/gf/ratio_{mutation_ratio}_scale_{scale}_num_{mutation_model_num}/{attack_name}") 
-        create_dir(work_dir)
-        for m_i in range(mutation_model_num):
-            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
-            mutated_model = muodel_mutat._gf_mut(scale)    
-            save_file_name = f"model_mutated_{m_i+1}.pth"
-            save_path = os.path.join(work_dir, save_file_name)
-            torch.save(mutated_model.state_dict(), save_path)
-            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
-
-
-def neuron_activation_inverse_mutate():
-    dataset_name = "CIFAR10"
-    model_name = "resnet18_nopretrain_32_32_3"
-    attack_name = "Blended"
-    mutation_name = "neuron_activation_inverse"
-    dict_state = get_dict_state()
-    backdoor_model = dict_state["backdoor_model"]
-    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-    mutation_model_num = 50
-    for mutation_ratio in mutation_ratio_list:
-        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
-        create_dir(work_dir)
-        for m_i in range(mutation_model_num):
-            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
-            mutated_model = muodel_mutat._neuron_activation_inverse()    
-            save_file_name = f"model_mutated_{m_i+1}.pth"
-            save_path = os.path.join(work_dir, save_file_name)
-            torch.save(mutated_model.state_dict(), save_path)
-            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
-
-def neuron_block_mutate():
-    dataset_name = "CIFAR10"
-    model_name = "resnet18_nopretrain_32_32_3"
-    attack_name = "Blended"
-    mutation_name = "neuron_block"
-    dict_state = get_dict_state()
-    backdoor_model = dict_state["backdoor_model"]
-    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-    mutation_model_num = 50
-    for mutation_ratio in mutation_ratio_list:
-        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
-        create_dir(work_dir)
-        for m_i in range(mutation_model_num):
-            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
-            mutated_model = muodel_mutat._neuron_block()   
-            save_file_name = f"model_mutated_{m_i+1}.pth"
-            save_path = os.path.join(work_dir, save_file_name)
-            torch.save(mutated_model.state_dict(), save_path)
-            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
-
-def neuron_switch_mutate():
-    dataset_name = "CIFAR10"
-    model_name = "resnet18_nopretrain_32_32_3"
-    attack_name = "Blended"
-    mutation_name = "neuron_switch"
-    dict_state = get_dict_state()
-    backdoor_model = dict_state["backdoor_model"]
-    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-    mutation_model_num = 50
-    for mutation_ratio in mutation_ratio_list:
-        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
-        create_dir(work_dir)
-        for m_i in range(mutation_model_num):
-            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
-            mutated_model = muodel_mutat._neuron_switch()   
-            save_file_name = f"model_mutated_{m_i+1}.pth"
-            save_path = os.path.join(work_dir, save_file_name)
-            torch.save(mutated_model.state_dict(), save_path)
-            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
-
-def weight_shuffling():
-    dataset_name = "CIFAR10"
-    model_name = "resnet18_nopretrain_32_32_3"
-    attack_name = "Blended"
-    mutation_name = "weight_shuffle"
-    dict_state = get_dict_state()
-    backdoor_model = dict_state["backdoor_model"]
-    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-    mutation_model_num = 50
-    for mutation_ratio in mutation_ratio_list:
-        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"
-        create_dir(work_dir)
-        for m_i in range(mutation_model_num):
-            muodel_mutat = ModelMutat(backdoor_model, mutation_ratio)
-            mutated_model = muodel_mutat._weight_shuffling()   
-            save_file_name = f"model_mutated_{m_i+1}.pth"
-            save_path = os.path.join(work_dir, save_file_name)
-            torch.save(mutated_model.state_dict(), save_path)
-            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}, save_path:{save_path}")
-
-
-def eval_mutated_model():
-    device = torch.device("cuda:2")
-    dataset_name = "CIFAR10"
-    model_name = "resnet18_nopretrain_32_32_3"
-    attack_name = "Blended"
-    mutation_name = "weight_shuffle"
-    dict_state = get_dict_state()
-    backdoor_model = dict_state["backdoor_model"]
+def update_dict_state():
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-11-15_18:07:35/dict_state.pth", map_location="cpu")
     poisoned_trainset = dict_state["poisoned_trainset"]
-    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-    mutation_model_num = 50
-    base_dir = "/data/mml/backdoor_detect/experiments"
-    scale = 5
-    save_file_name = f"{dataset_name}_{model_name}_{attack_name}_{mutation_name}.data"
-    save_path = os.path.join(base_dir,save_file_name)
-    data = defaultdict(list)
-    for mutation_ratio in tqdm(mutation_ratio_list):
-        work_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/ratio_{mutation_ratio}_num_{mutation_model_num}/{attack_name}"        
-        for m_i in range(mutation_model_num):
-            state_dict = torch.load(os.path.join(work_dir, f"model_mutated_{m_i+1}.pth"), map_location="cpu")
-            backdoor_model.load_state_dict(state_dict)
-            evalModel = EvalModel(backdoor_model, poisoned_trainset, device)
-            report = evalModel._eval_classes_acc()
-            data[mutation_ratio].append(report)
-            print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}")
-    joblib.dump(data, save_path)
-
-
-def draw_box():
-    device = torch.device("cuda:0")
-    dict_state = get_dict_state()
-    backdoor_model = dict_state["backdoor_model"]
-    poisoned_trainset = dict_state["poisoned_trainset"]
-    e = EvalModel(backdoor_model, poisoned_trainset, device)
-    origin_report = e._eval_classes_acc()
-    dataset_name = "CIFAR10"
-    model_name = "resnet18_nopretrain_32_32_3"
-    attack_name = "Blended"
-    mutation_name = "gf"
-    base_dir = "/data/mml/backdoor_detect/experiments"
-    file_name = f"{dataset_name}_{model_name}_{attack_name}_{mutation_name}.data"
-    file_path = os.path.join(base_dir,file_name)
-    data = joblib.load(file_path)
-    mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
-    ans = {}
-    for mutation_ratio in mutation_ratio_list:
-        ans[mutation_ratio] = {}
-        for class_idx in range(10):
-            ans[mutation_ratio][class_idx] = []
-    for mutation_ratio in mutation_ratio_list:
-        report_list = data[mutation_ratio]
-        for report in report_list:
-            for class_idx in range(10):
-                precision = report[str(class_idx)]["precision"]
-                origin_precison = origin_report[str(class_idx)]["precision"]
-                dif = round(origin_precison-precision,3)
-                ans[mutation_ratio][class_idx].append(dif)
-
-    save_dir = os.path.join(base_dir, "images/box")
-    create_dir(save_dir)
-    for mutation_ratio in mutation_ratio_list:
-        all_y = []
-        labels = []
-        for class_i in range(10):
-            y_list = ans[mutation_ratio][class_i]
-            all_y.append(y_list)
-            labels.append(f"Class_{class_i}")
-        title = f"{dataset_name}_{model_name}_{attack_name}_{mutation_name}_{mutation_ratio}"
-        save_file_name = title+".png"
-        save_path = os.path.join(save_dir, save_file_name)
-        draw.draw_box(all_y, labels,title,save_path)
-
-
-
+    for i in range(len(poisoned_trainset.samples)):
+        path, label = poisoned_trainset.samples[i]
+        new_path = path.replace("./dataset/cifar10/train", "/data/mml/backdoor_detect/dataset/cifar10/train")
+        poisoned_trainset.samples[i] = (new_path, label)
+    dict_state["poisoned_trainset"] = poisoned_trainset
+    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-11-15_18:07:35/dict_state.pth")
+    print("update successfully")
 
 if __name__ == "__main__":
     # attack()

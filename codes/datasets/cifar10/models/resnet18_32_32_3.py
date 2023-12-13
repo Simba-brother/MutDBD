@@ -336,4 +336,5 @@ def ResNet(num, num_classes=10):
 
 
 if __name__ == "__main__":
-    start_train()
+    # start_train()
+    pass

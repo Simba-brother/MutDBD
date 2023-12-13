@@ -51,7 +51,7 @@ class EvalModel(object):
         acc = correct_num/total_num
         acc = round(acc.item(),3)
         end = time.time()
-        print(f"Total time consumption:{start-end}s")
+        print(f"Total time consumption:{end-start}s")
         return acc
 
     def _eval_classes_acc(self):

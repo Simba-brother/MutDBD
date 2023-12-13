@@ -279,11 +279,22 @@ def get_dict_state():
     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
     return dict_state
 
+def update_dict_state():
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
+    poisoned_trainset = dict_state["poisoned_trainset"]
+    for i in range(len(poisoned_trainset.samples)):
+        path, label = poisoned_trainset.samples[i]
+        new_path = path.replace(".experiments/", "/data/mml/backdoor_detect/experiments/")
+        poisoned_trainset.samples[i] = (new_path, label)
+    dict_state["poisoned_trainset"] = poisoned_trainset
+    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth")
+    print("update successfully")
 if __name__ == "__main__":
     # attack()
     # process_eval()
     # get_dict_state()
     # temp()
+    update_dict_state()
     pass
 
 

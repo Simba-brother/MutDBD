@@ -131,36 +131,7 @@ class Log:
         with open(self.log_path,'a') as f:
             f.write(msg)
 
-class ModelReview(object):
-    def __init__(self):
-        self.model = None
-    def set_model(self, model):
-        self.model = model
-    def get_model(self, model):
-        return self.model
-    def see_layers(self):
-        model = self.model
-        layers = [module for module in model.modules()]
-        print(f"总共层数:{len(layers)}")
-        print("="*20)
-        conv2d_num = 0
-        for layer in layers:
-            # print(layer,"\n")
-            if isinstance(layer, torch.nn.Conv2d):
-                conv2d_num += 1
-                print(layer.out_channels)
-        print("总共卷积层数",conv2d_num)
-        print("="*20)
-        print("="*20)
-        linear_num = 0
-        for layer in layers:
-            # print(layer,"\n")
-            if isinstance(layer, torch.nn.Linear):
-                linear_num += 1
-                print("in",layer.in_features)
-                print("out",layer.out_features)
-        print("全连接层数",linear_num)
-        print("="*20)
+
 if __name__ == "__main__":
 
     pass

@@ -131,9 +131,9 @@ class PurePoisonedTrainDataset(Dataset):
         return x,y
 
 schedule = {
-    'device': 'cuda:2',
+    'device': 'cuda:1',
 
-    'benign_training': False, # 先训练出来个benign model
+    'benign_training': True, # 先训练出来个benign model
     'batch_size': 128,
     'num_workers': 1,
 
@@ -150,7 +150,7 @@ schedule = {
     'save_epoch_interval': 10,
 
     'save_dir': '/data/mml/backdoor_detect/experiments',
-    'experiment_name': 'cifar10_vgg19_labelconsistent'
+    'experiment_name': 'cifar10_vgg19_labelconsistent_clean'
 }
 
 
@@ -283,9 +283,9 @@ def get_dict_state():
     pass
 
 if __name__ == "__main__":
-    # benign_train()
+    benign_train()
     # attack()
-    process_eval()
+    # process_eval()
     # get_dict_state()
     # temp()
     pass

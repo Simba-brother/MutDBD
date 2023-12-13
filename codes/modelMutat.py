@@ -25,11 +25,37 @@ def add_Gaussian_perturbation(weight, neuron_ids, scale):
         weight[:,neuron_id] = col
     return weight
 
+
+def shuffle_conv2d_weights(weight, neuron_id):
+    o_c, in_c, h, w =  weight.shape
+    weight = weight.reshape(o_c, in_c * h * w)
+    row = weight[neuron_id]
+    idx = torch.randperm(row.nelement())
+    row = row.view(-1)[idx].view(row.size())
+    row.requires_grad_()
+    weight[neuron_id] = row
+    weight = weight.reshape(o_c, in_c, h, w)
+    return weight
+
 def switch_linear_weights(weight, neuron_ids):
     weight_copy = copy.deepcopy(weight)
     shuffled_neuron_ids = np.random.permutation(neuron_ids)
     for neuron_id, shuffled_neuron_id in zip(neuron_ids,shuffled_neuron_ids):
         weight[:, neuron_id] = weight_copy[:,shuffled_neuron_id]
+    return weight
+
+def switch_conv2d_weights(weight, neuron_ids):
+    '''
+    args:
+        weight:层权重 o_c, in_c, h, w =  weight.shape
+        neuron_ids:切换的神经元ids
+    '''
+    # 拷贝一份weight出来
+    weight_copy = copy.deepcopy(weight)
+    # 把这些神经元id打乱
+    shuffled_neuron_ids = np.random.permutation(neuron_ids)
+    for neuron_id, shuffled_neuron_id in zip(neuron_ids,shuffled_neuron_ids):
+        weight[neuron_id,:, :, :] = weight_copy[shuffled_neuron_id,:,:,:]
     return weight
 
 class ModelMutat(object):
@@ -39,6 +65,7 @@ class ModelMutat(object):
         
     def _gf_mut(self, scale=5):
         model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         with torch.no_grad():
             for layer in layers:
@@ -54,20 +81,19 @@ class ModelMutat(object):
     
     def _neuron_activation_inverse(self):
         model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         # 遍历各层
         with torch.no_grad():
             for layer in layers[1:]:
-                # if isinstance(layer, nn.Conv2d):
-                #     weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
-                #     in_channels = layer.in_channels
-                #     out_channels = layer.out_channels
-                #     cur_layer_neuron_num = out_channels
-                #     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                #     cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
-                #     selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
-                #     for cur_layer_neuron_id in selected_cur_layer_neuron_ids:
-                #         weight[cur_layer_neuron_id,:,:,:] *= -1
+                if isinstance(layer, nn.Conv2d):
+                    weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
+                    neuron_num = layer.out_channels
+                    selected_neuron_num = math.ceil(neuron_num*self.mutation_ratio)
+                    neuron_ids = list(range(neuron_num))
+                    selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
+                    for neuron_id in selected_neuron_ids:
+                        weight[neuron_id,:,:,:] *= -1
                 if isinstance(layer, nn.Linear):
                     weight = layer.weight # weight shape:output, input
                     out_features, in_features = weight.shape
@@ -82,50 +108,52 @@ class ModelMutat(object):
     
     def _neuron_block(self):
         model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         # 遍历各层
         with torch.no_grad():
             for layer in layers[1:]:
-                # if isinstance(layer, nn.Conv2d):
-                #     weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
-                #     in_channels = layer.in_channels
-                #     mutate_num = math.ceil(in_channels*mutate_ratio)
-                #     selected_in_channels_id = random.sample(list(range(in_channels)),mutate_num)
-                #     for neuron_id in selected_in_channels_id:
-                #         weight[:,neuron_id,:,:] = 0
-                #         weight[:,neuron_id,:,:].requires_grad_()
+                if isinstance(layer, nn.Conv2d):
+                    weight = layer.weight # weight shape:out_channels, in_channels, kernel_size_0,kernel_size_1
+                    neuron_num = layer.out_channels
+                    selected_neuron_num = math.ceil(neuron_num*self.mutation_ratio)
+                    selected_neuron_ids = random.sample(list(range(neuron_num)),selected_neuron_num)
+                    for neuron_id in selected_neuron_ids:
+                        weight[neuron_id,:,:,:] = 0
+                        weight[neuron_id,:,:,:].requires_grad_()
+
                 if isinstance(layer, nn.Linear):
                     weight = layer.weight # weight shape:output, input
                     out_features, in_features = weight.shape
                     last_layer_neuron_num = in_features
                     selected_neuron_num = math.ceil(last_layer_neuron_num*self.mutation_ratio)
-                    selected_cur_layer_neuron_ids = random.sample(list(range(last_layer_neuron_num)),selected_neuron_num)
-                    for neuron_id in selected_cur_layer_neuron_ids:
+                    selected_last_layer_neuron_ids = random.sample(list(range(last_layer_neuron_num)),selected_neuron_num)
+                    for neuron_id in selected_last_layer_neuron_ids:
                         weight[:,neuron_id] = 0
         return model_copy
     def _neuron_switch(self):
         # 产生一个copy model
         model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
         # 获得所有层
         layers = [module for module in model_copy.modules()]
         with torch.no_grad():
             # 无梯度模式下，遍历各层
             for layer in layers[1:]:
-                # if isinstance(layer, nn.Conv2d):
-                #     # 如果该层为Conv2d
-                #     # 获得卷积层权重weight
-                #     weight = layer.weight # shape:(our_channels, in_channels, kernel_size_0, kernel_size_1)
-                #     in_channels = layer.in_channels
-                #     # Conv2d输入通道个数作为上层的神经元个数
-                #     last_layer_neuron_num = in_channels
-                #     # 算出上层多少个神经元需要被变异
-                #     mutate_num = math.ceil(last_layer_neuron_num*mutate_ratio)
-                #     # 获得上层神经元的索引list
-                #     last_layer_neuron_ids = list(range(last_layer_neuron_num))
-                #     # 从上层神经元中随机采样变异数量了的神经元id list
-                #     selected_last_layer_neuron_ids = random.sample(last_layer_neuron_ids,mutate_num)
-                #     # 对该层权重进行变异
-                #     switch_conv2d_weights(weight, selected_last_layer_neuron_ids)
+                if isinstance(layer, nn.Conv2d):
+                    # 如果该层为Conv2d
+                    # 获得卷积层权重weight
+                    weight = layer.weight # shape:(out_channels, in_channels, kernel_size_0, kernel_size_1)
+                    neuron_num = layer.out_channels
+                    # Conv2d输入通道个数作为上层的神经元个数
+                    # 算出上层多少个神经元需要被变异
+                    selected_neuron_num = math.ceil(neuron_num*self.mutation_ratio)
+                    # 获得上层神经元的索引list
+                    neuron_ids = list(range(neuron_num))
+                    # 从上层神经元中随机采样变异数量了的神经元id list
+                    selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
+                    # 对该层权重进行变异
+                    switch_conv2d_weights(weight, selected_neuron_ids)
                 if isinstance(layer, nn.Linear):
                     weight = layer.weight # weight shape:output, input
                     # bias = layer.bias
@@ -139,19 +167,19 @@ class ModelMutat(object):
     
     def _weight_shuffling(self):
         model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         # 遍历各层
         with torch.no_grad():
             for layer in layers[1:]:
-                # if isinstance(layer, nn.Conv2d):
-                #     weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
-                #     out_channels = layer.out_channels
-                #     cur_layer_neuron_num = out_channels
-                #     mutate_num = math.ceil(cur_layer_neuron_num*mutate_ratio)
-                #     cur_layer_neuron_ids = list(range(cur_layer_neuron_num))
-                #     selected_cur_layer_neuron_ids = random.sample(cur_layer_neuron_ids,mutate_num)
-                #     for neuron_id in selected_cur_layer_neuron_ids:
-                #         shuffle_conv2d_weights(weight, neuron_id)
+                if isinstance(layer, nn.Conv2d):
+                    weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
+                    neuron_num = layer.out_channels
+                    selected_neuron_num = math.ceil(neuron_num*self.mutation_ratio)
+                    selected_neuron_ids = list(range(selected_neuron_num))
+                    selected_cur_layer_neuron_ids = random.sample(selected_neuron_ids,selected_neuron_num)
+                    for neuron_id in selected_cur_layer_neuron_ids:
+                        shuffle_conv2d_weights(weight, neuron_id)
                 if isinstance(layer, nn.Linear):
                     weight = layer.weight # weight shape:output, input
                     out_features, in_features = weight.shape

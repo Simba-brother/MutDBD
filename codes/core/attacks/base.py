@@ -257,6 +257,7 @@ class Base(object):
                     log(msg)
 
             # 每轮次过后，寻找下best model并保存
+
             predict_digits, labels, mean_loss = self._test(self.poisoned_train_dataset, device, self.current_schedule['batch_size'])
             total_num = labels.size(0)
             prec1, prec5 = accuracy(predict_digits, labels, topk=(1, 5))
@@ -281,7 +282,6 @@ class Base(object):
                       time.strftime("[%Y-%m-%d_%H:%M:%S] ", time.localtime()) + \
                       f"Top-1 correct / Total: {top1_correct}/{total_num}, Top-1 accuracy: {top1_correct/total_num}, Top-5 correct / Total: {top5_correct}/{total_num}, Top-5 accuracy: {top5_correct/total_num}, mean loss: {mean_loss}, time: {time.time()-last_time}\n"
                 log(msg)
-
                 # test result on poisoned test dataset（ASR）
                 predict_digits, labels, mean_loss = self._test(self.poisoned_test_dataset, device, self.current_schedule['batch_size'])
                 total_num = labels.size(0)
