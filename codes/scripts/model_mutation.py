@@ -44,7 +44,7 @@ mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
 mutation_model_num = 50
 
 base_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/"
-device = torch.device("cuda:3")
+device = torch.device("cuda:1")
 
 def gf_mutate():
     scale = 5
@@ -127,8 +127,6 @@ def eval_mutated_model():
             data[mutation_ratio].append(report)
             print(f"mutation_ratio:{mutation_ratio}, m_i:{m_i}")
     joblib.dump(data, save_path)
-
-
 
 
 def draw_box():
@@ -245,7 +243,7 @@ def adaptive_mutate():
     #         p_dict[mutation_ratio] = p_list
     # return
 if __name__ == "__main__":
-    mutate()
-    # eval_mutated_model()
+    # mutate()
+    eval_mutated_model()
     # draw_box()
     # adaptive_mutate()

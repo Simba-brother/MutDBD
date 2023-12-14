@@ -7,8 +7,8 @@ mutation_name_list = ["gf","neuron_activation_inverse","neuron_block","neuron_sw
 
 
 dataset_name = "CIFAR10"
-attack_name = "Refool"
+attack_name = "BadNets"
 model_name = "resnet18_nopretrain_32_32_3"
-mutation_name = "weight_shuffle"
+mutation_name = "neuron_activation_inverse"
 
 

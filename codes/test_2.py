@@ -162,7 +162,10 @@ def test19():
     get_dict_state()
     Blended_resnet18_nopretrain_32_32_3.get_dict_state()
     print()
+def test20():
 
+    a = [2] + [1]*(3-1)
+    print(a)
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
@@ -170,5 +173,5 @@ if __name__ == "__main__":
     # test15()
     # test16()
     # test19()
-
+    test20()
     pass

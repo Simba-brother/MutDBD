@@ -80,6 +80,7 @@ class EvalModel(object):
                 pred_labels.extend(torch.argmax(preds,dim=1).tolist()) 
                 true_labels.extend(Y.tolist()) 
         end = time.time()
+        print("cost time:", end-start)
         report = classification_report(true_labels, pred_labels, output_dict=True)
         return report
 

@@ -16,6 +16,7 @@ from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
 
 from codes.core.models.resnet import ResNet
+from tqdm import tqdm
 
 global_seed = 666
 deterministic = True
@@ -100,7 +101,7 @@ refool= core.Refool(
 )
 
 schedule = {
-    'device': 'cuda:5',
+    'device': 'cuda:1',
     'GPU_num': 1,
 
     'benign_training': False,
@@ -153,8 +154,7 @@ class PurePoisonedTrainDataset(Dataset):
         purePoisonedTrainDataset = []
         for id in range(len(self.poisoned_train_dataset)):
             sample, label = self.poisoned_train_dataset[id]
-            if id in self.poisoned_ids:
-                purePoisonedTrainDataset.append((sample,label))
+            purePoisonedTrainDataset.append((sample,label))
         return purePoisonedTrainDataset
 
     def __len__(self):
@@ -162,6 +162,40 @@ class PurePoisonedTrainDataset(Dataset):
     
     def __getitem__(self, index):
         x,y=self.purePoisonedTrainDataset[index]
+        return x,y
+    
+class PoisonedTrainset(Dataset):
+    def __init__(self, poisoned_trainset_origin):
+        self.poisoned_trainset_oigin = poisoned_trainset_origin
+        self.poisoned_trainset = self.jiekai()
+    def jiekai(self):
+        poisonedTrainDataset = []
+        for id in range(len(self.poisoned_trainset_oigin)):
+            sample, label = self.poisoned_trainset_oigin[id]
+            poisonedTrainDataset.append((sample,label))
+        return poisonedTrainDataset
+    def __len__(self):
+        return len(self.poisoned_trainset)
+    
+    def __getitem__(self, index):
+        x,y=self.poisoned_trainset[index]
+        return x,y
+    
+class PoisonedTestset(Dataset):
+    def __init__(self, poisoned_testset_origin):
+        self.poisoned_testset_origin = poisoned_testset_origin
+        self.poisoned_testset = self.jiekai()
+    def jiekai(self):
+            poisonedTestDataset = []
+            for id in range(len(self.poisoned_testset_origin)):
+                sample, label = self.poisoned_testset_origin[id]
+                poisonedTestDataset.append((sample,label))
+            return poisonedTestDataset
+    def __len__(self):
+        return len(self.poisoned_testset)
+    
+    def __getitem__(self, index):
+        x,y=self.poisoned_testset[index]
         return x,y
 
 def get_config():
@@ -172,17 +206,18 @@ def attack():
     poisoned_trainset = refool.poisoned_train_dataset
     poisoned_testset = refool.poisoned_test_dataset
     poisoned_ids = poisoned_trainset.poisoned_set
-
+    poisonedTrainset = PoisonedTrainset(poisoned_trainset)
+    poisonedTestset = PoisonedTestset(poisoned_testset)
     pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
     purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
 
     dict_state = {}
-    dict_state["poisoned_trainset"]=poisoned_trainset
+    dict_state["poisoned_trainset"]=poisonedTrainset
     dict_state["poisoned_ids"]=poisoned_ids
     dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
     dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
     dict_state["clean_testset"]=testset
-    dict_state["poisoned_testset"]=poisoned_testset
+    dict_state["poisoned_testset"]=poisonedTestset
 
     print("开始attack train")
     refool.train(schedule)
@@ -204,7 +239,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:5")
+    device = torch.device("cuda:0")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -247,14 +282,20 @@ def process_eval():
     poisoned_testset = dict_state["poisoned_testset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
+
+    
     clean_testset_acc = eval(backdoor_model,clean_testset)
     poisoned_testset_acc = eval(backdoor_model,poisoned_testset)
     pureCleanTrainDataset_acc = eval(backdoor_model,pureCleanTrainDataset)
     purePoisonedTrainDataset_acc = eval(backdoor_model,purePoisonedTrainDataset)
+    poisoned_trainset_acc = eval(backdoor_model,poisoned_trainset)
+    
     print("clean_testset_acc",clean_testset_acc)
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
     
 def get_dict_state():
     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth", map_location="cpu")
@@ -271,10 +312,22 @@ def update_dict_state():
     torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth")
     print("update successfully")
 
+def update_dict_state_2():
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth", map_location="cpu")
+    poisoned_trainset = refool.poisoned_train_dataset
+    poisoned_testset = refool.poisoned_test_dataset
+    poisonedTrainset = PoisonedTrainset(poisoned_trainset)
+    poisonedTestset = PoisonedTestset(poisoned_testset)
+    dict_state["poisoned_trainset"] = poisonedTrainset
+    dict_state["poisoned_testset"] = poisonedTestset
+    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth")
+    print("update successfully")
+
 if __name__ == "__main__":
     
-    # attack()
+    attack()
     # process_eval()
     # get_dict_state()
-    update_dict_state()
+    # update_dict_state()
+    # update_dict_state_2()
     pass

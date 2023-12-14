@@ -100,7 +100,7 @@ refool= core.Refool(
 )
 
 schedule = {
-    'device': 'cuda:6',
+    'device': 'cuda:0',
     'GPU_num': 1,
 
     'benign_training': False,
@@ -142,7 +142,40 @@ class PureCleanTrainDataset(Dataset):
     def __getitem__(self, index):
         x,y=self.pureCleanTrainDataset[index]
         return x,y
-
+class PoisonedTrainset(Dataset):
+    def __init__(self, poisoned_trainset_origin):
+        self.poisoned_trainset_oigin = poisoned_trainset_origin
+        self.poisoned_trainset = self.jiekai()
+    def jiekai(self):
+        poisonedTrainDataset = []
+        for id in range(len(self.poisoned_trainset_oigin)):
+            sample, label = self.poisoned_trainset_oigin[id]
+            poisonedTrainDataset.append((sample,label))
+        return poisonedTrainDataset
+    def __len__(self):
+        return len(self.poisoned_trainset)
+    
+    def __getitem__(self, index):
+        x,y=self.poisoned_trainset[index]
+        return x,y
+    
+class PoisonedTestset(Dataset):
+    def __init__(self, poisoned_testset_origin):
+        self.poisoned_testset_origin = poisoned_testset_origin
+        self.poisoned_testset = self.jiekai()
+    def jiekai(self):
+            poisonedTestDataset = []
+            for id in range(len(self.poisoned_testset_origin)):
+                sample, label = self.poisoned_testset_origin[id]
+                poisonedTestDataset.append((sample,label))
+            return poisonedTestDataset
+    def __len__(self):
+        return len(self.poisoned_testset)
+    
+    def __getitem__(self, index):
+        x,y=self.poisoned_testset[index]
+        return x,y
+    
 class PurePoisonedTrainDataset(Dataset):
     def __init__(self, poisoned_train_dataset, poisoned_ids):
         self.poisoned_train_dataset = poisoned_train_dataset
@@ -172,17 +205,18 @@ def attack():
     poisoned_trainset = refool.poisoned_train_dataset
     poisoned_testset = refool.poisoned_test_dataset
     poisoned_ids = poisoned_trainset.poisoned_set
-
+    poisonedTrainset = PoisonedTrainset(poisoned_trainset)
+    poisonedTestset = PoisonedTestset(poisoned_testset)
     pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
     purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
 
     dict_state = {}
-    dict_state["poisoned_trainset"]=poisoned_trainset
+    dict_state["poisoned_trainset"]=poisonedTrainset
     dict_state["poisoned_ids"]=poisoned_ids
     dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
     dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
     dict_state["clean_testset"]=testset
-    dict_state["poisoned_testset"]=poisoned_testset
+    dict_state["poisoned_testset"]=poisonedTestset
 
     print("开始attack train")
     refool.train(schedule)
@@ -263,7 +297,7 @@ def get_dict_state():
 
 if __name__ == "__main__":
     
-    # attack()
-    process_eval()
+    attack()
+    # process_eval()
     # get_dict_state()
     pass
