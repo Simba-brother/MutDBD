@@ -26,7 +26,7 @@ model = VGG("VGG19")
 clean_state_dict_path = "/data/mml/backdoor_detect/experiments/CIFAR10/vgg19/clean/best_model.pth"
 model.load_state_dict(torch.load(clean_state_dict_path))
 ratio = 1.0
-device = torch.device("cuda:1")
+device = torch.device("cuda:6")
 
 transform_train = transforms.Compose([
         transforms.ToPILImage(),

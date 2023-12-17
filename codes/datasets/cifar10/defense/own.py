@@ -9,7 +9,7 @@ import joblib
 import pandas as pd
 import numpy as np
 import torch
-from scipy.stats import entropy
+# from scipy.stats import entropy
 from sklearn.metrics import confusion_matrix
 from torch.utils.data import DataLoader,Dataset
 

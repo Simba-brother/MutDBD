@@ -238,7 +238,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:5")
+    device = torch.device("cuda:0")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -274,30 +274,32 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Refool_2023-12-06_13:19:12/dict_state.pth")
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Refool_2023-12-14_17:22:12/dict_state.pth")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
     clean_testset = dict_state["clean_testset"]
     poisoned_testset = dict_state["poisoned_testset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
     clean_testset_acc = eval(backdoor_model,clean_testset)
     poisoned_testset_acc = eval(backdoor_model,poisoned_testset)
     pureCleanTrainDataset_acc = eval(backdoor_model,pureCleanTrainDataset)
     purePoisonedTrainDataset_acc = eval(backdoor_model,purePoisonedTrainDataset)
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
     print("clean_testset_acc",clean_testset_acc)
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
-    
+    print("poisoned_trainset_acc", poisoned_trainset_acc)
 def get_dict_state():
-    # dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Refool_2023-11-13_21:53:53/dict_state.pth", map_location="cpu")
+    # dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Refool_2023-12-14_17:22:12/dict_state.pth", map_location="cpu")
     # return dict_state
     pass
 
 if __name__ == "__main__":
     
-    attack()
+    # attack()
     # process_eval()
     # get_dict_state()
     pass

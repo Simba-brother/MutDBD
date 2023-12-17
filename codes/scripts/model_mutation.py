@@ -44,7 +44,7 @@ mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
 mutation_model_num = 50
 
 base_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/"
-device = torch.device("cuda:1")
+device = torch.device("cuda:7")
 
 def gf_mutate():
     scale = 5
@@ -129,7 +129,7 @@ def eval_mutated_model():
     joblib.dump(data, save_path)
 
 
-def draw_box():
+def draw_box_single():
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset = dict_state["poisoned_trainset"]
     e = EvalModel(backdoor_model, poisoned_trainset, device)
@@ -165,25 +165,15 @@ def draw_box():
         save_path = os.path.join(save_dir, save_file_name)
         draw.draw_box(all_y, labels,title,save_path)
 
-def mutate():
-    if mutation_name == "gf":
-        gf_mutate()
-    if mutation_name == "neuron_activation_inverse":
-        neuron_activation_inverse_mutate()
-    if mutation_name == "neuron_block":
-        neuron_block_mutate()
-    if mutation_name == "neuron_switch":
-        neuron_switch_mutate()
-    if mutation_name == "weight_shuffle":
-        weight_shuffling()
-
-
-def adaptive_mutate():
+def draw_box_all():
+    # 数据集/模型/攻击名称
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset = dict_state["poisoned_trainset"]
     e = EvalModel(backdoor_model, poisoned_trainset, device)
     origin_report = e._eval_classes_acc()
+    # 存各个变异方法
     data_list = []
+    # 遍历变异方法
     for mutation_name in  config.mutation_name_list:
         file_name = f"{dataset_name}_{model_name}_{attack_name}_{mutation_name}.data"
         file_path = os.path.join("/data/mml/backdoor_detect/experiments",file_name)
@@ -215,6 +205,18 @@ def adaptive_mutate():
         save_path = os.path.join(save_dir, save_file_name)
         draw.draw_box(all_y, labels,title,save_path)
 
+def mutate():
+    if mutation_name == "gf":
+        gf_mutate()
+    if mutation_name == "neuron_activation_inverse":
+        neuron_activation_inverse_mutate()
+    if mutation_name == "neuron_block":
+        neuron_block_mutate()
+    if mutation_name == "neuron_switch":
+        neuron_switch_mutate()
+    if mutation_name == "weight_shuffle":
+        weight_shuffling()
+
 
 
 
@@ -244,6 +246,7 @@ def adaptive_mutate():
     # return
 if __name__ == "__main__":
     # mutate()
-    eval_mutated_model()
-    # draw_box()
-    # adaptive_mutate()
+    # eval_mutated_model()
+    # draw_box_single()
+    # draw_box_all()
+    pass

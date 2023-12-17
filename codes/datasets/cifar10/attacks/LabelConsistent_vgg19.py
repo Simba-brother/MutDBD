@@ -158,7 +158,7 @@ eps = 8
 alpha = 1.5
 steps = 100
 max_pixel = 255
-poisoned_rate = 0.1
+poisoned_rate = 0.0
 
 label_consistent = core.LabelConsistent(
     train_dataset=trainset,
