@@ -265,15 +265,17 @@ def process_eval():
     poisoned_testset = dict_state["poisoned_testset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
     clean_testset_acc = eval(backdoor_model,clean_testset)
     poisoned_testset_acc = eval(backdoor_model,poisoned_testset)
     pureCleanTrainDataset_acc = eval(backdoor_model,pureCleanTrainDataset)
     purePoisonedTrainDataset_acc = eval(backdoor_model,purePoisonedTrainDataset)
+    poisoned_trainset_acc = eval(backdoor_model,poisoned_trainset)
     print("clean_testset_acc",clean_testset_acc)
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
-    
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
 
 def get_dict_state():
     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_labelconsistent_2023-11-15_19:52:15/dict_state.pth", map_location="cpu")
@@ -291,10 +293,10 @@ def update_dict_state():
     print("update successfully")
 if __name__ == "__main__":
     # attack()
-    # process_eval()
+    process_eval()
     # get_dict_state()
     # temp()
-    update_dict_state()
+    # update_dict_state()
     pass
 
 

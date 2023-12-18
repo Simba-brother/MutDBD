@@ -340,27 +340,25 @@ def attack():
     # dict_state = torch.load(os.path.join(work_dir, "dict_state.pth"))
 
 def process_eval():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new_new.pth", map_location="cpu")
-    data  = get_data()
-    backdoor_model = data["backdoor_model"]
-    clean_testset = data["clean_testset"]
-    dict_state["clean_testset"] = clean_testset
-    dict_state["clean_testset"].root = "/data/mml/backdoor_detect/dataset/cifar10/test"
-    poisoned_testset = data["poisoned_testset"]
-    dict_state["poisoned_testset"] = poisoned_testset
-    dict_state["poisoned_testset"].root = "/data/mml/backdoor_detect/dataset/cifar10/test"
-    torch.save(dict_state,"/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new_new.pth")
-    pure_poisoned_trainset = data["pure_poisoned_trainset"]
-    pure_clean_trainset = data["pure_clean_trainset"]
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state.pth", map_location="cpu")
+    backdoor_model = dict_state["backdoor_model"]
+    clean_testset = dict_state["clean_testset"]
+    poisoned_testset = dict_state["poisoned_testset"]
+
+    pure_poisoned_trainset = dict_state["purePoisonedTrainDataset"]
+    pure_clean_trainset = dict_state["pureCleanTrainDataset"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
+
     clean_testset_acc = eval(backdoor_model, clean_testset)
     poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
     pure_clean_trainset_acc = eval(backdoor_model, pure_clean_trainset)
     pure_poisoned_trainset_acc = eval(backdoor_model, pure_poisoned_trainset)
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
     print("clean_testset_acc",clean_testset_acc)
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("pure_clean_trainset_acc",pure_clean_trainset_acc)
     print("pure_poisoned_trainset_acc",pure_poisoned_trainset_acc)
-
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
 
 def temp():
     dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state.pth", map_location="cpu")
@@ -465,7 +463,7 @@ def get_dict_state():
 
 if __name__ == "__main__":
     # temp_update_dict_state()
-    # process_eval()
+    process_eval()
     # attack()
     pass
 

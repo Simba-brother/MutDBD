@@ -506,17 +506,19 @@ def temp_update_dict_state():
     torch.save(dict_state_new,"/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state_new_new.pth")
     print("temp_update_dict_state() finished")
 
+# def update_dict_state():
+#     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth", map_location="cpu")
+#     pure_clean_trainset = ExtractDataset(dict_state["pureCleanTrainDataset"])
+#     dict_state["pureCleanTrainDataset"] = pure_clean_trainset
+#     poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"])
+#     dict_state["poisoned_trainset"] = poisoned_trainset
+#     torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth")
+
 def get_dict_state():
     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth", map_location="cpu")
     return dict_state
 
-def update_dict_state():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth", map_location="cpu")
-    pure_clean_trainset = ExtractDataset(dict_state["pureCleanTrainDataset"])
-    dict_state["pureCleanTrainDataset"] = pure_clean_trainset
-    poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"])
-    dict_state["poisoned_trainset"] = poisoned_trainset
-    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth")
+
 if __name__ == "__main__":
     # attack()
     # process_eval()

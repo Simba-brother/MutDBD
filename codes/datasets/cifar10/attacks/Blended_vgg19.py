@@ -290,11 +290,11 @@ def process_eval():
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
     print("poisoned_trainset_acc",poisoned_trainset_acc)
 
-def update_dict_state():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Blended_2023-12-06_12:10:37/dict_state.pth",map_location="cpu")
-    poisoned_trainset = PoisonedTrainset(dict_state["poisoned_trainset"])
-    dict_state["poisoned_trainset"] = poisoned_trainset
-    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_vgg19_Blended_2023-12-06_12:10:37/dict_state.pth")
+# def update_dict_state():
+#     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Blended_2023-12-06_12:10:37/dict_state.pth",map_location="cpu")
+#     poisoned_trainset = PoisonedTrainset(dict_state["poisoned_trainset"])
+#     dict_state["poisoned_trainset"] = poisoned_trainset
+#     torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_vgg19_Blended_2023-12-06_12:10:37/dict_state.pth")
 
 def get_dict_state():
     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Blended_2023-12-06_12:10:37/dict_state.pth", map_location="cpu")
@@ -303,7 +303,7 @@ def get_dict_state():
 if __name__ == "__main__":
     # attack()
     # get_dict_state()
-    update_dict_state()
+    # update_dict_state()
     process_eval()
     pass
 

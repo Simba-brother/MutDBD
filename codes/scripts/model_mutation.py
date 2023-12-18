@@ -36,6 +36,16 @@ if dataset_name == "CIFAR10":
     if model_name == "vgg19":
         if attack_name == "BadNets":
             from codes.datasets.cifar10.attacks.badnets_vgg19 import *
+        if attack_name == "Blended":
+            from codes.datasets.cifar10.attacks.Blended_vgg19 import *
+        if attack_name == "IAD":
+            from codes.datasets.cifar10.attacks.IAD_vgg19 import *
+        if attack_name == "LabelConsistent":
+            from codes.datasets.cifar10.attacks.LabelConsistent_vgg19 import *
+        if attack_name == "Refool":
+            from codes.datasets.cifar10.attacks.Refool_vgg19 import *
+        if attack_name == "WaNet":
+            from codes.datasets.cifar10.attacks.WaNet_vgg19 import *
 
 dict_state = get_dict_state()
 backdoor_model = dict_state["backdoor_model"]    
@@ -44,7 +54,7 @@ mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
 mutation_model_num = 50
 
 base_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/"
-device = torch.device("cuda:7")
+device = torch.device("cuda:1")
 
 def gf_mutate():
     scale = 5
