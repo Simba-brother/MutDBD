@@ -7,14 +7,14 @@ import torch
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 
-
+from torch.utils.data import DataLoader,Dataset
 from codes.datasets.cifar10.models.resnet18_32_32_3 import ResNet
 from codes.eval_model import EvalModel
 from codes.utils import entropy, create_dir
 
 model = ResNet(18)
-attack_name = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-mutation_ratio = 0.6
+attack_name = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+mutation_ratio = 0.05
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "CIFAR10"
 model_name = "resnet18_nopretrain_32_32_3"
@@ -42,12 +42,39 @@ if dataset_name == "CIFAR10":
             from codes.datasets.cifar10.attacks.badnets_vgg19 import *
 
 dict_state = get_dict_state()
+target_class_idx = 1
+
+class TargetClassDataset(Dataset):
+    def __init__(self, dataset, target_class_idx):
+        self.dataset = dataset
+        self.target_class_idx  = target_class_idx
+        self.target_class_dataset = self.get_target_class_dataset()
+
+    def get_target_class_dataset(self):
+        target_class_dataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id]
+            if label == self.target_class_idx:
+                target_class_dataset.append((sample, label))
+        return target_class_dataset
+    
+    def __len__(self):
+        return len(self.target_class_dataset)
+    
+    def __getitem__(self, index):
+        x,y=self.target_class_dataset[index]
+        return x,y
+    
 pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+target_class_dataset_clean = TargetClassDataset(pureCleanTrainDataset, target_class_idx)
+target_class_dataset_poisoned = TargetClassDataset(purePoisonedTrainDataset, target_class_idx)
 
-cur_dataset = purePoisonedTrainDataset
+cur_dataset = target_class_dataset_poisoned
+df_filename = "poisoned_trainset_pred_labels.csv"
+device = torch.device("cuda:2")
 
-device = torch.device("cuda:4")
+
 
 def get_mutation_models_weight_file_path():
     weight_filePath_list = []
@@ -80,7 +107,7 @@ def get_output(weight_filePath_list:list):
     attack_name
     save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
     create_dir(save_dir)
-    save_file_name = "poisoned_trainset_pred_labels.csv"
+    save_file_name = df_filename
     save_path = os.path.join(save_dir, save_file_name)
     df.to_csv(save_path, index=False)
     print("get_output() successfully")

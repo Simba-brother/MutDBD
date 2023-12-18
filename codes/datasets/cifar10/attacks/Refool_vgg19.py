@@ -292,14 +292,14 @@ def process_eval():
     print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
     print("poisoned_trainset_acc", poisoned_trainset_acc)
+
 def get_dict_state():
-    # dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Refool_2023-12-14_17:22:12/dict_state.pth", map_location="cpu")
-    # return dict_state
-    pass
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Refool_2023-12-14_17:22:12/dict_state.pth", map_location="cpu")
+    return dict_state
 
 if __name__ == "__main__":
     
     # attack()
-    # process_eval()
+    process_eval()
     # get_dict_state()
     pass

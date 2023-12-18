@@ -218,15 +218,32 @@ class PureCleanTrainDataset(Dataset):
     def __init__(self, pure_clean_trainset_data, pure_clean_trainset_label):
         self.pure_clean_trainset_data = pure_clean_trainset_data
         self.pure_clean_trainset_label = pure_clean_trainset_label
-
+    
     def __len__(self):
-        return len(self.pure_clean_trainset_label)
+        return len(self.pure_clean_trainset_data)
     
     def __getitem__(self, index):
         x = self.pure_clean_trainset_data[index]
         y = self.pure_clean_trainset_label[index]
         x = torch.tensor(x)
         y = torch.tensor(y)
+        return x,y
+class ExtractDataset(Dataset):
+    def __init__(self, old_dataset):
+        self.old_dataset = old_dataset
+        self.new_dataset = self._extract_dataset()
+    def _extract_dataset(self):
+        dataset = []
+        for id in range(len(self.old_dataset)):
+            sample, label = self.old_dataset[id]
+            dataset.append((sample,label))
+        return dataset
+    
+    def __len__(self):
+        return len(self.new_dataset)
+    
+    def __getitem__(self, index):
+        x,y=self.new_dataset[index]
         return x,y
     
 class PoisonedTestSet(Dataset):
@@ -380,15 +397,17 @@ def process_eval():
     poisoned_testset = dict_state["poisoned_testset"]
     pure_clean_trainset = dict_state["pureCleanTrainDataset"]
     pure_poisoned_trainset = dict_state["purePoisonedTrainDataset"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
     clean_testset_acc = eval(backdoor_model, clean_testset)
     poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
     pure_clean_trainset_acc = eval(backdoor_model, pure_clean_trainset)
     pure_poisoned_trainset_acc = eval(backdoor_model, pure_poisoned_trainset)
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
     print("clean_testset_acc",clean_testset_acc)
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("pure_clean_trainset_acc",pure_clean_trainset_acc)
     print("pure_poisoned_trainset_acc",pure_poisoned_trainset_acc)
-
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
 
 def temp():
     dict_state = torch.load("experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state.pth", map_location="cpu")
@@ -488,13 +507,19 @@ def temp_update_dict_state():
     print("temp_update_dict_state() finished")
 
 def get_dict_state():
-    # dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_IAD_2023-11-08_23:13:28/dict_state.pth", map_location="cpu")
-    # return dict_state
-    pass
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth", map_location="cpu")
+    return dict_state
 
+def update_dict_state():
+    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth", map_location="cpu")
+    pure_clean_trainset = ExtractDataset(dict_state["pureCleanTrainDataset"])
+    dict_state["pureCleanTrainDataset"] = pure_clean_trainset
+    poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"])
+    dict_state["poisoned_trainset"] = poisoned_trainset
+    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_vgg19_IAD_2023-12-06_13:25:53/dict_state.pth")
 if __name__ == "__main__":
-    # temp_update_dict_state()
-    process_eval()
     # attack()
+    # process_eval()
+    # update_dict_state()
     pass
 

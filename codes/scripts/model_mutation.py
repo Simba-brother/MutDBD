@@ -245,7 +245,7 @@ def mutate():
     #         p_dict[mutation_ratio] = p_list
     # return
 if __name__ == "__main__":
-    # mutate()
+    mutate()
     # eval_mutated_model()
     # draw_box_single()
     # draw_box_all()
