@@ -1,8 +1,10 @@
+
 import random
 import numpy as np
 from collections import defaultdict
 import torch
 import timm
+
 import os
 import math
 from torchvision.transforms import Compose,ToTensor,ToPILImage, Resize
@@ -173,5 +175,5 @@ if __name__ == "__main__":
     # test15()
     # test16()
     # test19()
-    test20()
+    test_1()
     pass
