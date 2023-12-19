@@ -7,8 +7,8 @@ mutation_name_list = ["gf","neuron_activation_inverse","neuron_block","neuron_sw
 
 
 dataset_name = "CIFAR10"
-attack_name = "WaNet"
+attack_name = "Refool"
 model_name = "vgg19"
-mutation_name = "gf"
+mutation_name = "weight_shuffle"
 
 
