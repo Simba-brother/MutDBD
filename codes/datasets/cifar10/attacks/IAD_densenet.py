@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
 from codes.core.attacks import IAD
-from codes.core.models.resnet import ResNet
+from codes.datasets.cifar10.models.densenet import densenet_cifar
 
 # 设置随机种子
 global_seed = 666
@@ -31,7 +31,7 @@ def _seed_worker():
     random.seed(worker_seed)
 
 # 获得一个朴素的resnet18
-model = ResNet(num=18,num_classes=10)
+model = densenet_cifar()
 
 # 使用BackdoorBox的transform
 transform_train = Compose([
@@ -130,7 +130,7 @@ testset1 = CIFAR10(
 '''
 
 schedule = {
-    'device': 'cuda:2',
+    'device': 'cuda:0',
     'GPU_num': 1,
 
     'benign_training': False,
@@ -161,7 +161,7 @@ schedule = {
     'save_epoch_interval': 10,
 
     'save_dir': '/data/mml/backdoor_detect/experiments',
-    'experiment_name': 'cifar10_resnet18_nopretrained_32_32_3_IAD'
+    'experiment_name': 'cifar10_densenet_IAD'
 }
 
 iad = IAD(
@@ -462,7 +462,7 @@ def get_dict_state():
     return dict_state
 
 if __name__ == "__main__":
-    # attack()
+    attack()
     # process_eval()
     pass
 

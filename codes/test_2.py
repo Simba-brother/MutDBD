@@ -168,6 +168,14 @@ def test20():
 
     a = [2] + [1]*(3-1)
     print(a)
+def test21():
+    # 定义原始列表
+    original_list = [5, 2, 8, 1]
+    
+    # 使用sorted函数进行排序并获取相应的索引
+    sorted_indices = sorted(range(len(original_list)), key=lambda x: original_list[x])
+    
+    print("排序后的索引为：", sorted_indices)
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
@@ -175,5 +183,5 @@ if __name__ == "__main__":
     # test15()
     # test16()
     # test19()
-    test_1()
+    test21()
     pass

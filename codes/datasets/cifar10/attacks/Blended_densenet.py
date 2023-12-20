@@ -4,8 +4,6 @@ This is the test code of benign training and poisoned training under Blended Att
 
 import sys
 sys.path.append("./")
-import joblib
-from collections import defaultdict
 import time
 import numpy as np
 import random
@@ -19,11 +17,7 @@ import torchvision
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip
 from codes import core
-from codes.modelMutat import ModelMutat
-from codes.eval_model import EvalModel
-from codes import draw
-from codes.utils import create_dir
-from tqdm import tqdm
+from codes.datasets.cifar10.models.densenet import densenet_cifar
 
 def _seed_worker():
     worker_seed =666
@@ -90,7 +84,7 @@ weight = torch.zeros((1, 28, 28), dtype=torch.float32)
 weight[0, -3:, -3:] = 0.2
 '''
 
-victim_model = core.models.ResNet(18,num_classes=10)
+victim_model = densenet_cifar()
 
 blended = core.Blended(
     train_dataset=trainset,
@@ -130,8 +124,8 @@ class PurePoisonedTrainDataset(Dataset):
     def __init__(self, poisoned_train_dataset, poisoned_ids):
         self.poisoned_train_dataset = poisoned_train_dataset
         self.poisoned_ids  = poisoned_ids
-        self.purePoisonedTrainDataset = self._getPurePoisonedTrainDataset()
-    def _getPurePoisonedTrainDataset(self):
+        self.purePoisonedTrainDataset = self._getPureCleanTrainDataset()
+    def _getPureCleanTrainDataset(self):
         purePoisonedTrainDataset = []
         for id in range(len(self.poisoned_train_dataset)):
             sample, label = self.poisoned_train_dataset[id]
@@ -145,27 +139,24 @@ class PurePoisonedTrainDataset(Dataset):
     def __getitem__(self, index):
         x,y=self.purePoisonedTrainDataset[index]
         return x,y
-
-
-class ExtractDataset(Dataset):
-    def __init__(self, old_dataset):
-        self.old_dataset = old_dataset
-        self.new_dataset = self._get_new_dataset()
-
-    def _get_new_dataset(self):
-        new_dataset = []
-        for id in range(len(self.old_dataset)):
-            sample, label = self.old_dataset[id]
-            new_dataset.append((sample,label))
-        return new_dataset
+    
+class PoisonedTrainset(Dataset):
+    def __init__(self, poisoned_trainset):
+        self.poisoned_trainset = poisoned_trainset
+        self.dataset = self._get_dataset()
+    def _get_dataset(self):
+        dataset = []
+        for id in range(len(self.poisoned_trainset)):
+            sample, label = self.poisoned_trainset[id]
+            dataset.append((sample,label))
+        return dataset
     
     def __len__(self):
-        return len(self.new_dataset)
+        return len(self.dataset)
     
     def __getitem__(self, index):
-        x,y=self.new_dataset[index]
+        x,y=self.dataset[index]
         return x,y
-
 # Show an Example of Poisoned Training Samples
 # x, y = poisoned_train_dataset[index]
 # print(y)
@@ -186,7 +177,7 @@ class ExtractDataset(Dataset):
 
 # Train Benign Model
 schedule = {
-    'device': 'cuda:0',
+    'device': 'cuda:1',
     # 'CUDA_VISIBLE_DEVICES': '1',
     'GPU_num': 1,
 
@@ -207,7 +198,8 @@ schedule = {
     'save_epoch_interval': 10,
 
     'save_dir': '/data/mml/backdoor_detect/experiments',
-    'experiment_name': 'cifar10_resnet_nopretrained_32_32_3_Blended'
+    # 'experiment_name': 'train_benign_CIFAR10_Blended'
+    'experiment_name': 'cifar10_densenet_Blended'
 }
 
 def attack():
@@ -241,7 +233,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:5")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -279,43 +271,40 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-12-20_15:43:23/dict_state.pth")
+    dict_state = torch.load("")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
     clean_testset = dict_state["clean_testset"]
     poisoned_testset = dict_state["poisoned_testset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
     clean_testset_acc = eval(backdoor_model,clean_testset)
     poisoned_testset_acc = eval(backdoor_model,poisoned_testset)
     pureCleanTrainDataset_acc = eval(backdoor_model,pureCleanTrainDataset)
     purePoisonedTrainDataset_acc = eval(backdoor_model,purePoisonedTrainDataset)
+    poisoned_trainset_acc = eval(backdoor_model,poisoned_trainset)
     print("clean_testset_acc",clean_testset_acc)
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
 
+# def update_dict_state():
+#     dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_vgg19_Blended_2023-12-06_12:10:37/dict_state.pth",map_location="cpu")
+#     poisoned_trainset = PoisonedTrainset(dict_state["poisoned_trainset"])
+#     dict_state["poisoned_trainset"] = poisoned_trainset
+#     torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_vgg19_Blended_2023-12-06_12:10:37/dict_state.pth")
 
 def get_dict_state():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-12-20_15:43:23/dict_state.pth", map_location="cpu")
+    dict_state = torch.load("", map_location="cpu")
     return dict_state
 
-def update_dict_state():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-12-20_15:43:23/dict_state.pth", map_location="cpu")
-    clean_testset = ExtractDataset(dict_state["clean_testset"]) 
-    dict_state["clean_testset"] = clean_testset
-    poisoned_testset = ExtractDataset(dict_state["poisoned_testset"]) 
-    dict_state["poisoned_testset"] = poisoned_testset
-    poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"]) 
-    dict_state["poisoned_trainset"] = poisoned_trainset
-    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_resnet_nopretrained_32_32_3_Blended_2023-12-20_15:43:23/dict_state.pth")
-
-
 if __name__ == "__main__":
-    # attack()
+    attack()
     # process_eval()
-    # update_dict_state()
     # get_dict_state()
+    # update_dict_state()
     pass
 
 '''

@@ -111,6 +111,33 @@ class EvalModel(object):
         end = time.time()
         print("cost time:", end-start)
         return pred_labels
+    
+    def _get_outputs(self):
+        batch_size =128
+        testset_loader = DataLoader(
+            self.testset,
+            batch_size = batch_size,
+            shuffle=False,
+            # num_workers=self.current_schedule['num_workers'],
+            drop_last=False,
+            pin_memory=False,
+            worker_init_fn=_seed_worker
+        )
+        # 评估开始时间
+        start = time.time()
+        self.model.to(self.device)
+        self.model.eval()  # put network in train mode for Dropout and Batch Normalization
+        outputs = []
+        with torch.no_grad():
+            for X, Y in testset_loader:
+                X = X.to(self.device)
+                Y = Y.to(self.device)
+                preds = self.model(X)
+                outputs.extend(preds.tolist()) 
+        end = time.time()
+        print("cost time:", end-start)
+        return outputs
+
 
 # from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 # origin_dict_state = get_dict_state()

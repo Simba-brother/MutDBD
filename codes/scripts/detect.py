@@ -1,23 +1,26 @@
 import sys
 sys.path.append("./")
+import random
 import os
 import statistics
-
+import joblib
 import torch
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 
 from torch.utils.data import DataLoader,Dataset
 from codes.datasets.cifar10.models.resnet18_32_32_3 import ResNet
+from codes.datasets.cifar10.models.vgg import VGG
 from codes.eval_model import EvalModel
 from codes.utils import entropy, create_dir
 
-model = ResNet(18)
-attack_name = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
-mutation_ratio = 0.05
+random.seed(555)
+model = VGG("VGG19")
+attack_name = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+mutation_ratio = 0.05 # importent!!
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "CIFAR10"
-model_name = "resnet18_nopretrain_32_32_3"
+model_name = "vgg19" #resnet18_nopretrain_32_32_3, vgg19
 
 mutates_path = os.path.join(exp_root_dir, dataset_name, model_name, "mutates")
 mutation_name_list = ["gf","neuron_activation_inverse","neuron_block","neuron_switch","weight_shuffle"]
@@ -40,6 +43,16 @@ if dataset_name == "CIFAR10":
     if model_name == "vgg19":
         if attack_name == "BadNets":
             from codes.datasets.cifar10.attacks.badnets_vgg19 import *
+        if attack_name == "Blended":
+            from codes.datasets.cifar10.attacks.Blended_vgg19 import *
+        if attack_name == "IAD":
+            from codes.datasets.cifar10.attacks.IAD_vgg19 import *
+        if attack_name == "LabelConsistent":
+            from codes.datasets.cifar10.attacks.LabelConsistent_vgg19 import *
+        if attack_name == "Refool":
+            from codes.datasets.cifar10.attacks.Refool_vgg19 import *
+        if attack_name == "WaNet":
+            from codes.datasets.cifar10.attacks.WaNet_vgg19 import *
 
 dict_state = get_dict_state()
 target_class_idx = 1
@@ -65,14 +78,35 @@ class TargetClassDataset(Dataset):
         x,y=self.target_class_dataset[index]
         return x,y
     
+class NoTargetClassDataset(Dataset):
+    def __init__(self, dataset, target_class_idx):
+        self.dataset = dataset
+        self.target_class_idx  = target_class_idx
+        self.notarget_class_dataset = self.get_target_class_dataset()
+
+    def get_target_class_dataset(self):
+        notarget_class_dataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id]
+            if label != self.target_class_idx:
+                notarget_class_dataset.append((sample, label))
+        return notarget_class_dataset
+    
+    def __len__(self):
+        return len(self.notarget_class_dataset)
+    
+    def __getitem__(self, index):
+        x,y=self.notarget_class_dataset[index]
+        return x,y
+    
 pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+poisoned_trainset = dict_state["poisoned_trainset"]
 target_class_dataset_clean = TargetClassDataset(pureCleanTrainDataset, target_class_idx)
 target_class_dataset_poisoned = TargetClassDataset(purePoisonedTrainDataset, target_class_idx)
+no_target_class_trainset = NoTargetClassDataset(poisoned_trainset, target_class_idx)
 
-cur_dataset = target_class_dataset_poisoned
-df_filename = "poisoned_trainset_pred_labels.csv"
-device = torch.device("cuda:2")
+device = torch.device("cuda:0")
 
 
 
@@ -92,26 +126,32 @@ def get_mutation_models_weight_file_path():
     print("get_mutation_models_weight_file_path() successfully")
     return weight_filePath_list
 
-def get_output(weight_filePath_list:list):
+
+
+
+def get_pred_label(weight_filePath_list:list, dataset):
     res = {}
     for m_i, weight_filePath in enumerate(weight_filePath_list):
         weight = torch.load(weight_filePath, map_location="cpu")
         model.load_state_dict(weight)
-        e = EvalModel(model, cur_dataset, device)
+        e = EvalModel(model, dataset, device)
         pred_labels = e._get_pred_labels()
         res[f"m_{m_i}"] = pred_labels
     df = pd.DataFrame(res)
-    exp_root_dir
-    dataset_name
-    model_name
-    attack_name
-    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    create_dir(save_dir)
-    save_file_name = df_filename
-    save_path = os.path.join(save_dir, save_file_name)
-    df.to_csv(save_path, index=False)
-    print("get_output() successfully")
+    print("get_pred_label() successfully")
     return df
+
+
+def get_output(weight_filePath_list:list, dataset):
+    res = {}
+    for m_i, weight_filePath in enumerate(weight_filePath_list):
+        weight = torch.load(weight_filePath, map_location="cpu")
+        model.load_state_dict(weight)
+        e = EvalModel(model, dataset, device)
+        outputs = e._get_outputs()
+        res[f"m_{m_i}"] = outputs
+    print("get_output() successfully")
+    return res
 
 def get_mean_entropy(df:pd.DataFrame):
     entropy_list = []
@@ -120,6 +160,61 @@ def get_mean_entropy(df:pd.DataFrame):
     average = statistics.mean(entropy_list)
     print("get_mean_entropy() successfully")
     return average
+
+def sort_model_by_acc(weight_filePath_list:list, dataset):
+    '''
+    acc越低,模型优先级越高
+    '''
+    sorted_weight_filePath_list = []
+    acc_list = []
+    for m_i, weight_filePath in enumerate(weight_filePath_list):
+        weight = torch.load(weight_filePath, map_location="cpu")
+        model.load_state_dict(weight)
+        e = EvalModel(model, dataset, device)
+        acc = e._eval_acc()
+        acc_list.append(acc)
+    sorted_model_indices = sorted(range(len(acc_list)), key=lambda x: acc_list[x])
+    for i in sorted_model_indices:
+        sorted_weight_filePath_list.append(weight_filePath_list[i])
+    return sorted_weight_filePath_list
+
+
+def calu_deepGini(output):
+    cur_sum = 0
+    for v in output:
+        cur_sum += v*v
+    return 1-cur_sum
+
+def sort_model_by_deepGini(weight_filePath_list:list, dataset):
+    '''
+    deepgini越大,优先级越高
+    '''
+    sorted_weight_filePath_list = []
+    deepGini_list = []
+    for m_i, weight_filePath in enumerate(weight_filePath_list):
+        weight = torch.load(weight_filePath, map_location="cpu")
+        model.load_state_dict(weight)
+        e = EvalModel(model, dataset, device)
+        outputs = e._get_outputs()
+        avg_deepGini = 0
+        for output in outputs:
+            avg_deepGini += calu_deepGini(output)
+        avg_deepGini = avg_deepGini / len(outputs)
+        deepGini_list.append(avg_deepGini)
+    sorted_model_indices = sorted(range(len(deepGini_list)), key=lambda x: deepGini_list[x])
+    sorted_model_indices.reverse()
+    for i in sorted_model_indices:
+        sorted_weight_filePath_list.append(weight_filePath_list[i])
+    return sorted_weight_filePath_list
+
+def select_top_k_models(sorted_weight_filePath_list, k=50):
+    cut_off = 0.5
+    cut_point = int(len(sorted_weight_filePath_list)*cut_off)
+    temp_list = sorted_weight_filePath_list[:cut_point]
+    ans = random.sample(temp_list, k)
+    return ans
+
+
 
 def detect(threshold):
     clean_csv_path = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "clean_trainset_pred_labels.csv")
@@ -159,12 +254,71 @@ def detect(threshold):
     print("recall:",recall)
     print("F1:",F1)
 
-def look_entroy():
+
+def save_df(df, save_dir, save_file_name):
+    create_dir(save_dir)
+    save_path = os.path.join(save_dir, save_file_name)
+    df.to_csv(save_path, index=False)
+
+def look_entropy():
+    # 加载adaptive_ratio model weights
     weight_filePath_list = get_mutation_models_weight_file_path()
-    df = get_output(weight_filePath_list)
-    average_entropy = get_mean_entropy(df)
-    print("average_entropy", average_entropy)
+    # 得到预测标签
+    df = get_pred_label(weight_filePath_list, target_class_dataset_poisoned)
+    # 保存预测结果
+    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
+    save_file_name = "sorted_poisoned_trainset_pred_labels.csv"
+    save_df(df, save_dir, save_file_name)
+    # 计算平均熵
+    poisoned_average_entropy = get_mean_entropy(df)
+    print("poisoned_average_entropy:", poisoned_average_entropy)
+
+
+    df = get_pred_label(weight_filePath_list, target_class_dataset_clean)
+    # 保存预测结果
+    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
+    save_file_name = "sorted_clean_trainset_pred_labels.csv"
+    save_df(df, save_dir, save_file_name)
+    # 计算平均熵
+    clean_average_entropy = get_mean_entropy(df)
+    print("clean_average_entropy:", clean_average_entropy)
+
+    print("==="*10)
+    print("clean_average_entropy:", clean_average_entropy)
+    print("poisoned_average_entropy:", poisoned_average_entropy)
+
+def look_sorted_entropy():
+    # 加载adaptive_ratio model weights
+    weight_filePath_list = get_mutation_models_weight_file_path()
+    # 根据mutated model在clean samples上的acc,来排序mutated model
+    sorted_weight_filePath_list = sort_model_by_acc(weight_filePath_list, no_target_class_trainset)
+    # 取top
+    selected_weight_filePath_list = select_top_k_models(sorted_weight_filePath_list, k=50)
+    # 得到预测标签
+    df = get_pred_label(selected_weight_filePath_list, target_class_dataset_poisoned)
+    # 保存预测结果
+    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
+    save_file_name = "sorted_poisoned_trainset_pred_labels.csv"
+    save_df(df, save_dir, save_file_name)
+    # 计算平均熵
+    poisoned_average_entropy = get_mean_entropy(df)
+    print("poisoned_average_entropy:", poisoned_average_entropy)
+
+
+    df = get_pred_label(selected_weight_filePath_list, target_class_dataset_clean)
+    # 保存预测结果
+    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
+    save_file_name = "sorted_clean_trainset_pred_labels.csv"
+    save_df(df, save_dir, save_file_name)
+    # 计算平均熵
+    clean_average_entropy = get_mean_entropy(df)
+    print("clean_average_entropy:", clean_average_entropy)
+
+    print("==="*10)
+    print("clean_average_entropy:", clean_average_entropy)
+    print("poisoned_average_entropy:", poisoned_average_entropy)
 
 if __name__ == "__main__":
-    look_entroy()
+    # look_entropy()
+    look_sorted_entropy()
 

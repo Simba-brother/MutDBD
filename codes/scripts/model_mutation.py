@@ -54,7 +54,7 @@ mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
 mutation_model_num = 50
 
 base_dir = f"/data/mml/backdoor_detect/experiments/{dataset_name}/{model_name}/mutates/{mutation_name}/"
-device = torch.device("cuda:0")
+device = torch.device("cuda:1")
 
 def gf_mutate():
     scale = 5
@@ -161,7 +161,7 @@ def draw_box_single():
                 dif = round(origin_precison-precision,3)
                 ans[mutation_ratio][class_idx].append(dif)
 
-    save_dir = os.path.join("/data/mml/backdoor_detect/experiments", "images/box")
+    save_dir = os.path.join("/data/mml/backdoor_detect/experiments", "images/box", dataset_name, model_name)
     create_dir(save_dir)
     for mutation_ratio in mutation_ratio_list:
         all_y = []
@@ -202,7 +202,8 @@ def draw_box_all():
                     dif = origin_report[str(class_i)]["precision"] - report[str(class_i)]["precision"]
                     ans[mutation_ratio][class_i].append(dif)
 
-    save_dir = os.path.join("/data/mml/backdoor_detect/experiments", "images/box")
+    save_dir = os.path.join("/data/mml/backdoor_detect/experiments", "images/box", dataset_name, model_name)
+    create_dir(save_dir)
     for mutation_ratio in mutation_ratio_list:
         all_y = []
         labels = []
@@ -226,9 +227,6 @@ def mutate():
         neuron_switch_mutate()
     if mutation_name == "weight_shuffle":
         weight_shuffling()
-
-
-
 
     # p_dict = {}
     # for mutation_ratio in mutation_ratio_list:
@@ -256,7 +254,7 @@ def mutate():
     # return
 if __name__ == "__main__":
     # mutate()
-    eval_mutated_model()
+    # eval_mutated_model()
     # draw_box_single()
     # draw_box_all()
     pass
