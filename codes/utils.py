@@ -6,6 +6,7 @@ import random
 import torch.nn
 import time
 import sys
+import queue
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
 begin_time = last_time
@@ -131,6 +132,13 @@ class Log:
         with open(self.log_path,'a') as f:
             f.write(msg)
 
+def priorityQueue_2_list(q:queue.PriorityQueue):
+    qsize = q.qsize()
+    res = []
+    while not q.empty():
+        res.append(q.get())
+    assert len(res) == qsize, "队列数量不对"
+    return res
 
 if __name__ == "__main__":
 

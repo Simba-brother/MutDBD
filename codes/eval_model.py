@@ -2,6 +2,7 @@ import sys
 sys.path.append("./")
 import time
 import torch
+import torch.nn.functional as F
 import numpy as np
 import random
 from torch.utils.data import DataLoader
@@ -54,6 +55,32 @@ class EvalModel(object):
         print(f"Total time consumption:{end-start}s")
         return acc
 
+    def _get_TrueOrFalse(self):
+        batch_size =128
+        testset_loader = DataLoader(
+            self.testset,
+            batch_size = batch_size,
+            shuffle=False,
+            # num_workers=self.current_schedule['num_workers'],
+            drop_last=False,
+            pin_memory=False,
+            worker_init_fn=_seed_worker
+        )
+        # 评估开始时间
+        start = time.time()
+        self.model.to(self.device)
+        self.model.eval()  # put network in train mode for Dropout and Batch Normalization
+        trueOrFalse_list = []
+        with torch.no_grad():
+            for X, Y in testset_loader:
+                X = X.to(self.device)
+                Y = Y.to(self.device)
+                preds = self.model(X)
+                trueOrFalse_list.extend((torch.argmax(preds, dim=1) == Y).tolist()) 
+        end = time.time()
+        print(f"Total time consumption:{end-start}s")
+        return trueOrFalse_list
+    
     def _eval_classes_acc(self):
         batch_size =128
         testset_loader = DataLoader(
@@ -137,7 +164,34 @@ class EvalModel(object):
         end = time.time()
         print("cost time:", end-start)
         return outputs
-
+    
+    def _get_confidence_list(self):
+        batch_size =128
+        testset_loader = DataLoader(
+            self.testset,
+            batch_size = batch_size,
+            shuffle=False,
+            # num_workers=self.current_schedule['num_workers'],
+            drop_last=False,
+            pin_memory=False,
+            worker_init_fn=_seed_worker
+        )
+        # 评估开始时间
+        start = time.time()
+        self.model.to(self.device)
+        self.model.eval()  # put network in train mode for Dropout and Batch Normalization
+        confidence_list = []
+        with torch.no_grad():
+            for X, Y in testset_loader:
+                X = X.to(self.device)
+                Y = Y.to(self.device)
+                preds = self.model(X)
+                probability = F.softmax(preds, dim=1)
+                vaules, indices = torch.max(probability,dim=1)
+                confidence_list.extend(vaules.tolist())
+        end = time.time()
+        print("cost time:", end-start)
+        return confidence_list
 
 # from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
 # origin_dict_state = get_dict_state()

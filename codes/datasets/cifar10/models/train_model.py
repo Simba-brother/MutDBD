@@ -16,6 +16,7 @@ from torchvision import transforms
 from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip, ToPILImage, Resize
 from codes import utils
 from vgg import VGG
+from resnet18_32_32_3 import ResNet
 
 class ModelTrain(object):
     def __init__(self, model, transform_train, transform_test, trainset, testset, batch_size, epochs, device, loss_fn, optimizer, work_dir, scheduler):
@@ -76,7 +77,7 @@ class ModelTrain(object):
             if epoch_acc > best_acc:
                 best_acc = epoch_acc
                 utils.create_dir(self.work_dir)
-                ckpt_model_path = os.path.join(self.work_dir, "best_model.pth")
+                ckpt_model_path = os.path.join(self.work_dir, "best_model_new.pth")
                 torch.save(self.model.state_dict(), ckpt_model_path)
                 print(f"best model is saved in {ckpt_model_path}")
             self.scheduler.step()
@@ -112,7 +113,7 @@ class ModelTrain(object):
         print(f"acc:{acc}, {correct}/{total}")
 
 
-def cifar10_vgg19():
+def train_cifar10_vgg19():
     model = VGG('VGG19')
     transform_train = transforms.Compose([
         transforms.ToPILImage(),
@@ -151,7 +152,50 @@ def cifar10_vgg19():
     work_dir = "/data/mml/backdoor_detect/experiments/CIFAR10/vgg19/clean"
     model_train = ModelTrain(model, transform_train, transform_test, trainset, testset, batch_size, epochs, device, loss_fn, optimizer, work_dir, scheduler)
     model_train.train()
+
+
+def train_cifar10_resnet18():
+    model = ResNet(18)
+    transform_train = Compose([
+        ToPILImage(),
+        Resize((32, 32)),
+        ToTensor()
+    ])
+    transform_test = Compose([
+                ToPILImage(),
+                Resize((32, 32)),
+                ToTensor()
+    ])
+    # 获得数据集
+    trainset = DatasetFolder(
+        root='/data/mml/backdoor_detect/dataset/cifar10/train',
+        loader=cv2.imread, # ndarray
+        extensions=('png',),
+        transform=transform_train,
+        target_transform=None,
+        is_valid_file=None)
+    testset = DatasetFolder(
+        root='/data/mml/backdoor_detect/dataset/cifar10/test',
+        loader=cv2.imread,
+        extensions=('png',),
+        transform=transform_test,
+        target_transform=None,
+        is_valid_file=None)
+    batch_size = 128
+    epochs = 200
+    device = torch.device("cuda:0")
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1,
+                      momentum=0.9, weight_decay=5e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)    
+    work_dir = "/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/clean"
+    # model_train = ModelTrain(model, transform_train, transform_test, trainset, testset, batch_size, epochs, device, loss_fn, optimizer, work_dir, scheduler)
+    # model_train.train()
+
+    model.load_state_dict(torch.load(os.path.join(work_dir,"best_model_new.pth"), map_location="cpu"))
+    model_train = ModelTrain(model, transform_train, transform_test, trainset, testset, batch_size, epochs, device, loss_fn, optimizer, work_dir, scheduler)
     model_train.test()
 
 if __name__ == "__main__":
-    cifar10_vgg19()
+    # train_cifar10_vgg19()
+    train_cifar10_resnet18()

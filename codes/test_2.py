@@ -12,10 +12,12 @@ from torch import nn
 from copy import deepcopy
 import cv2
 import sys
+import math
+import queue
 sys.path.append("./")
-from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import get_dict_state
-from codes.datasets.cifar10.attacks import Blended_resnet18_nopretrain_32_32_3 
-
+# from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import get_dict_state
+# from codes.datasets.cifar10.attacks import Blended_resnet18_nopretrain_32_32_3 
+from cliffs_delta import cliffs_delta
 def test_1():
     random.seed(0)
     for _ in range(20):
@@ -160,10 +162,7 @@ def test18():
     disturb_array = np.random.normal(scale=7, size=100) 
     print(disturb_array.std())
     print()
-def test19():
-    get_dict_state()
-    Blended_resnet18_nopretrain_32_32_3.get_dict_state()
-    print()
+
 def test20():
 
     a = [2] + [1]*(3-1)
@@ -176,6 +175,51 @@ def test21():
     sorted_indices = sorted(range(len(original_list)), key=lambda x: original_list[x])
     
     print("排序后的索引为：", sorted_indices)
+def test22():
+    a = [9,5,6]
+    a.sort()
+    print(a)
+def test23():
+    x1 = [10, 20, 20, 20, 30, 38, 30, 40, 50, 100]
+    x2 = [10, 20, 30, 40, 40, 50]
+    d, res = cliffs_delta(x2, x1)
+
+    print(d,res)
+def test24():
+    a = [4,2,8]
+    b = sorted(a) # a不变
+    print(a)
+    print(b)
+
+    a.sort() # a变
+    print(a)
+
+def test25():
+    a = -9
+    b = abs(a) # a不变
+    print(a)
+
+def test26():
+    data = [True, False, True]
+    a = sum(data)
+    print(a)
+
+
+def test27():
+    a = [1,4,5]
+    b = [0,3,8]
+    c = a - b
+    print(c)
+
+def test28(**kw):
+    print(kw.keys())
+def test29():
+    q = queue.PriorityQueue()
+    q.put((9,"b"))
+    q.put((1,"a"))
+    x = q.get()
+    y = q.get()
+    print(x,y)
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
@@ -183,5 +227,5 @@ if __name__ == "__main__":
     # test15()
     # test16()
     # test19()
-    test21()
+    test29()
     pass

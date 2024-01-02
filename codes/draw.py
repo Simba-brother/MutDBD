@@ -3,6 +3,24 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
 
+def draw_line(x_list, title, save_path, **kw):
+    # 设置图片大小，清晰度
+    plt.figure(figsize=(8, 8), dpi=800)
+    keys  = kw.keys()
+    for key in keys:
+        value = kw[key]
+        plt.plot(x_list, value, label=key, marker='o')
+    # 设置x轴的刻度
+    plt.xticks(x_list)
+    plt.xlabel("cut off")
+    plt.title(title)
+    # 绘制网格(控制透明度)
+    plt.grid(alpha=0.5, linestyle=':')
+    # 添加图例
+    plt.legend()
+    plt.show()
+    plt.savefig(save_path,transparent=False,dpi=800)
+
 def draw_box(data,labels,title,save_path):
     # rcParams['font.size'] = 8   # 设置字体大小为14
     fig = plt.figure()

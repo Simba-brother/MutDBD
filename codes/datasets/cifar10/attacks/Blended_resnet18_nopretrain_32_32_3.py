@@ -4,8 +4,6 @@ This is the test code of benign training and poisoned training under Blended Att
 
 import sys
 sys.path.append("./")
-import joblib
-from collections import defaultdict
 import time
 import numpy as np
 import random
@@ -15,15 +13,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torchvision.datasets import DatasetFolder
-import torchvision
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip
+from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip
 from codes import core
-from codes.modelMutat import ModelMutat
-from codes.eval_model import EvalModel
-from codes import draw
-from codes.utils import create_dir
-from tqdm import tqdm
 
 def _seed_worker():
     worker_seed =666

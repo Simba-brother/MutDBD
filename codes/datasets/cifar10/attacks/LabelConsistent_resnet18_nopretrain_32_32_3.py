@@ -223,7 +223,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:5")
+    device = torch.device("cuda:0")
     model.to(device)
     batch_size = 128
     # 加载trigger set
