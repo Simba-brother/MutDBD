@@ -1,5 +1,6 @@
 import sys
 sys.path.append("./")
+from collections import defaultdict
 import time
 import torch
 import torch.nn.functional as F
@@ -87,10 +88,10 @@ class EvalModel(object):
             self.testset,
             batch_size = batch_size,
             shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
+            num_workers= 1, #self.current_schedule['num_workers'],
             drop_last=False,
-            pin_memory=False,
-            worker_init_fn=_seed_worker
+            pin_memory=False
+            # worker_init_fn=_seed_worker
         )
         # 评估开始时间
         start = time.time()
@@ -98,17 +99,32 @@ class EvalModel(object):
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         pred_labels = []
         true_labels = []
+        # {class_idx:correct_num}
+        # correct_count_dict = defaultdict(int)
+        # total_count_dict = defaultdict(int)
+        # acc_dict = defaultdict(int)
         with torch.no_grad():
             for X, Y in testset_loader:
                 X = X.to(self.device)
                 Y = Y.to(self.device)
-                preds = self.model(X)
-                 
-                pred_labels.extend(torch.argmax(preds,dim=1).tolist()) 
+                outputs = self.model(X)
+                # predicted_labels = torch.argmax(outputs,dim=1)
+                # for label,predicted_label in zip(Y, predicted_labels):
+                #     label = label.item()
+                #     predicted_label = predicted_label.item()
+                #     total_count_dict[label] += 1
+                #     if label == predicted_label:
+                #         correct_count_dict[label] += 1
+                pred_labels.extend(torch.argmax(outputs,dim=1).tolist()) 
                 true_labels.extend(Y.tolist()) 
         end = time.time()
-        print("cost time:", end-start)
+        print("_eval_classes_acc() cost time:", end-start)
         report = classification_report(true_labels, pred_labels, output_dict=True)
+        # for class_idx, correct_count in correct_count_dict.items():
+        #     total_count = total_count_dict[class_idx]
+        #     acc = correct_count/total_count
+        #     acc = round(acc,3)
+        #     acc_dict[class_idx] = acc
         return report
     
     def _get_pred_labels(self):
@@ -161,6 +177,33 @@ class EvalModel(object):
                 Y = Y.to(self.device)
                 preds = self.model(X)
                 outputs.extend(preds.tolist()) 
+        end = time.time()
+        print("cost time:", end-start)
+        return outputs
+    
+    def _get_prob_outputs(self):
+        batch_size =128
+        testset_loader = DataLoader(
+            self.testset,
+            batch_size = batch_size,
+            shuffle=False,
+            # num_workers=self.current_schedule['num_workers'],
+            drop_last=False,
+            pin_memory=False,
+            worker_init_fn=_seed_worker
+        )
+        # 评估开始时间
+        start = time.time()
+        self.model.to(self.device)
+        self.model.eval()  # put network in train mode for Dropout and Batch Normalization
+        outputs = []
+        with torch.no_grad():
+            for X, Y in testset_loader:
+                X = X.to(self.device)
+                Y = Y.to(self.device)
+                preds = self.model(X)
+                probability = F.softmax(preds, dim=1)
+                outputs.extend(probability.tolist()) 
         end = time.time()
         print("cost time:", end-start)
         return outputs

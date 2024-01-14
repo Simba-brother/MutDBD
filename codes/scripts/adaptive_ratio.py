@@ -16,7 +16,6 @@ from cliffs_delta import cliffs_delta
 dataset_name = config.dataset_name
 model_name = config.model_name
 attack_name = config.attack_name
-mutation_name = config.mutation_name 
 mutation_name_list =  config.mutation_name_list
 attack_name_list = config.attack_name_list
 
@@ -52,7 +51,7 @@ if dataset_name == "CIFAR10":
 dict_state = get_dict_state()
 backdoor_model = dict_state["backdoor_model"]    
 testset = dict_state["poisoned_trainset"]
-device = torch.device("cuda:1")
+device = torch.device("cuda:0")
 mutation_ratio_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
 mutation_model_num = 50
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
@@ -335,12 +334,148 @@ def draw_box(adaptive_ratio_dic):
     draw.draw_box(all_y, labels,title,save_path)
     print(f"mutated_model_num:{mutated_model_num}")
 
+
+# 攻击类别数据集
+class TargetClassDataset(Dataset):
+    def __init__(self, dataset, target_class_idx):
+        self.dataset = dataset
+        self.target_class_idx  = target_class_idx
+        self.target_class_dataset = self.get_target_class_dataset()
+
+    def get_target_class_dataset(self):
+        target_class_dataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id]
+            if label == self.target_class_idx:
+                target_class_dataset.append((sample, label))
+        return target_class_dataset
+    
+    def __len__(self):
+        return len(self.target_class_dataset)
+    
+    def __getitem__(self, index):
+        x,y=self.target_class_dataset[index]
+        return x,y
+    
+def draw_box_of_adaptive_ratio(adaptive_ratio_dic):
+    # 数据集/模型/攻击名称
+    backdoor_model = dict_state["backdoor_model"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
+    e = EvalModel(backdoor_model, poisoned_trainset, device)
+    # original backdoor model在各个类别上的precision和accuracy
+    origin_report = e._eval_classes_acc()
+    # 存储 数据集/模型/攻击下，[(变异算子，{变异率:[report]}),...]
+    data_list = []
+    # 遍历变异方法
+    for mutation_name in  config.mutation_name_list:
+        report_path = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, mutation_name, "eval_poisoned_trainset_report.data")
+        data = joblib.load(report_path)
+        data_list.append((mutation_name,data))
+    # 存储{class_idx:[precision_o-precision_m]}
+    ans = defaultdict(list)
+    mutated_model_num = len(data_list)*50
+    # 遍历变异算子
+    for data in data_list:
+        # 得到变异算子名称
+        mutation_name =data[0]
+        # 得到该变异算子下的自适应变异率 攻击:变异算子:自适应变异率
+        adaptive_ratio = adaptive_ratio_dic[attack_name][mutation_name]["adaptive_ratio"]
+        if adaptive_ratio == -1:
+            mutated_model_num -= 50
+            continue
+        report_list = data[1][adaptive_ratio]
+        for report in report_list:
+            for class_i in range(10):
+                dif = origin_report[str(class_i)]["precision"] - report[str(class_i)]["precision"]
+                ans[class_i].append(dif)
+    
+    save_dir = os.path.join("/data/mml/backdoor_detect/experiments", "images/box", dataset_name, model_name, attack_name, "adptive_ratio")
+    create_dir(save_dir)
+    all_y = []
+    labels = []
+    for class_i in range(10):
+        y_list = ans[class_i]
+        all_y.append(y_list)
+        labels.append(f"Class_{class_i}")
+    title = f"{dataset_name}_{model_name}_{attack_name}_adptive_ratio"
+    save_file_name = title+".png"
+    save_path = os.path.join(save_dir, save_file_name)
+    xlabel = "Category"
+    ylabel = "Precision difference"
+    draw.draw_box(all_y, labels, title, xlabel, ylabel, save_path)
+    print(f"mutated_model_num:{mutated_model_num}")
+
+def draw_box_of_target_class_adaptive_ratio(adaptive_ratio_dic):
+    # 数据集/模型/攻击名称
+    backdoor_model = dict_state["backdoor_model"]
+    # 纯污染集
+    purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+    # 纯clean集
+    pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
+    # 目标class
+    target_class_idx = 1
+    # 目标class中的污染集
+    poisoned_set_target_class = TargetClassDataset(purePoisonedTrainDataset, target_class_idx)
+    # 目标class中的干净集
+    clean_set_target_class = TargetClassDataset(pureCleanTrainDataset, target_class_idx)
+    # 目标class中的污染集的accuracy
+    e = EvalModel(backdoor_model, poisoned_set_target_class, device)
+    poisoned_origin_acc = e._eval_acc()
+    # 目标class中的干净集的accuracy
+    e = EvalModel(backdoor_model, clean_set_target_class, device)
+    clean_origin_acc = e._eval_acc()
+    # 存储 数据集/模型/攻击下，[(变异算子，{变异率:[{"target_class_clean_acc":acc_clean, "target_class_poisoned_acc":acc_poisoned, "target_class_acc":acc_whole}]}),...]
+    data_list = []
+    # 遍历变异方法
+    for mutation_name in  config.mutation_name_list:
+        report_path = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, mutation_name, "eval_poisoned_trainset_target_class.data")
+        data = joblib.load(report_path)
+        data_list.append((mutation_name,data))
+    # 存储{"clean":[accuracy_o-accuracy_m], "poisoned":[accuracy_o-accuracy_m]}
+    ans = defaultdict(list)
+    mutated_model_num = len(data_list)*50
+    # 遍历变异算子
+    for data in data_list:
+        # 得到变异算子名称
+        mutation_name =data[0]
+        # 得到该变异算子下的自适应变异率 攻击:变异算子:自适应变异率
+        adaptive_ratio = adaptive_ratio_dic[attack_name][mutation_name]["adaptive_ratio"]
+        if adaptive_ratio == -1:
+            mutated_model_num -= 50
+            continue
+        dic_list = data[1][adaptive_ratio]
+        for dic in dic_list:
+            clean_acc = dic["target_class_clean_acc"]
+            poisoned_acc = dic["target_class_poisoned_acc"]
+            dif_clean = clean_origin_acc - clean_acc
+            dif_poisoned = poisoned_origin_acc - poisoned_acc
+            ans["target_class_clean"].append(dif_clean)
+            ans["target_class_poisoned"].append(dif_poisoned)
+    
+    save_dir = os.path.join("/data/mml/backdoor_detect/experiments", "images/box", dataset_name, model_name, attack_name, "adptive_ratio", "targetClass")
+    create_dir(save_dir)
+    all_y = []
+    labels = []
+    all_y.append(ans["target_class_clean"])
+    all_y.append(ans["target_class_poisoned"])
+    labels.append("target_class_clean")
+    labels.append("target_class_poisoned")
+    
+    title = f"{dataset_name}_{model_name}_{attack_name}_adptive_ratio"
+    save_file_name = title+".png"
+    save_path = os.path.join(save_dir, save_file_name)
+    xlabel = "Group"
+    ylabel = "Accuracy difference"
+    draw.draw_box(all_y, labels, title, xlabel, ylabel, save_path)
+    print(f"mutated_model_num:{mutated_model_num}")
+
+
 if __name__ == "__main__":
     # adaptive_ratio_dic = adaptive_single()
 
     adapive_ratio_dic_path = os.path.join(exp_root_dir, dataset_name, model_name, "adaptive_ratio_dic.data")
     adaptive_ratio_dic = joblib.load(adapive_ratio_dic_path)
-    draw_box(adaptive_ratio_dic)
-
+    # draw_box_of_adaptive_ratio(adaptive_ratio_dic)
+    draw_box_of_target_class_adaptive_ratio(adaptive_ratio_dic)
     # adaptive_all_2(adaptive_ratio_dic)
     # adaptive_all()

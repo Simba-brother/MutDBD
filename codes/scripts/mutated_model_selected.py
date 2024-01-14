@@ -46,7 +46,7 @@ def select_by_suspected_nonsuspected_acc_dif(model_struct, weight_file_path_list
     q_list = priorityQueue_2_list(q)
     for item in q_list:
         sorted_weight_file_path_list.append(item[1])
-    selected_weight_file_path_list = sorted_weight_file_path_list[:50]
+    selected_weight_file_path_list = sorted_weight_file_path_list[:10]
     return selected_weight_file_path_list
 
 def select_by_suspected_nonsuspected_confidence_distribution_dif(model_struct, weight_file_path_list:list, suspected_dataset, non_suspected_dataset, device):
@@ -67,6 +67,7 @@ def select_by_suspected_nonsuspected_confidence_distribution_dif(model_struct, w
         (2)怀疑集 -> 被选择的变异模型集 -> 样本在变异模型上的confidence到中心point距离大于置信区间上界 => 判定为backdoor实例
     '''
     selected_weight_file_path_list = []
+    sorted_weight_file_path_list = []
     q = queue.PriorityQueue()
     for m_i, weight_file_path in enumerate(weight_file_path_list):
         model_struct.load_state_dict(torch.load(weight_file_path, map_location="cpu"))
@@ -77,9 +78,16 @@ def select_by_suspected_nonsuspected_confidence_distribution_dif(model_struct, w
         non_suspected_confidence_list = e._get_confidence_list()
         sorted_non_suspected_confidence_list = sorted(non_suspected_confidence_list)
         d,info = cliffs_delta(sorted_suspected_confidence_list, sorted_non_suspected_confidence_list)
-        priority = abs(d) # 越大优先级越高
+        if d > 0:
+            # 前大后小
+            priority = d # 越大优先级越高
+        else:
+            # 前小后大
+            continue
         q.put((-priority, weight_file_path))
-    sorted_weight_file_path_list = priorityQueue_2_list(q)
+    q_list = priorityQueue_2_list(q)
+    for item in q_list:
+        sorted_weight_file_path_list.append(item[1])
     selected_weight_file_path_list = sorted_weight_file_path_list[:50]
     return selected_weight_file_path_list
 

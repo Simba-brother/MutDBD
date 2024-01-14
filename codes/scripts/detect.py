@@ -18,20 +18,28 @@ from codes.eval_model import EvalModel
 from codes.utils import entropy, create_dir
 import scipy.stats as stats
 import queue
-from codes.draw import draw_box,draw_line
+from codes.draw import draw_box,draw_line,draw_stackbar
 from cliffs_delta import cliffs_delta
 from mutated_model_selected import select_by_suspected_nonsuspected_acc_dif, select_by_suspected_nonsuspected_confidence_distribution_dif
+
+# 随机数种子
 random.seed(555)
+# 模型结构
 model = ResNet(18)
 # model = VGG("VGG19")
-attack_name = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+# 攻击name
+attack_name = "BadNets" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+# 实验结果文件夹
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
+# 数据集name
 dataset_name = "CIFAR10"
+# model name
 model_name = "resnet18_nopretrain_32_32_3" # resnet18_nopretrain_32_32_3, vgg19
-
+# 变异模型存储文件夹path
 mutates_path = os.path.join(exp_root_dir, dataset_name, model_name, "mutates")
+# 变异算子name
 mutation_name_list = ["gf","neuron_activation_inverse","neuron_block","neuron_switch","weight_shuffle"]
-
+# dataset/model/各个攻击方式，各个变异算子，对应的自适应变异率
 adapive_ratio_dic_path = os.path.join(exp_root_dir, dataset_name, model_name, "adaptive_ratio_dic.data")
 adaptive_ratio_dic = joblib.load(adapive_ratio_dic_path)
 
@@ -64,8 +72,9 @@ if dataset_name == "CIFAR10":
             from codes.datasets.cifar10.attacks.WaNet_vgg19 import *
 
 dict_state = get_dict_state()
+# attack category
 target_class_idx = 1
-
+# 攻击类别数据集
 class TargetClassDataset(Dataset):
     def __init__(self, dataset, target_class_idx):
         self.dataset = dataset
@@ -86,7 +95,7 @@ class TargetClassDataset(Dataset):
     def __getitem__(self, index):
         x,y=self.target_class_dataset[index]
         return x,y
-    
+# 非攻击类别数据集
 class NoTargetClassDataset(Dataset):
     def __init__(self, dataset, target_class_idx):
         self.dataset = dataset
@@ -107,7 +116,7 @@ class NoTargetClassDataset(Dataset):
     def __getitem__(self, index):
         x,y=self.notarget_class_dataset[index]
         return x,y
-    
+# 非怀疑数据集
 class NoSuspectedClassDataset(Dataset):
     def __init__(self, dataset, suspected_class_idx_list):
         self.dataset = dataset
@@ -128,7 +137,7 @@ class NoSuspectedClassDataset(Dataset):
     def __getitem__(self, index):
         x,y=self.nosuspected_dataset[index]
         return x,y
-    
+# 怀疑集
 class SuspectedClassDataset(Dataset):
     def __init__(self, dataset, suspected_class_idx_list):
         self.dataset = dataset
@@ -149,7 +158,7 @@ class SuspectedClassDataset(Dataset):
     def __getitem__(self, index):
         x,y=self.suspected_dataset[index]
         return x,y
-    
+# 后门模型结构
 backdoor_model = dict_state["backdoor_model"]
 pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
 purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
@@ -230,8 +239,6 @@ def split_models(weight_filePath_list, dataset):
     cut_off_2 = int(len(sorted_w_list)*0.75)
     return sorted_w_list[cut_off_1:cut_off_2]
 
-
-
 def get_pred_label(weight_filePath_list:list, dataset):
     res = {}
     for m_i, weight_filePath in tqdm(enumerate(weight_filePath_list)):
@@ -250,7 +257,7 @@ def get_confidence(weight_filePath_list:list, dataset):
         weight = torch.load(weight_filePath, map_location="cpu")
         model.load_state_dict(weight)
         e = EvalModel(model, dataset, device)
-        confidence_list = e._get_confidence()
+        confidence_list = e._get_confidence_list()
         res[f"m_{m_i}"] = confidence_list
     df = pd.DataFrame(res)
     print("get_confidence() successfully")
@@ -267,7 +274,6 @@ def get_trueOrFalse(weight_filePath_list:list, dataset):
     df = pd.DataFrame(res)
     print("get_pred_label() successfully")
     return df
-
 
 def get_output(weight_filePath_list:list, dataset):
     res = {}
@@ -310,9 +316,9 @@ def get_true_count_list(df:pd.DataFrame):
     return true_count_list
 
 # 根据样本数据和置信水平求置信区间
-def confidence_interval(data, alpha=0.05):
+def confidence_interval(data, alpha=0.01):
     '''
-    alpha:0.05 # 置信水平为95%
+    alpha:0.01 # 置信水平为99%
     '''
     n = len(data)  # 样本数
     mean = np.mean(data)  # 样本均值
@@ -339,7 +345,6 @@ def sort_model_by_acc(weight_filePath_list:list, dataset):
     for i in sorted_model_indices:
         sorted_weight_filePath_list.append(weight_filePath_list[i])
     return sorted_weight_filePath_list
-
 
 def calu_deepGini(output):
     cur_sum = 0
@@ -376,13 +381,11 @@ def select_top_k_models(sorted_weight_filePath_list, k=50):
     ans = random.sample(temp_list, k)
     return ans
 
-
 def save_df(df, save_dir, save_file_name):
     create_dir(save_dir)
     save_path = os.path.join(save_dir, save_file_name)
     df.to_csv(save_path, index=False)
 
-def look_entropy():
     # 加载adaptive_ratio model weights
     weight_filePath_list = get_mutation_models_weight_file_path(mutation_ratio=0.05)
     print("变异模型个数:", len(weight_filePath_list))
@@ -398,37 +401,6 @@ def look_entropy():
 
 
     df = get_pred_label(weight_filePath_list, target_class_dataset_clean)
-    # 保存预测结果
-    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    save_file_name = "sorted_clean_trainset_pred_labels.csv"
-    save_df(df, save_dir, save_file_name)
-    # 计算平均熵
-    clean_average_entropy = get_mean_entropy(df)
-    print("clean_average_entropy:", clean_average_entropy)
-
-    print("==="*10)
-    print("clean_average_entropy:", clean_average_entropy)
-    print("poisoned_average_entropy:", poisoned_average_entropy)
-
-def look_sorted_entropy():
-    # 加载adaptive_ratio model weights
-    weight_filePath_list = get_mutation_models_weight_file_path(mutation_ratio=0.05)
-    # 根据mutated model在clean samples上的acc,来排序mutated model
-    sorted_weight_filePath_list = sort_model_by_acc(weight_filePath_list, no_target_class_trainset)
-    # 取top
-    selected_weight_filePath_list = select_top_k_models(sorted_weight_filePath_list, k=50)
-    # 得到预测标签
-    df = get_pred_label(selected_weight_filePath_list, target_class_dataset_poisoned)
-    # 保存预测结果
-    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    save_file_name = "sorted_poisoned_trainset_pred_labels.csv"
-    save_df(df, save_dir, save_file_name)
-    # 计算平均熵
-    poisoned_average_entropy = get_mean_entropy(df)
-    print("poisoned_average_entropy:", poisoned_average_entropy)
-
-
-    df = get_pred_label(selected_weight_filePath_list, target_class_dataset_clean)
     # 保存预测结果
     save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
     save_file_name = "sorted_clean_trainset_pred_labels.csv"
@@ -483,331 +455,6 @@ def get_acc_list(weight_filePath_list, nosuspected_dataset):
         acc_list.append(acc)
     return acc_list
 
-
-def detect():
-    '''
-    dataset/attack/model
-    clean和poisoned检测
-    '''
-    # 获得attack name下被变异模型怀疑的target class idx list
-    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
-    if attack_name == "IAD":
-        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    else:
-        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    # 获得没有被怀疑的class的dataset，可作为我们的clean samples
-    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的dataset，将用于检测
-    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实clean dataset
-    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实poisoned dataset
-    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
-    # 加载adaptive_ratio model weights
-    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
-    print("变异模型个数:", len(weight_filePath_list))
-    
-    # 得到非怀疑class dataset预测标签
-    df_nosuspected = get_trueOrFalse(weight_filePath_list, nosuspected_dataset)
-    # df_nosuspected = pd.read_csv(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "nosuspected_dataset_pred_labels.csv"))
-    # 保存预测结果
-    # save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    # save_file_name = "nosuspected_dataset_pred_labels.csv"
-    # save_df(df_nosuspected, save_dir, save_file_name)
-    # 计算clean confidence interval
-    true_count_list = get_true_count_list(df_nosuspected)
-    # interval = confidence_interval(true_count_list,alpha=0.01)
-    mean_t = np.mean(true_count_list)
-    # 存suspected_dataset中预测标签和真实标签, True(poisoned)
-    pred_list = []
-    gt_list = []
-
-    # 怀疑子集中的真实clean的
-    df_clean_suspected = get_trueOrFalse(weight_filePath_list, suspected_clean_dataset)
-    # df_clean_suspected = pd.read_csv(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "suspected_clean_dataset_pred_labels.csv"))
-    # 保存预测结果
-    # save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    # save_file_name = "suspected_clean_dataset_pred_labels.csv"
-    # save_df(df_clean_suspected, save_dir, save_file_name)
-    true_count_list = get_true_count_list(df_clean_suspected)
-    for true_count in true_count_list:
-        if true_count > mean_t:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(False)
-    # 怀疑子集中的真实poisoned的
-    df_poisoned_suspected = get_trueOrFalse(weight_filePath_list, suspected_poisoned_dataset)
-    # df_poisoned_suspected = pd.read_csv(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "suspected_clean_dataset_pred_labels.csv"))
-    # 保存预测结果
-    # save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    # save_file_name = "suspected_poisoned_dataset_pred_labels.csv"
-    # save_df(df_poisoned_suspected, save_dir, save_file_name)
-    true_count_list = get_true_count_list(df_poisoned_suspected)
-    for true_count in true_count_list:
-        if true_count > mean_t:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(True)
-
-    if attack_name != "IAD":
-        assert len(pred_list) == len(suspected_dataset), "数量不对"
-        assert len(gt_list) == len(suspected_dataset), "数量不对"
-
-    TN, FP, FN, TP = confusion_matrix(gt_list, pred_list).ravel()
-    acc = round((TP+TN)/(TP+TN+FP+FN),3)
-    precision = round(TP/(TP+FP),3)
-    recall = round(TP/(TP+FN),3)
-    F1 = round(2*precision*recall/(precision+recall),3)
-    print("TN:",TN)
-    print("FP:",FP)
-    print("FN:",FN)
-    print("TP:",TP)
-    print("acc:",acc)
-    print("precision:",precision)
-    print("recall:",recall)
-    print("F1:",F1)
-
-    print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
-    print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
-
-def detect_by_distance():
-    '''
-    dataset/attack/model
-    clean和poisoned检测
-    '''
-    # 获得attack name下被变异模型怀疑的target class idx list
-    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
-    if attack_name == "IAD":
-        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    else:
-        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    # 获得没有被怀疑的class的dataset，可作为我们的clean samples
-    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的dataset，将用于检测
-    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实clean dataset
-    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实poisoned dataset
-    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
-    # 加载adaptive_ratio model weights
-    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
-    print("变异模型个数:", len(weight_filePath_list))
-    weight_filePath_list = remove_models(weight_filePath_list, nosuspected_dataset)
-    print("过滤后变异模型个数:", len(weight_filePath_list))
-    
-    # 得到非怀疑class dataset预测标签
-    df_no_suspected = get_trueOrFalse(weight_filePath_list, nosuspected_dataset)
-    center,  distance_list = get_center_and_distance_list(df_no_suspected)
-    # interval = confidence_interval(distance_list, alpha=0.1)
-    interval = stats.t.interval(confidence=0.99, df=len(distance_list)-1, loc=np.mean(distance_list), scale=stats.sem(distance_list))
-    # 存suspected_dataset中预测标签和真实标签, True(poisoned)
-    pred_list = []
-    gt_list = []
-    # 怀疑子集中的真实clean的
-    df_clean_suspected = get_trueOrFalse(weight_filePath_list, suspected_clean_dataset)
-    for row_idx, row in df_clean_suspected.iterrows():
-        point = row.tolist()
-        distance = calculate_distance(point, center)
-        if distance > interval[1]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(False)
-
-    # 怀疑子集中的真实poisoned的
-    df_poisoned_suspected = get_trueOrFalse(weight_filePath_list, suspected_poisoned_dataset)
-    for row_idx, row in df_poisoned_suspected.iterrows():
-        point = row.tolist()
-        distance = calculate_distance(point, center)
-        if distance > interval[1]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(True)
-    # df_poisoned_suspected = pd.read_csv(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "suspected_clean_dataset_pred_labels.csv"))
-    # 保存预测结果
-    # save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    # save_file_name = "suspected_poisoned_dataset_pred_labels.csv"
-    # save_df(df_poisoned_suspected, save_dir, save_file_name
-
-    if attack_name != "IAD":
-        assert len(pred_list) == len(suspected_dataset), "数量不对"
-        assert len(gt_list) == len(suspected_dataset), "数量不对"
-
-    TN, FP, FN, TP = confusion_matrix(gt_list, pred_list).ravel()
-    acc = round((TP+TN)/(TP+TN+FP+FN),3)
-    precision = round(TP/(TP+FP),3)
-    recall = round(TP/(TP+FN),3)
-    F1 = round(2*precision*recall/(precision+recall),3)
-    print("TN:",TN)
-    print("FP:",FP)
-    print("FN:",FN)
-    print("TP:",TP)
-    print("acc:",acc)
-    print("precision:",precision)
-    print("recall:",recall)
-    print("F1:",F1)
-    print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
-    print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
-
-
-def detect_by_entropy():
-    '''
-    dataset/attack/model
-    clean和poisoned检测
-    '''
-    # 获得attack name下被变异模型怀疑的target class idx list
-    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
-    if attack_name == "IAD":
-        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    else:
-        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    # 获得没有被怀疑的class的dataset，可作为我们的clean samples
-    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的dataset，将用于检测
-    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实clean dataset
-    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实poisoned dataset
-    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
-    # 加载adaptive_ratio model weights
-    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
-    weight_filePath_list = remove_models(weight_filePath_list, nosuspected_dataset)
-    print("变异模型个数:", len(weight_filePath_list))
-    
-    # 得到非怀疑class dataset预测标签
-    df_no_suspected = get_pred_label(weight_filePath_list, nosuspected_dataset)
-    entropy_list = get_entropy_list(df_no_suspected)
-    # interval = confidence_interval(distance_list, alpha=0.1)
-    interval = stats.t.interval(confidence=0.99, df=len(entropy_list)-1, loc=np.mean(entropy_list), scale=stats.sem(entropy_list))
-    # 存suspected_dataset中预测标签和真实标签, True(poisoned)
-    pred_list = []
-    gt_list = []
-    # 怀疑子集中的真实clean的
-    df_clean_suspected = get_pred_label(weight_filePath_list, suspected_clean_dataset)
-    for row_idx, row in df_clean_suspected.iterrows():
-        cur_entropy = entropy(list(row))
-        if cur_entropy < interval[0]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(False)
-
-    # 怀疑子集中的真实poisoned的
-    df_poisoned_suspected = get_pred_label(weight_filePath_list, suspected_poisoned_dataset)
-    for row_idx, row in df_poisoned_suspected.iterrows():
-        cur_entropy = entropy(list(row))
-        if cur_entropy < interval[0]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(True)
-    # df_poisoned_suspected = pd.read_csv(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "suspected_clean_dataset_pred_labels.csv"))
-    # 保存预测结果
-    # save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    # save_file_name = "suspected_poisoned_dataset_pred_labels.csv"
-    # save_df(df_poisoned_suspected, save_dir, save_file_name
-
-    if attack_name != "IAD":
-        assert len(pred_list) == len(suspected_dataset), "数量不对"
-        assert len(gt_list) == len(suspected_dataset), "数量不对"
-
-    TN, FP, FN, TP = confusion_matrix(gt_list, pred_list).ravel()
-    acc = round((TP+TN)/(TP+TN+FP+FN),3)
-    precision = round(TP/(TP+FP),3)
-    recall = round(TP/(TP+FN),3)
-    F1 = round(2*precision*recall/(precision+recall),3)
-    print("TN:",TN)
-    print("FP:",FP)
-    print("FN:",FN)
-    print("TP:",TP)
-    print("acc:",acc)
-    print("precision:",precision)
-    print("recall:",recall)
-    print("F1:",F1)
-    print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
-    print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
-
-
-def detect_by_confidence_list():
-    '''
-    dataset/attack/model
-    clean和poisoned检测
-    '''
-    # 获得attack name下被变异模型怀疑的target class idx list
-    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
-    if attack_name == "IAD":
-        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    else:
-        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    # 获得没有被怀疑的class的dataset，可作为我们的clean samples
-    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的dataset，将用于检测
-    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实clean dataset
-    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实poisoned dataset
-    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
-    # 加载adaptive_ratio model weights
-    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
-    weight_filePath_list = remove_models(weight_filePath_list, nosuspected_dataset)
-    print("变异模型个数:", len(weight_filePath_list))
-    
-    # 得到非怀疑class dataset预测标签
-    df_no_suspected = get_confidence(weight_filePath_list, nosuspected_dataset)
-    confidence_list = get_confidence_list(df_no_suspected)
-    # interval = confidence_interval(distance_list, alpha=0.1)
-    interval = stats.t.interval(confidence=0.99, df=len(confidence_list)-1, loc=np.mean(confidence_list), scale=stats.sem(confidence_list))
-    # 存suspected_dataset中预测标签和真实标签, True(poisoned)
-    pred_list = []
-    gt_list = []
-    # 怀疑子集中的真实clean的
-    df_clean_suspected = get_confidence(weight_filePath_list, suspected_clean_dataset)
-    for row_idx, row in df_clean_suspected.iterrows():
-        cur_confidence = np.mean(list(row))
-        if cur_confidence > interval[1]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(False)
-
-    # 怀疑子集中的真实poisoned的
-    df_poisoned_suspected = get_confidence(weight_filePath_list, suspected_poisoned_dataset)
-    for row_idx, row in df_poisoned_suspected.iterrows():
-        cur_confidence = np.mean(list(row))
-        if cur_confidence > interval[1]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(True)
-    # df_poisoned_suspected = pd.read_csv(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "suspected_clean_dataset_pred_labels.csv"))
-    # 保存预测结果
-    # save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    # save_file_name = "suspected_poisoned_dataset_pred_labels.csv"
-    # save_df(df_poisoned_suspected, save_dir, save_file_name
-
-    if attack_name != "IAD":
-        assert len(pred_list) == len(suspected_dataset), "数量不对"
-        assert len(gt_list) == len(suspected_dataset), "数量不对"
-
-    TN, FP, FN, TP = confusion_matrix(gt_list, pred_list).ravel()
-    acc = round((TP+TN)/(TP+TN+FP+FN),3)
-    precision = round(TP/(TP+FP),3)
-    recall = round(TP/(TP+FN),3)
-    F1 = round(2*precision*recall/(precision+recall),3)
-    print("TN:",TN)
-    print("FP:",FP)
-    print("FN:",FN)
-    print("TP:",TP)
-    print("acc:",acc)
-    print("precision:",precision)
-    print("recall:",recall)
-    print("F1:",F1)
-    print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
-    print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
-
 def fliter_mutated_model(weight_filePath_list, suspicious_dataset, non_suspicious_dataset):
     filter_w_list = []
     cliff_delta_list = []
@@ -842,88 +489,6 @@ def fliter_mutated_model(weight_filePath_list, suspicious_dataset, non_suspiciou
     for i in top_w_i_list:
         filter_w_list.append(weight_filePath_list[i]) 
     return filter_w_list
-
-def detect_by_confidence_distance():
-    '''
-    dataset/attack/model
-    clean和poisoned检测
-    '''
-    # 获得attack name下被变异模型怀疑的target class idx list
-    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
-    if attack_name == "IAD":
-        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    else:
-        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-    # 获得没有被怀疑的class的dataset，可作为我们的clean samples
-    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的dataset，将用于检测
-    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实clean dataset
-    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
-    # 获得被怀疑的class的真实poisoned dataset
-    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
-    # 加载adaptive_ratio model weights
-    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
-    print("变异模型个数:", len(weight_filePath_list))
-    # remove_models(weight_filePath_list, nosuspected_dataset)
-    weight_filePath_list = fliter_mutated_model(weight_filePath_list, suspected_dataset, nosuspected_dataset)
-    print("剩余变异模型个数:", len(weight_filePath_list))
-    
-    # 得到非怀疑class dataset预测标签
-    df_no_suspected = get_confidence(weight_filePath_list, nosuspected_dataset)
-    center,  distance_list = get_center_and_distance_list(df_no_suspected)
-    # interval = confidence_interval(distance_list, alpha=0.1)
-    interval = stats.t.interval(confidence=0.99, df=len(distance_list)-1, loc=np.mean(distance_list), scale=stats.sem(distance_list))
-    # 存suspected_dataset中预测标签和真实标签, True(poisoned)
-    pred_list = []
-    gt_list = []
-    # 怀疑子集中的真实clean的
-    df_clean_suspected = get_confidence(weight_filePath_list, suspected_clean_dataset)
-    for row_idx, row in df_clean_suspected.iterrows():
-        point = row.tolist()
-        distance = calculate_distance(point, center)
-        if distance > interval[1]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(False)
-
-    # 怀疑子集中的真实poisoned的
-    df_poisoned_suspected = get_confidence(weight_filePath_list, suspected_poisoned_dataset)
-    for row_idx, row in df_poisoned_suspected.iterrows():
-        point = row.tolist()
-        distance = calculate_distance(point, center)
-        if distance > interval[1]:
-            pred_list.append(True)
-        else:
-            pred_list.append(False)
-        gt_list.append(True)
-    # df_poisoned_suspected = pd.read_csv(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "suspected_clean_dataset_pred_labels.csv"))
-    # 保存预测结果
-    # save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name)
-    # save_file_name = "suspected_poisoned_dataset_pred_labels.csv"
-    # save_df(df_poisoned_suspected, save_dir, save_file_name
-
-    if attack_name != "IAD":
-        assert len(pred_list) == len(suspected_dataset), "数量不对"
-        assert len(gt_list) == len(suspected_dataset), "数量不对"
-
-    TN, FP, FN, TP = confusion_matrix(gt_list, pred_list).ravel()
-    acc = round((TP+TN)/(TP+TN+FP+FN),3)
-    precision = round(TP/(TP+FP),3)
-    recall = round(TP/(TP+FN),3)
-    F1 = round(2*precision*recall/(precision+recall),3)
-    print("TN:",TN)
-    print("FP:",FP)
-    print("FN:",FN)
-    print("TP:",TP)
-    print("acc:",acc)
-    print("precision:",precision)
-    print("recall:",recall)
-    print("F1:",F1)
-    print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
-    print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
-
 
 def priorityQueue_2_list(q:queue.PriorityQueue):
     qsize = q.qsize()
@@ -1049,8 +614,8 @@ def detect_by_suspected_nonsuspected_acc_dif_top_model_truecount_interval():
     weight_filePath_list = select_by_suspected_nonsuspected_acc_dif(model, weight_filePath_list, suspected_dataset, nosuspected_dataset, device)
     print("剩余变异模型个数:", len(weight_filePath_list))
     # no-suspected dataset
-    df_clean_suspected = get_trueOrFalse(weight_filePath_list, nosuspected_dataset)
-    label_maintenance_ratio_list = get_label_maintenance_ratio_list(df_clean_suspected)
+    df_no_suspected = get_trueOrFalse(weight_filePath_list, nosuspected_dataset)
+    label_maintenance_ratio_list = get_label_maintenance_ratio_list(df_no_suspected)
     interval = stats.t.interval(confidence=0.99, df=len(label_maintenance_ratio_list)-1, loc=np.mean(label_maintenance_ratio_list), scale=stats.sem(label_maintenance_ratio_list))
 
     pred_list = []
@@ -1251,7 +816,6 @@ def detect_by_suspected_nonsuspected_acc_dif_top_model_entropy_interval():
     print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
     print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
 
-
 def detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance():
     '''
     dataset/attack/model
@@ -1277,7 +841,7 @@ def detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance
     weight_filePath_list = select_by_suspected_nonsuspected_confidence_distribution_dif(model, weight_filePath_list, suspected_dataset, nosuspected_dataset, device)
     print("剩余变异模型个数:", len(weight_filePath_list))
     df_nosuspected = get_confidence(weight_filePath_list, nosuspected_dataset)
-    center, distance_list = get_center_and_distance_list()
+    center, distance_list = get_center_and_distance_list(df_nosuspected)
 
 
     sample_global_idx = 0
@@ -1297,7 +861,7 @@ def detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance
         item = (-priority, sample_global_idx, row_idx,  ground_truth_label) 
         q.put(item) # 队列越靠前越有可能为backdoor sample
     # 怀疑子集中的真实poisoned的
-    df_poisoned_suspected = get_pred_label(weight_filePath_list, suspected_poisoned_dataset)
+    df_poisoned_suspected = get_confidence(weight_filePath_list, suspected_poisoned_dataset)
     for row_idx, row in df_poisoned_suspected.iterrows():
         sample_global_idx += 1
         cur_point = row.tolist()
@@ -1312,7 +876,7 @@ def detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance
     priority_list = priorityQueue_2_list(q)
     if attack_name != "IAD":
         assert len(priority_list) == len(suspected_dataset), "数量不对"
-    # 截取前 50% 
+    
     cut_off_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
     precision_list = []
     recall_list = []
@@ -1373,7 +937,7 @@ def detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance
     # nosuspected dataset
     df_nosuspected = get_confidence(weight_filePath_list, nosuspected_dataset)
     center, distance_list = get_center_and_distance_list(df_nosuspected)
-    interval = stats.t.interval(confidence=0.99, df=len(distance_list)-1, loc=np.mean(distance_list), scale=stats.sem(entropy_list))
+    interval = stats.t.interval(confidence=0.99, df=len(distance_list)-1, loc=np.mean(distance_list), scale=stats.sem(distance_list))
 
     pred_list = []
     gt_list = []
@@ -1391,7 +955,7 @@ def detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance
         gt_list.append(False) 
 
     # 怀疑子集中的真实poisoned的
-    df_poisoned_suspected = get_pred_label(weight_filePath_list, suspected_poisoned_dataset)
+    df_poisoned_suspected = get_confidence(weight_filePath_list, suspected_poisoned_dataset)
     for row_idx, row in df_poisoned_suspected.iterrows():
         cur_point = row.tolist()
         cur_distance = 0
@@ -1423,24 +987,179 @@ def detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance
     print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
     print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
 
-if __name__ == "__main__":
-    # detect()
-    # detect_by_distance()
-    # detect_by_entropy()
-    # detect_by_confidence_distance()
-    # detect_by_confidence_list()
-    # look_entropy()
-    # look_sorted_entropy()
+def vote_truecount():
+    '''
+    统计并绘制,在变异model上,样本满足条件
+    '''
+    # 获得attack name下被变异模型怀疑的target class idx list
+    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
+    if attack_name == "IAD":
+        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
+    else:
+        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
+    # 非怀疑集,可作为我们的clean samples
+    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
+    # 怀疑集,将用于检测
+    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
+    # 怀疑集中的真实clean
+    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
+    # 怀疑集中的真实poisoned
+    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
+    # 加载adaptive_ratio权重
+    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
+    print("变异模型个数:", len(weight_filePath_list))
+    weight_filePath_list = select_by_suspected_nonsuspected_acc_dif(model, weight_filePath_list, suspected_dataset, nosuspected_dataset, device)
+    print("剩余变异模型个数:", len(weight_filePath_list))
+    df_clean_suspected = get_trueOrFalse(weight_filePath_list, suspected_clean_dataset)
+    df_poisoned_suspected = get_trueOrFalse(weight_filePath_list, suspected_poisoned_dataset)
+    clean_count_list = []
+    poisoned_count_list = []
+    guan_ka_num_list = list(reversed([x for x in range(0, 51)])) # [50,49,...,1,0]
+    for guan_ka_num in guan_ka_num_list:
+        clean_count = 0
+        poisoned_count = 0
+        for row_idx, row in df_clean_suspected.iterrows():
+            truecount = sum(row.tolist())
+            if truecount == guan_ka_num:
+                clean_count += 1
+        clean_count_list.append(clean_count)
+        for row_idx, row in df_poisoned_suspected.iterrows():
+            truecount = sum(row.tolist())
+            if truecount == guan_ka_num:
+                poisoned_count += 1
+        poisoned_count_list.append(poisoned_count)
+    save_dir = os.path.join(exp_root_dir, "images", "bar", dataset_name, model_name, "acc_dif", "TrueCount")
+    create_dir(save_dir)
+    save_file_name = f"{attack_name}.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    x_ticks = [str(x) for x in guan_ka_num_list]
+    draw_stackbar(x_ticks =x_ticks, title="The relationship between the number of clean samples and the number of poisoned samples in the conditional model", save_path=save_path, y_1_list=clean_count_list, y_2_list=poisoned_count_list)
 
+def vote_difcount():
+    '''
+    统计并绘制,在变异model上,样本满足条件
+    '''
+    # 获得attack name下被变异模型怀疑的target class idx list
+    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
+    if attack_name == "IAD":
+        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
+    else:
+        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
+    # 非怀疑集,可作为我们的clean samples
+    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
+    # 怀疑集,将用于检测
+    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
+    # 怀疑集中的真实clean
+    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
+    # 怀疑集中的真实poisoned
+    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
+    # 加载adaptive_ratio权重
+    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
+    print("变异模型个数:", len(weight_filePath_list))
+    weight_filePath_list = select_by_suspected_nonsuspected_acc_dif(model, weight_filePath_list, suspected_dataset, nosuspected_dataset, device)
+    print("剩余变异模型个数:", len(weight_filePath_list))
+    df_clean_suspected = get_trueOrFalse(weight_filePath_list, suspected_clean_dataset)
+    df_poisoned_suspected = get_trueOrFalse(weight_filePath_list, suspected_poisoned_dataset)
+    clean_count_list = []
+    poisoned_count_list = []
+    guan_ka_num_list = [x for x in range(-50, 51)] # [-50,-49,...,-1,0,1,2,...,49,50]
+    for guan_ka_num in guan_ka_num_list:
+        clean_count = 0
+        poisoned_count = 0
+        for row_idx, row in df_clean_suspected.iterrows():
+            truecount = sum(row.tolist())
+            falsecount = len(row)-truecount
+            dif = truecount - falsecount
+            if dif == guan_ka_num:
+                clean_count += 1
+        clean_count_list.append(clean_count)
+        for row_idx, row in df_poisoned_suspected.iterrows():
+            truecount = sum(row.tolist())
+            falsecount = len(row)-truecount
+            dif = truecount - falsecount
+            if dif == guan_ka_num:
+                poisoned_count += 1
+        poisoned_count_list.append(poisoned_count)
+    save_dir = os.path.join(exp_root_dir, "images", "bar", dataset_name, model_name, "acc_dif", "count_dif")
+    create_dir(save_dir)
+    save_file_name = f"{attack_name}.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    x_ticks = [str(x) for x in guan_ka_num_list]
+    draw_stackbar(x_ticks =x_ticks, title="The relationship between the number of clean samples and the number of poisoned samples in the conditional model", save_path=save_path, y_1_list=clean_count_list, y_2_list=poisoned_count_list)
+
+def vote_confidence():
+    '''
+    统计并绘制,在变异model上,样本满足条件
+    '''
+    # 获得attack name下被变异模型怀疑的target class idx list
+    suspected_class_idx_list = get_suspected_class_idx_list(adaptive_ratio_dic)
+    if attack_name == "IAD":
+        assert len(pureCleanTrainDataset)+2*len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
+    else:
+        assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
+    # 非怀疑集,可作为我们的clean samples
+    nosuspected_dataset = NoSuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
+    # 怀疑集,将用于检测
+    suspected_dataset = SuspectedClassDataset(poisoned_trainset, suspected_class_idx_list)
+    # 怀疑集中的真实clean
+    suspected_clean_dataset = SuspectedClassDataset(pureCleanTrainDataset, suspected_class_idx_list)
+    # 怀疑集中的真实poisoned
+    suspected_poisoned_dataset = SuspectedClassDataset(purePoisonedTrainDataset, suspected_class_idx_list)
+    # 加载adaptive_ratio权重
+    weight_filePath_list = get_mutation_models_weight_file_path_2(adaptive_ratio_dic)
+    print("变异模型个数:", len(weight_filePath_list))
+    weight_filePath_list = select_by_suspected_nonsuspected_confidence_distribution_dif(model, weight_filePath_list, suspected_dataset, nosuspected_dataset, device)
+    print("剩余变异模型个数:", len(weight_filePath_list))
+    df_no_suspected = get_confidence(weight_filePath_list, nosuspected_dataset)
+    center, distance_list = get_center_and_distance_list(df_no_suspected)
+    df_clean_suspected = get_confidence(weight_filePath_list, suspected_clean_dataset)
+    df_poisoned_suspected = get_confidence(weight_filePath_list, suspected_poisoned_dataset)
+    clean_count_list = []
+    poisoned_count_list = []
+    guan_ka_num_list = list(reversed([x for x in range(0, 51)])) # [50,49,...,1,0]
+    for guan_ka_num in guan_ka_num_list:
+        clean_count = 0
+        poisoned_count = 0
+        for row_idx, row in df_clean_suspected.iterrows():
+            vote_count = 0
+            confidence_list = row.tolist()
+            for x1,x2 in zip(confidence_list, center):
+                if x1 > x2:
+                    vote_count+=1
+            if vote_count == guan_ka_num:
+                clean_count += 1
+        clean_count_list.append(clean_count)
+        for row_idx, row in df_poisoned_suspected.iterrows():
+            vote_count = 0
+            confidence_list = row.tolist()
+            for x1,x2 in zip(confidence_list, center):
+                if x1 > x2:
+                    vote_count+=1
+            if vote_count == guan_ka_num:
+                poisoned_count += 1
+        poisoned_count_list.append(poisoned_count)
+    save_dir = os.path.join(exp_root_dir, "images", "bar", dataset_name, model_name, "acc_dif", "confidence_vote")
+    create_dir(save_dir)
+    save_file_name = f"{attack_name}.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    x_ticks = [str(x) for x in guan_ka_num_list]
+    draw_stackbar(x_ticks =x_ticks, title="The relationship between the number of clean samples and the number of poisoned samples in the conditional model", save_path=save_path, y_1_list=clean_count_list, y_2_list=poisoned_count_list)
+
+
+if __name__ == "__main__":
     # 模型选择:suspected_nonsuspected_confidence_distribution_dif 
     ## 根据变异模型预测confidence
     # detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance()
     # detect_by_suspected_nonsuspected_confidence_distribution_dif_center_distance_interval()
+
     # 模型选择: suspected_nonsuspected_acc_dif 
     ## 根据变异模型预测标签维持率
     # detect_by_suspected_nonsuspected_acc_dif_top_model_truecount()
-    detect_by_suspected_nonsuspected_acc_dif_top_model_truecount_interval()
+    # detect_by_suspected_nonsuspected_acc_dif_top_model_truecount_interval()
     ## 根据变异模型预测标签熵
     # detect_by_suspected_nonsuspected_acc_dif_top_model_entropy()
     # detect_by_suspected_nonsuspected_acc_dif_top_model_entropy_interval()
+    # vote_truecount()
+    # vote_difcount()
+    # vote_confidence()
     pass

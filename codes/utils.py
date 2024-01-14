@@ -7,10 +7,12 @@ import torch.nn
 import time
 import sys
 import queue
+import shutil
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
 begin_time = last_time
-_, term_width = os.popen('stty size', 'r').read().split()
+# _, term_width = os.popen('stty size', 'r').read().split()
+_, term_width = shutil.get_terminal_size()
 term_width = int(term_width)
 
 def format_time(seconds):

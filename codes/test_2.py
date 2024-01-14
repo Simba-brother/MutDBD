@@ -1,4 +1,5 @@
 
+
 import random
 import numpy as np
 from collections import defaultdict
@@ -14,6 +15,7 @@ import cv2
 import sys
 import math
 import queue
+from draw import draw_box_v2
 sys.path.append("./")
 # from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import get_dict_state
 # from codes.datasets.cifar10.attacks import Blended_resnet18_nopretrain_32_32_3 
@@ -220,6 +222,38 @@ def test29():
     x = q.get()
     y = q.get()
     print(x,y)
+def test30():
+    a = list(reversed([x for x in range(-50, 51)]))
+    print()
+
+def test31():
+    d, info = cliffs_delta([0,1,2,3,4,5], [4,5,6,7,8,9,10,11,12,13,14])
+    print("d:", d)
+    print("info", info)
+
+    d, info = cliffs_delta([4,5,6,7,8,9,10,11,12,13,14], [0,1,2,3,4,5,])
+    print("d:", d)
+    print("info", info)
+
+    d, info = cliffs_delta([1,2,3,4,5], [1,2,3,4,5])
+    print("d:", d)
+    print("info", info)
+
+def test32():
+    data = [[None]*10]*10
+    print(data)
+
+def test33():
+    labels = [1,2,3,4]
+    datas = []
+    for i in range(4):
+        data = np.random.rand(20)
+        datas.append(data)
+    target_class_clean_list = np.random.rand(50)
+    target_class_poisoned_list = np.random.rand(60)
+    title = "test"
+    save_path = "testbox.png"
+    draw_box_v2(datas,labels, target_class_clean_list, target_class_poisoned_list, title, save_path)
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
@@ -227,5 +261,6 @@ if __name__ == "__main__":
     # test15()
     # test16()
     # test19()
-    test29()
+    #test31()
+    test33()
     pass

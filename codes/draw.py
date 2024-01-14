@@ -3,6 +3,21 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 
 
+def draw_stackbar(x_ticks, title, save_path, y_1_list, y_2_list):
+    plt.figure(figsize=(12, 8), dpi=800)
+    x_list = [x for x in list(range(len(x_ticks)))]
+    plt.bar(x_list, y_1_list, align="center", label = "clean")
+    plt.bar(x_list, y_2_list, bottom=y_1_list, label = "poisoned")
+    plt.xticks(x_list,x_ticks,rotation=45)
+    plt.xlabel("Number of mutation models that meet the conditions")
+    plt.xlabel("Number of samples")
+    plt.title(title)
+    plt.tight_layout(pad=0)
+    plt.grid(alpha=0.5, linestyle=':')
+    plt.legend()
+    plt.show()
+    plt.savefig(save_path,transparent=False,dpi=800)
+
 def draw_line(x_list, title, save_path, **kw):
     # 设置图片大小，清晰度
     plt.figure(figsize=(8, 8), dpi=800)
@@ -21,7 +36,7 @@ def draw_line(x_list, title, save_path, **kw):
     plt.show()
     plt.savefig(save_path,transparent=False,dpi=800)
 
-def draw_box(data,labels,title,save_path):
+def draw_box(data, labels, title, xlabel, ylabel, save_path):
     # rcParams['font.size'] = 8   # 设置字体大小为14
     fig = plt.figure()
     plt.boxplot(
@@ -50,16 +65,29 @@ def draw_box(data,labels,title,save_path):
             }
             
         )
-    
+
     plt.title(title, fontsize=10)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.tight_layout(pad=0)
+    # plt.xticks(rotation=90)
     plt.show()
     plt.savefig(save_path,transparent=False,dpi=600)
+
     
 if __name__ == "__main__":
-
+    '''
     all_data = [np.random.normal(0, std, size=100) for std in range(1,4)]
     labels = ['$x_1$', '$x_2$', '$x_3$']
     title =  "box"
     save_path = "temp.png"
     draw_box(all_data, labels, title, save_path)
+    '''
+
+    x_ticks = [str(v) for v in list(reversed([x for x in range(1, 51)]))]
+    x_list = [x*2 for x in range(len(x_ticks))]
+    title = "temp"
+    save_path = "temp.png"
+    y_1_list = [3]*len(x_ticks)
+    y_2_list = [4]*len(x_ticks)
+    draw_stackbar(x_ticks, title, save_path, y_1_list, y_2_list)
