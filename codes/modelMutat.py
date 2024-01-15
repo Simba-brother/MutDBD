@@ -131,6 +131,7 @@ class ModelMutat(object):
                     for neuron_id in selected_last_layer_neuron_ids:
                         weight[:,neuron_id] = 0
         return model_copy
+    
     def _neuron_switch(self):
         # 产生一个copy model
         model_copy = copy.deepcopy(self.original_model)

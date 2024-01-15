@@ -18,17 +18,19 @@ def draw_stackbar(x_ticks, title, save_path, y_1_list, y_2_list):
     plt.show()
     plt.savefig(save_path,transparent=False,dpi=800)
 
-def draw_line(x_list, title, save_path, **kw):
+def draw_line(x_ticks, title:str, xlabel:str, save_path:str, **kw):
     # 设置图片大小，清晰度
-    plt.figure(figsize=(8, 8), dpi=800)
+    plt.figure(figsize=(20, 8), dpi=800)
+    x_list = [x for x in list(range(len(x_ticks)))]
     keys  = kw.keys()
     for key in keys:
         value = kw[key]
         plt.plot(x_list, value, label=key, marker='o')
     # 设置x轴的刻度
     plt.xticks(x_list)
-    plt.xlabel("cut off")
+    plt.xlabel(xlabel)
     plt.title(title)
+    plt.tight_layout(pad=0)
     # 绘制网格(控制透明度)
     plt.grid(alpha=0.5, linestyle=':')
     # 添加图例

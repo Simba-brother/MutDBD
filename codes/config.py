@@ -7,7 +7,7 @@ mutation_name_list = ["gf","neuron_activation_inverse","neuron_block","neuron_sw
 
 dataset_name = "CIFAR10"
 model_name = "resnet18_nopretrain_32_32_3"
-attack_name = "IAD"
+attack_name = "WaNet"
 
 
 

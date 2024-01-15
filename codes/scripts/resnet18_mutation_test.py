@@ -1,31 +1,30 @@
 import sys
-from collections import defaultdict
-from tqdm import tqdm
-import torch
-import os
-import numpy as np
-import cv2
-
 sys.path.append("./")
-from codes.modelMutat import ModelMutat
-from codes.eval_model import EvalModel
+from collections import defaultdict
+import os
+import cv2
+import joblib
+
+import numpy as np
+import torch
+from tqdm import tqdm
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 from torchvision.datasets import DatasetFolder
+
+from codes.modelMutat import ModelMutat
+from codes.eval_model import EvalModel
 from codes import config
-
-
+from codes.core.models.resnet import ResNet
+from codes.draw import draw_line
+from codes.utils import create_dir
 dataset_name = config.dataset_name
 model_name = config.model_name
 attack_name = config.attack_name
-# mutation_name = config.mutation_name 
-# mutation_name_list =  config.mutation_name_list
 
-from codes.core.models.resnet import ResNet
 
 model = ResNet(num=18,num_classes=10)
 clean_state_dict_path = "/data/mml/backdoor_detect/experiments/CIFAR10/resnet18_nopretrain_32_32_3/clean/best_model.pth"
-model.load_state_dict(torch.load(clean_state_dict_path))
-ratio = 1.0
+model.load_state_dict(torch.load(clean_state_dict_path, map_location="cpu"))
 device = torch.device("cuda:1")
 
 transform_train = Compose([ # the data augmentation method is hard-coded in core.SleeperAgent, user-defined data augmentation is not allowed
@@ -33,7 +32,6 @@ transform_train = Compose([ # the data augmentation method is hard-coded in core
     Resize((32, 32)),
     ToTensor()
 ])
-
 transform_test = Compose([
     ToPILImage(),
     Resize((32, 32)),
@@ -58,71 +56,183 @@ testset = DatasetFolder(
 cur_dataset = trainset
 
 e = EvalModel(model, cur_dataset, device)
-origin_test_acc = e._eval_acc()
+origin_acc = e._eval_acc()
 
-
-modelMutat = ModelMutat(model, mutation_ratio=ratio)
+mutation_ratio_list = [0.01,0.05,0.1,0.15,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+exp_root_dir = "/data/mml/backdoor_detect/experiments/"
 
 def gf_test():
-    gf_acc_list = []
-    for m_i in range(50):
-        mutated_model = modelMutat._gf_mut()
-        e = EvalModel(mutated_model, cur_dataset, device)
-        acc = e._eval_acc()
-        gf_acc_list.append(acc)
-    gf_mean_acc = np.mean(gf_acc_list)
-    return gf_mean_acc
+    acc_list = []
+    for mutation_ratio in mutation_ratio_list:
+        mean_acc = 0
+        for m_i in range(50):
+            modelMutat = ModelMutat(model, mutation_ratio)
+            mutated_model = modelMutat._gf_mut()
+            e = EvalModel(mutated_model, cur_dataset, device)
+            acc = e._eval_acc()
+            mean_acc += acc
+        mean_acc /= 50
+        mean_acc = round(mean_acc,3)
+        acc_list.append(mean_acc) 
+    acc_list.insert(0,origin_acc)
+    mutation_ratio_list.insert(0,0)
+    # 保存数据
+    save_dir = os.path.join(exp_root_dir, "temp_data")
+    create_dir(save_dir)
+    save_file_name = "acc_list.data"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(acc_list,save_path)
+    # 绘图
+    x_list = mutation_ratio_list
+    title = "Mutation operator:GF, Model:ResNet18, Dataset:CIFAR10"
+    xlabel = "mutation rate"
+    save_dir = os.path.join(exp_root_dir, "images/line", dataset_name, model_name, "mutation_test")
+    create_dir(save_dir)
+    save_file_name = "GF.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"Accuracy":acc_list}
+    draw_line(x_list,title, xlabel, save_path, **y)
+    # 返回数据
+    return acc_list
 
 def inverse_test():
-    inverse_acc_list = []
-    for m_i in range(50):
-        mutated_model = modelMutat._neuron_activation_inverse()
-        e = EvalModel(mutated_model, cur_dataset, device)
-        acc = e._eval_acc()
-        inverse_acc_list.append(acc)
-    inverse_mean_acc = np.mean(inverse_acc_list)
-    return inverse_mean_acc
+    acc_list = []
+    for mutation_ratio in mutation_ratio_list:
+        mean_acc = 0
+        for m_i in range(50):
+            modelMutat = ModelMutat(model, mutation_ratio)
+            mutated_model = modelMutat._neuron_activation_inverse()
+            e = EvalModel(mutated_model, cur_dataset, device)
+            acc = e._eval_acc()
+            mean_acc += acc
+        mean_acc /= 50
+        mean_acc = round(mean_acc,3)
+        acc_list.append(mean_acc) 
+    acc_list.insert(0,origin_acc)
+    mutation_ratio_list.insert(0,0)
+    # 保存数据
+    save_dir = os.path.join(exp_root_dir, "temp_data")
+    create_dir(save_dir)
+    save_file_name = "acc_list.data"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(acc_list,save_path)
+    # 绘图
+    x_list = mutation_ratio_list
+    title = "Mutation operator:inverse, Model:ResNet18, Dataset:CIFAR10"
+    xlabel = "mutation rate"
+    save_dir = os.path.join(exp_root_dir, "images/line", dataset_name, model_name, "mutation_test")
+    create_dir(save_dir)
+    save_file_name = "inverse.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"Accuracy":acc_list}
+    draw_line(x_list,title, xlabel, save_path, **y)
+    # 返回数据
+    return acc_list
 
 def block_test():
-    block_acc_list = []
-    for m_i in range(50):
-        mutated_model = modelMutat._neuron_block()
-        e = EvalModel(mutated_model, cur_dataset, device)
-        acc = e._eval_acc()
-        block_acc_list.append(acc)
-    block_mean_acc = np.mean(block_acc_list)
-    return block_mean_acc
+    acc_list = []
+    for mutation_ratio in mutation_ratio_list:
+        mean_acc = 0
+        for m_i in range(50):
+            modelMutat = ModelMutat(model, mutation_ratio)
+            mutated_model = modelMutat._neuron_block()
+            e = EvalModel(mutated_model, cur_dataset, device)
+            acc = e._eval_acc()
+            mean_acc += acc
+        mean_acc /= 50
+        mean_acc = round(mean_acc,3)
+        acc_list.append(mean_acc) 
+    acc_list.insert(0,origin_acc)
+    mutation_ratio_list.insert(0,0)
+    # 保存数据
+    save_dir = os.path.join(exp_root_dir, "temp_data")
+    create_dir(save_dir)
+    save_file_name = "acc_list.data"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(acc_list,save_path)
+    # 绘图
+    x_list = mutation_ratio_list
+    title = "Mutation operator:block, Model:ResNet18, Dataset:CIFAR10"
+    xlabel = "mutation rate"
+    save_dir = os.path.join(exp_root_dir, "images/line", dataset_name, model_name, "mutation_test")
+    create_dir(save_dir)
+    save_file_name = "block.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"Accuracy":acc_list}
+    draw_line(x_list,title, xlabel, save_path, **y)
+    # 返回数据
+    return acc_list
 
 def switch_test():
-    switch_acc_list = []
-    for m_i in range(50):
-        mutated_model = modelMutat._neuron_switch()
-        e = EvalModel(mutated_model, cur_dataset, device)
-        acc = e._eval_acc()
-        switch_acc_list.append(acc)
-    switch_mean_acc = np.mean(switch_acc_list)
-    return switch_mean_acc
+    acc_list = []
+    for mutation_ratio in mutation_ratio_list:
+        mean_acc = 0
+        for m_i in range(50):
+            modelMutat = ModelMutat(model, mutation_ratio)
+            mutated_model = modelMutat._neuron_switch()
+            e = EvalModel(mutated_model, cur_dataset, device)
+            acc = e._eval_acc()
+            mean_acc += acc
+        mean_acc /= 50
+        mean_acc = round(mean_acc,3)
+        acc_list.append(mean_acc) 
+    acc_list.insert(0,origin_acc)
+    mutation_ratio_list.insert(0,0)
+    # 保存数据
+    save_dir = os.path.join(exp_root_dir, "temp_data")
+    create_dir(save_dir)
+    save_file_name = "acc_list.data"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(acc_list,save_path)
+    # 绘图
+    x_list = mutation_ratio_list
+    title = "Mutation operator:switch, Model:ResNet18, Dataset:CIFAR10"
+    xlabel = "mutation rate"
+    save_dir = os.path.join(exp_root_dir, "images/line", dataset_name, model_name, "mutation_test")
+    create_dir(save_dir)
+    save_file_name = "switch.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"Accuracy":acc_list}
+    draw_line(x_list,title, xlabel, save_path, **y)
+    # 返回数据
+    return acc_list
 
 def shuffle_test():
-    shuffle_acc_list = []
-    for m_i in range(50):
-        mutated_model = modelMutat._weight_shuffling()
-        e = EvalModel(mutated_model, cur_dataset, device)
-        acc = e._eval_acc()
-        shuffle_acc_list.append(acc)
-    shuffle_mean_acc = np.mean(shuffle_acc_list)
-    return shuffle_mean_acc
+    acc_list = []
+    for mutation_ratio in mutation_ratio_list:
+        mean_acc = 0
+        for m_i in range(50):
+            modelMutat = ModelMutat(model, mutation_ratio)
+            mutated_model = modelMutat._weight_shuffling()
+            e = EvalModel(mutated_model, cur_dataset, device)
+            acc = e._eval_acc()
+            mean_acc += acc
+        mean_acc /= 50
+        mean_acc = round(mean_acc,3)
+        acc_list.append(mean_acc) 
+    acc_list.insert(0,origin_acc)
+    mutation_ratio_list.insert(0,0)
+    # 保存数据
+    save_dir = os.path.join(exp_root_dir, "temp_data")
+    create_dir(save_dir)
+    save_file_name = "acc_list.data"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(acc_list,save_path)
+    # 绘图
+    x_list = mutation_ratio_list
+    title = "Mutation operator:shuffle, Model:ResNet18, Dataset:CIFAR10"
+    xlabel = "mutation rate"
+    save_dir = os.path.join(exp_root_dir, "images/line", dataset_name, model_name, "mutation_test")
+    create_dir(save_dir)
+    save_file_name = "shuffle.png"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"Accuracy":acc_list}
+    draw_line(x_list,title, xlabel, save_path, **y)
+    # 返回数据
+    return acc_list
 
 if __name__ == "__main__":
-    gf_mean_acc = gf_test()
-    inverse_mean_acc = inverse_test()
-    block_mean_acc = block_test()
-    switch_mean_acc = switch_test()
-    shuffle_mean_acc = shuffle_test()
-    print("ratio:",ratio)
-    print("origin_acc:",origin_test_acc)
-    print("gf_mean_acc:",gf_mean_acc)
-    print("inverse_mean_acc:",inverse_mean_acc)
-    print("block_mean_acc:",block_mean_acc)
-    print("switch_mean_acc:",switch_mean_acc)
-    print("shuffle_mean_acc:",shuffle_mean_acc)
+    # block_test()
+    # switch_test()
+    # shuffle_test()
+    pass

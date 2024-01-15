@@ -14,7 +14,7 @@ torch.manual_seed(global_seed)
 np.random.seed(global_seed)
 random.seed(global_seed)
 
-def _seed_worker():
+def _seed_worker(worker_id):
     global_seed = 666
     torch.manual_seed(global_seed)
     np.random.seed(global_seed)
@@ -32,7 +32,7 @@ class EvalModel(object):
             self.testset,
             batch_size = batch_size,
             shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
+            num_workers=4,
             drop_last=False,
             pin_memory=False,
             worker_init_fn=_seed_worker
