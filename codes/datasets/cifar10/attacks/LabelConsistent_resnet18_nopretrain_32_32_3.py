@@ -22,16 +22,13 @@ from codes import core
 
 from codes.core.models.resnet import ResNet
 
-
-# CUDA_VISIBLE_DEVICES = '3'
-# os.environ['CUDA_VISIBLE_DEVICES'] = CUDA_VISIBLE_DEVICES
-def _seed_worker():
+def _seed_worker(worker_id):
     worker_seed =666
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 global_seed = 666
 deterministic = True
-torch.manual_seed(global_seed)
+torch.manual_seed(global_seed) # cpu随机数种子
 victim_model = ResNet(18,num_classes=10)
 adv_model = ResNet(18,num_classes=10)
 # 这个是先通过benign训练得到的clean model weight
@@ -62,8 +59,7 @@ testset = DatasetFolder(
     is_valid_file=None)
 
 
-
-
+# 图片四角白点
 pattern = torch.zeros((32, 32), dtype=torch.uint8)
 pattern[-1, -1] = 255
 pattern[-1, -3] = 255
@@ -136,7 +132,7 @@ schedule = {
 
     'benign_training': False, # 先训练处来一benign model
     'batch_size': 128,
-    'num_workers': 1,
+    'num_workers': 4,
 
     'lr': 0.1,
     'momentum': 0.9,
@@ -173,9 +169,9 @@ label_consistent = core.LabelConsistent(
     poisoned_rate=poisoned_rate,
     pattern=pattern,
     weight=weight,
-    eps=eps,
-    alpha=alpha,
-    steps=steps,
+    eps=eps, # 8
+    alpha=alpha, # 1.5
+    steps=steps, # 100
     max_pixel=max_pixel,
     poisoned_transform_train_index=0,
     poisoned_transform_test_index=0,

@@ -285,10 +285,10 @@ class IAD(Base):
                  y_target,
                  poisoned_rate,
                  cross_rate,
-                 lambda_div,
-                 lambda_norm,
-                 mask_density,
-                 EPSILON,
+                 lambda_div, # 1被传入
+                 lambda_norm, # 100被传入
+                 mask_density, # 0.032被传入
+                 EPSILON, #1e-7被传入
                  schedule=None, 
                  seed=0, 
                  deterministic=False,
@@ -319,6 +319,7 @@ class IAD(Base):
         self.test_poisoned_label = []
         self.modelG = Generator(self.dataset_name)
         self.modelM = Generator(self.dataset_name, out_channels=1)
+    # IAD Class 复写了父类Base的train方法
     def train(self, schedule=None):
         # 给对象注入训练schedule
         if schedule is None and self.global_schedule is None:
@@ -363,15 +364,15 @@ class IAD(Base):
             self.train_dataset,
             batch_size=self.current_schedule['batch_size'],
             shuffle=True,
-            # num_workers=self.current_schedule['num_workers'],
+            num_workers=self.current_schedule['num_workers'],
             drop_last=True,
-            worker_init_fn=self._seed_worker
+            worker_init_fn=self._seed_worker # 父类方法
         )
         train_loader1 = DataLoader(
             self.train_dataset1,
             batch_size=self.current_schedule['batch_size'],
             shuffle=True,
-            # num_workers=self.current_schedule['num_workers'],
+            num_workers=self.current_schedule['num_workers'],
             drop_last=True,
             worker_init_fn=self._seed_worker
         )
@@ -379,7 +380,7 @@ class IAD(Base):
             self.test_dataset,
             batch_size=self.current_schedule['batch_size'],
             shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
+            num_workers=self.current_schedule['num_workers'],
             drop_last=False,
             worker_init_fn=self._seed_worker
         )
@@ -387,7 +388,7 @@ class IAD(Base):
             self.test_dataset1,
             batch_size=self.current_schedule['batch_size'],
             shuffle=True,
-            # num_workers=self.current_schedule['num_workers'],
+            num_workers=self.current_schedule['num_workers'],
             drop_last=False,
             worker_init_fn=self._seed_worker
         )
@@ -416,15 +417,9 @@ class IAD(Base):
         self.work_dir = work_dir
         os.makedirs(work_dir, exist_ok=True)
         log = Log(osp.join(work_dir, 'log.txt'))
-        
-
-        # log and output:
-        # 1. ouput loss and time
-        # 2. test and output statistics
-        # 3. save checkpoint
 
         self.iteration = 0
-        epoch = 1
+        epoch = 1 # epoch从1开始
         last_time = time.time()
         msg = f"Total train samples: {len(self.train_dataset)}\nTotal test samples: {len(self.test_dataset)}\nBatch size: {self.current_schedule['batch_size']}\niteration every epoch: {len(self.train_dataset) // self.current_schedule['batch_size']}\nInitial learning rate: {self.current_schedule['lr']}\n"
         log(msg)
@@ -434,6 +429,7 @@ class IAD(Base):
             # 开始之前先对 modelM训练
             self.modelM.train()
             for i in range(25):
+                # self.modelM.train() train 25轮次
                 msg = "Epoch {} | mask_density: {} | - {}  - lambda_div: {}  - lambda_norm: {}\n".format(
                         epoch, self.mask_density, self.dataset_name, self.lambda_div, self.lambda_norm
                     )
@@ -448,7 +444,7 @@ class IAD(Base):
                     msg = time.strftime("[%Y-%m-%d_%H:%M:%S] ", time.localtime()) + "Test Norm: {:.3f} | Diversity: {:.3f}\n".format(loss_norm_eval, loss_div_eval)
                     log(msg)
                 epoch += 1
-
+        # 此时epoch = 26
         # The backdoor trigger mask generator will been frozen
         self.modelM.eval()
         self.modelM.requires_grad_(False)
@@ -609,7 +605,7 @@ class IAD(Base):
         # Construct the classification loss and the diversity loss
         total_loss = 0
         criterion = self.loss
-        criterion_div = nn.MSELoss(reduction="none")
+        criterion_div = nn.MSELoss(reduction="none") # 可用于计算图像之间的距离
         # 该epoch得到poisoned_trainset
         self.train_poisoned_data, self.train_poisoned_label = [], []
         self.pure_poisoned_trainset_data = []
@@ -713,7 +709,7 @@ class IAD(Base):
 
         return avg_loss, acc_clean, acc_bd, acc_cross
 
-
+    # 重写了父类的_test方法
     def _test(
         self, 
         test_dl1,

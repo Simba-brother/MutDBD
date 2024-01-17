@@ -17,31 +17,24 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip
 from codes import core
 
-def _seed_worker():
+def _seed_worker(worker_id):
     worker_seed =666
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
 global_seed = 666
 deterministic = True
-torch.manual_seed(global_seed)
-
-# Define Benign Training and Testing Dataset
-# dataset = torchvision.datasets.CIFAR10
-# dataset = torchvision.datasets.MNIST
-
+torch.manual_seed(global_seed) # 设置 CPU 生成随机数的 种子 ，方便下次复现实验结果。
 
 
 transform_train = Compose([
-    ToTensor(),
-    RandomHorizontalFlip()
+    ToTensor(), # 得到CHWand 0~1
+    RandomHorizontalFlip() # 数据增强
 ])
-# trainset = dataset('data', train=True, transform=transform_train, download=True)
-
 transform_test = Compose([
     ToTensor()
 ])
-# testset = dataset('data', train=False, transform=transform_test, download=True)
+
 trainset = DatasetFolder(
     root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
@@ -72,10 +65,11 @@ testset = DatasetFolder(
 
 pattern = torch.zeros((1, 32, 32), dtype=torch.uint8)
 pattern[0, -3:, -3:] = 255
-weight = torch.zeros((1, 32, 32), dtype=torch.float32)
+weight = torch.zeros((1, 32, 32), dtype=torch.float32) # torch.Tensor
 weight[0, -3:, -3:] = 0.2
 
 '''
+MINIST
 pattern = torch.zeros((1, 28, 28), dtype=torch.uint8)
 pattern[0, -3:, -3:] = 255
 weight = torch.zeros((1, 28, 28), dtype=torch.float32)

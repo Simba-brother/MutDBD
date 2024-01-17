@@ -25,7 +25,7 @@ global_seed = 666
 deterministic = True
 torch.manual_seed(global_seed)
 
-def _seed_worker():
+def _seed_worker(worker_id):
     worker_seed =666
     np.random.seed(worker_seed)
     random.seed(worker_seed)
@@ -58,6 +58,7 @@ trainset = DatasetFolder(
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
+# 另外一份训练集
 trainset1 = DatasetFolder(
     root='/data/mml/backdoor_detect/dataset/cifar10/train',
     loader=cv2.imread, # ndarray
@@ -65,7 +66,6 @@ trainset1 = DatasetFolder(
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
-
 testset = DatasetFolder(
     root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
@@ -73,6 +73,7 @@ testset = DatasetFolder(
     transform=transform_test,
     target_transform=None,
     is_valid_file=None)
+# 另外一份测试集
 testset1 = DatasetFolder(
     root='/data/mml/backdoor_detect/dataset/cifar10/test',
     loader=cv2.imread,
@@ -103,7 +104,7 @@ testset_loader = DataLoader(
 
 schedule = {
     'device': 'cuda:0',
-    'GPU_num': 1,
+    'GPU_num': 4,
 
     'benign_training': False,
     'batch_size': 128,

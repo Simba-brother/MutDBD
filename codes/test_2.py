@@ -15,7 +15,7 @@ import cv2
 import sys
 import math
 import queue
-from draw import draw_box_v2
+# from draw import draw_box_v2
 sys.path.append("./")
 # from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import get_dict_state
 # from codes.datasets.cifar10.attacks import Blended_resnet18_nopretrain_32_32_3 
@@ -253,7 +253,11 @@ def test33():
     target_class_poisoned_list = np.random.rand(60)
     title = "test"
     save_path = "testbox.png"
-    draw_box_v2(datas,labels, target_class_clean_list, target_class_poisoned_list, title, save_path)
+    # draw_box_v2(datas,labels, target_class_clean_list, target_class_poisoned_list, title, save_path)
+def test34():
+    data = [1,2,3,4,5]
+    random.shuffle(data)
+    print(data)
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
@@ -262,5 +266,5 @@ if __name__ == "__main__":
     # test16()
     # test19()
     #test31()
-    test33()
+    test34()
     pass

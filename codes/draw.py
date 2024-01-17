@@ -27,7 +27,7 @@ def draw_line(x_ticks, title:str, xlabel:str, save_path:str, **kw):
         value = kw[key]
         plt.plot(x_list, value, label=key, marker='o')
     # 设置x轴的刻度
-    plt.xticks(x_list)
+    plt.xticks(x_list,x_ticks,rotation=45)
     plt.xlabel(xlabel)
     plt.title(title)
     plt.tight_layout(pad=0)

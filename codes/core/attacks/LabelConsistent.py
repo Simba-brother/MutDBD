@@ -497,7 +497,7 @@ class LabelConsistent(Base):
                  poisoned_transform_train_index=0,
                  poisoned_transform_test_index=0,
                  poisoned_target_transform_index=0,
-                 schedule=None,
+                 schedule=None, # 传过来了
                  seed=0,
                  deterministic=False):
 
@@ -506,7 +506,7 @@ class LabelConsistent(Base):
             test_dataset=test_dataset,
             model=model,
             loss=loss,
-            schedule=schedule,
+            schedule=schedule, #  =》 self.current_schedule
             seed=seed,
             deterministic=deterministic)
         
@@ -549,14 +549,25 @@ class LabelConsistent(Base):
             adv_dataset_dir: 存adv dataset文件夹
         '''
         def _generate_adv_dataset(dataset, adv_model, adv_dataset_dir, adv_transform, eps, alpha, steps, y_target, poisoned_rate):
-            if self.current_schedule is None and self.global_schedule is None:
-                self.current_schedule = {
-                    'device': 'CPU',
-                    'batch_size': 128,
-                    'num_workers': 8
-                }
-            elif self.current_schedule is None and self.global_schedule is not None:
-                self.current_schedule = deepcopy(self.global_schedule)
+            '''
+            # dataset:benign trainset
+            # adv_model: 待对抗模型
+            # adv_dataset_dir: 存储对抗样本数据集
+            # adv_transform: Compose([transforms.ToTensor()])
+            # eps: 8
+            # alpha:1.5
+            # steps:100
+            # y_target: 1
+            # poisoned_rate: 0.1
+            '''
+            # if self.current_schedule is None and self.global_schedule is None:
+            #     self.current_schedule = {
+            #         'device': 'CPU',
+            #         'batch_size': 128,
+            #         'num_workers': 8
+            #     }
+            # elif self.current_schedule is None and self.global_schedule is not None:
+            #     self.current_schedule = deepcopy(self.global_schedule)
             '''
             if 'device' in self.current_schedule and self.current_schedule['device'] == 'GPU':
                 if 'CUDA_VISIBLE_DEVICES' in self.current_schedule:
@@ -583,13 +594,13 @@ class LabelConsistent(Base):
             # copy一份原始数据集的转换器
             backup_transform = deepcopy(dataset.transform)
             # 将数据集转换器设置为adv转换器
-            dataset.transform = adv_transform
+            dataset.transform = adv_transform # Compose([transforms.ToTensor()])
             # benign dataset数据加载器
             data_loader = DataLoader(
                 dataset,
                 batch_size=self.current_schedule['batch_size'],
                 shuffle=False,
-                # num_workers=self.current_schedule['num_workers'],
+                num_workers=self.current_schedule['num_workers'],
                 drop_last=False,
                 pin_memory=True,
                 worker_init_fn=self._seed_worker
@@ -627,12 +638,14 @@ class LabelConsistent(Base):
             # np.squeeze https://blog.csdn.net/fred_18/article/details/92688903
             # 选择出targets == y_target的index
             y_target_index_list = np.squeeze(np.argwhere(targets == y_target))
+            # 攻击类别的总样本数
             total_target_num = len(y_target_index_list)
             # 只对target class中的样本进行污染
             poisoned_num = int(total_target_num * poisoned_rate)
             assert poisoned_num >= 0, 'poisoned_num should greater than or equal to zero.'
             random.shuffle(y_target_index_list)
             # poisoned ids
+            # poisoned set中的都是y_target
             poisoned_set = frozenset(list(y_target_index_list[:poisoned_num]))
             # 为label创建下一层文件夹
             for target in np.unique(targets):

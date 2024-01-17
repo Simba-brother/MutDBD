@@ -232,7 +232,9 @@ def shuffle_test():
     return acc_list
 
 if __name__ == "__main__":
+    # gf_test()
+    # inverse_test()
     # block_test()
     # switch_test()
-    # shuffle_test()
+    shuffle_test()
     pass

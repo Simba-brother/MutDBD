@@ -14,7 +14,7 @@ from PIL import Image
 from torchvision.transforms import functional as F
 from torchvision.transforms import Compose
 
-from .base import *
+from .base import * #把父类所在文件所有东西都引进了，包括父类文件中的import module也导入了
 
 
 class AddTrigger:
@@ -30,7 +30,7 @@ class AddTrigger:
         Returns:
             torch.Tensor: Poisoned image, shape (C, H, W).
         """
-        return (self.weight * img + self.res).type(torch.uint8)
+        return (self.weight * img + self.res).type(torch.uint8) # 图片右下角9个像素为白块，且shape为CHW,dtype:uint8
 
 
 class AddDatasetFolderTrigger(AddTrigger):
@@ -42,14 +42,14 @@ class AddDatasetFolderTrigger(AddTrigger):
     """
 
     def __init__(self, pattern, weight):
-        super(AddDatasetFolderTrigger, self).__init__()
+        super(AddDatasetFolderTrigger, self).__init__() # 调用父类构造，其实父类构造啥属性也没注入
 
         if pattern is None:
             raise ValueError("Pattern can not be None.")
         else:
             self.pattern = pattern
             if self.pattern.dim() == 2:
-                self.pattern = self.pattern.unsqueeze(0)
+                self.pattern = self.pattern.unsqueeze(0) # 将数据放入更高维度的槽中 # self.pattern
 
         if weight is None:
             raise ValueError("Weight can not be None.")
@@ -59,8 +59,8 @@ class AddDatasetFolderTrigger(AddTrigger):
                 self.weight = self.weight.unsqueeze(0)
 
         # Accelerated calculation
-        self.res = self.weight * self.pattern
-        self.weight = 1.0 - self.weight
+        self.res = self.weight * self.pattern # self.res
+        self.weight = 1.0 - self.weight  # self.weight
 
     def __call__(self, img):
         # 允许一个类的实例像函数一样被调用
@@ -74,22 +74,24 @@ class AddDatasetFolderTrigger(AddTrigger):
         """
 
         def add_trigger(img):
+            ''' 本方法内部使用的小函数'''
             if img.dim() == 2:
-                img = img.unsqueeze(0)
-                img = self.add_trigger(img)
+                img = img.unsqueeze(0) # 增加一个C
+                img = self.add_trigger(img) # 父类中的方法
                 img = img.squeeze()
             else:
                 img = self.add_trigger(img)
             return img
 
         if type(img) == PIL.Image.Image:
-            img = F.pil_to_tensor(img)
-            img = add_trigger(img)
+            img = F.pil_to_tensor(img) # [C],H,W且在0~1
+            img = add_trigger(img) # type(img) = torch.Tensor
             # 1 x H x W
             if img.size(0) == 1:
-                img = Image.fromarray(img.squeeze().numpy(), mode='L')
+                img = Image.fromarray(img.squeeze().numpy(), mode='L') # type(img) = PIL.Image.Image
             # 3 x H x W
             elif img.size(0) == 3:
+                # img.permute(1, 2, 0), C,H,W => H,W,C
                 img = Image.fromarray(img.permute(1, 2, 0).numpy())
             else:
                 raise ValueError("Unsupportable image shape.")
@@ -97,12 +99,12 @@ class AddDatasetFolderTrigger(AddTrigger):
         elif type(img) == np.ndarray:
             # H x W
             if len(img.shape) == 2:
-                img = torch.from_numpy(img)
+                img = torch.from_numpy(img) # ndArray => torch.Tensor
                 img = add_trigger(img)
                 img = img.numpy()
             # H x W x C
             else:
-                img = torch.from_numpy(img).permute(2, 0, 1)
+                img = torch.from_numpy(img).permute(2, 0, 1) # ndArray => torch.Tensor and HWC => CHW
                 img = add_trigger(img)
                 img = img.permute(1, 2, 0).numpy()
             return img
@@ -112,9 +114,9 @@ class AddDatasetFolderTrigger(AddTrigger):
                 img = add_trigger(img)
             # H x W x C
             else:
-                img = img.permute(2, 0, 1)
+                img = img.permute(2, 0, 1) # HWC => CHW
                 img = add_trigger(img)
-                img = img.permute(1, 2, 0)
+                img = img.permute(1, 2, 0) # CHW => HWC
             return img
         else:
             raise TypeError('img should be PIL.Image.Image or numpy.ndarray or torch.Tensor. Got {}'.format(type(img)))
@@ -220,10 +222,15 @@ class PoisonedDatasetFolder(DatasetFolder):
                  poisoned_transform_index,
                  poisoned_target_transform_index):
         super(PoisonedDatasetFolder, self).__init__(
-            benign_dataset.root, # 数据集文件夹 ./dataset/cifar10/train
+            # 数据集文件夹位置
+            benign_dataset.root, # 数据集文件夹 /data/mml/backdoor_detect/dataset/cifar10/train
+            # 数据集直接加载器
             benign_dataset.loader, # cv2.imread
+            # 数据集扩展名
             benign_dataset.extensions, # .png
+            # 数据集transform
             benign_dataset.transform, # 被注入到self.transform
+            # 数据集标签transform
             benign_dataset.target_transform, # 对label进行transform
             None)
         # 数据集包含的数据量
@@ -232,14 +239,14 @@ class PoisonedDatasetFolder(DatasetFolder):
         poisoned_num = int(total_num * poisoned_rate)
         # 断言：中毒的数据量必须是>=0
         assert poisoned_num >= 0, 'poisoned_num should greater than or equal to zero.'
-        # 数量的list
-        tmp_list = list(range(total_num))
-        # 数量的list乱序
+        # 数据id list
+        tmp_list = list(range(total_num)) #[0,1,2,...,N]
+        # id list被打乱
         random.shuffle(tmp_list)
-        # 乱序的前poisoned_num个作为中毒样本
+        # 选出的id set作为污染目标样本
         self.poisoned_set = frozenset(tmp_list[:poisoned_num])
-
         # Add trigger to images
+        # 注意在调用父类（DatasetFolder）构造时self.transform = benign_dataset.transform
         if self.transform is None:
             self.poisoned_transform = Compose([])
         else:
@@ -263,9 +270,9 @@ class PoisonedDatasetFolder(DatasetFolder):
         Returns:
             tuple: (sample, target) where target is class_index of the target class.
         """
-        path, target = self.samples[index]
-        sample = self.loader(path)
-        if index in self.poisoned_set:
+        path, target = self.samples[index] # 父类（DatasetFolder）属性
+        sample = self.loader(path) # self.loader也是调用父类构造时注入的
+        if index in self.poisoned_set: # self.poisoned_set 本类构造注入的
             sample = self.poisoned_transform(sample)
             target = self.poisoned_target_transform(target)
         else:
@@ -463,15 +470,17 @@ class BadNets(Base):
             poisoned_rate,
             pattern,
             weight,
-            poisoned_transform_train_index,
-            poisoned_target_transform_index)
+            poisoned_transform_train_index, # default:0
+            poisoned_target_transform_index # default:0
+            ) 
         
         # 创建出污染数据集（test set）
         self.poisoned_test_dataset = CreatePoisonedDataset(
             test_dataset,
             y_target,
-            1,
+            1, # poisoned_rate = 1
             pattern,
             weight,
-            poisoned_transform_test_index,
-            poisoned_target_transform_index)
+            poisoned_transform_test_index, # default:0
+            poisoned_target_transform_index # default:0
+            )

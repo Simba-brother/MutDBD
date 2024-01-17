@@ -440,8 +440,9 @@ class Blended(Base):
             poisoned_rate,
             pattern,
             weight,
-            poisoned_transform_train_index,
-            poisoned_target_transform_index)
+            poisoned_transform_train_index, # default:0
+            poisoned_target_transform_index # default:0
+            )
 
         self.poisoned_test_dataset = CreatePoisonedDataset(
             test_dataset,
@@ -449,5 +450,6 @@ class Blended(Base):
             1.0,
             pattern,
             weight,
-            poisoned_transform_test_index,
-            poisoned_target_transform_index)
+            poisoned_transform_test_index, # default:0
+            poisoned_target_transform_index # default:0
+            )

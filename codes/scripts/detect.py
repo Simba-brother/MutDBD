@@ -5,6 +5,7 @@ import random
 import os
 import statistics
 import joblib
+import setproctitle
 import torch
 import pandas as pd
 from sklearn.metrics import confusion_matrix
@@ -16,6 +17,7 @@ from codes.datasets.cifar10.models.resnet18_32_32_3 import ResNet
 from codes.datasets.cifar10.models.vgg import VGG
 from codes.eval_model import EvalModel
 from codes.utils import entropy, create_dir
+from codes.scripts.baseData import BaseData
 import scipy.stats as stats
 import queue
 from codes.draw import draw_box,draw_line,draw_stackbar
@@ -28,7 +30,7 @@ random.seed(555)
 model = ResNet(18)
 # model = VGG("VGG19")
 # 攻击name
-attack_name = "BadNets" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+attack_name = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 # 实验结果文件夹
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 # 数据集name
@@ -1146,6 +1148,41 @@ def vote_confidence():
     draw_stackbar(x_ticks =x_ticks, title="The relationship between the number of clean samples and the number of poisoned samples in the conditional model", save_path=save_path, y_1_list=clean_count_list, y_2_list=poisoned_count_list)
 
 
+
+def get_targetclass_clean_poisoned_accuracy_variation():
+    mutation_operator_name = "gf"
+    bdata = BaseData(dataset_name, model_name, attack_name, mutation_operator_name)
+    mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8]
+    mean_p_acc_list = []
+    mean_c_acc_list = []
+    for mutation_rate in mutation_rate_list:
+        poisoned_acc_list = []
+        clean_acc_list = []
+        mutation_weight_file_list = bdata._get_mutation_weight_file(mutation_rate)
+        for mutation_weight_file in mutation_weight_file_list:
+            model.load_state_dict(torch.load(mutation_weight_file, map_location="cpu"))
+            e = EvalModel(model, target_class_dataset_poisoned, device) 
+            p_acc = e._eval_acc()
+            e = EvalModel(model, target_class_dataset_clean, device) 
+            c_acc = e._eval_acc()
+            poisoned_acc_list.append(p_acc)
+            clean_acc_list.append(c_acc)
+        mean_p_acc = sum(poisoned_acc_list) / len(poisoned_acc_list)
+        mean_c_acc = sum(clean_acc_list) / len(clean_acc_list)
+        mean_p_acc_list.append(mean_p_acc)
+        mean_c_acc_list.append(mean_c_acc)
+    # 画图
+    x_ticks = mutation_rate_list
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:{mutation_operator_name}"
+    xlabel = "mutation_rate"
+    save_dir = os.path.join(exp_root_dir,"images/line", dataset_name, model_name, attack_name, mutation_operator_name)
+    create_dir(save_dir)
+    save_file_name = "targetclass_clean_poisoned_accuracy_variation"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"poisoned set":mean_p_acc_list, "clean set":mean_c_acc_list}
+    draw_line(x_ticks, title, xlabel, save_path, **y)
+    print("get_targetclass_clean_poisoned_accuracy_variation() successful")
+
 if __name__ == "__main__":
     # 模型选择:suspected_nonsuspected_confidence_distribution_dif 
     ## 根据变异模型预测confidence
@@ -1162,4 +1199,6 @@ if __name__ == "__main__":
     # vote_truecount()
     # vote_difcount()
     # vote_confidence()
+    setproctitle.setproctitle(attack_name)
+    get_targetclass_clean_poisoned_accuracy_variation()
     pass

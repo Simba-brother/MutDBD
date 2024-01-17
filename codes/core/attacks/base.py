@@ -13,7 +13,7 @@ from torchvision.datasets import DatasetFolder, MNIST, CIFAR10
 
 from ..utils import Log
 
-
+# 支持的数据集类型
 support_list = (
     DatasetFolder,
     MNIST,
@@ -60,7 +60,6 @@ class Base(object):
     def __init__(self, train_dataset, test_dataset, model, loss, schedule=None, seed=0, deterministic=False):
         assert isinstance(train_dataset, support_list), 'train_dataset is an unsupported dataset type, train_dataset should be a subclass of our support list.'
         self.train_dataset = train_dataset
-
         assert isinstance(test_dataset, support_list), 'test_dataset is an unsupported dataset type, test_dataset should be a subclass of our support list.'
         self.test_dataset = test_dataset
         self.model = model 
@@ -85,11 +84,10 @@ class Base(object):
         os.environ['PYTHONHASHSEED'] = str(seed)
 
         if deterministic:
-            torch.backends.cudnn.benchmark = False
-            torch.use_deterministic_algorithms(True)
-            # torch.use_deterministic_algorithms(True, warn_only=True)
+            torch.backends.cudnn.benchmark = False # GPU、网络结构固定，可设置为True
+            torch.use_deterministic_algorithms(True) 
             torch.backends.cudnn.deterministic = True
-            os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+            os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8' # 防止下行设置因为版本问题报错
             # Hint: In some versions of CUDA, RNNs and LSTM networks may have non-deterministic behavior.
             # If you want to set them deterministic, see torch.nn.RNN() and torch.nn.LSTM() for details and workarounds.
 
@@ -105,6 +103,11 @@ class Base(object):
         return self.poisoned_train_dataset, self.poisoned_test_dataset
 
     def adjust_learning_rate(self, optimizer, epoch, step, len_epoch):
+        # epoch: 当前训练进行时的epoch
+        # step: batch_id
+        # len_epoch: epoch中有多少个batch ,也就是每轮次（epoch）中迭代了多少步（step）,注意: 此处为向上取整
+        # self.train之后会注入self.current_schedule
+        # 统计小于当前epoch的个数作为因子
         factor = (torch.tensor(self.current_schedule['schedule']) <= epoch).sum()
 
         lr = self.current_schedule['lr']*(self.current_schedule['gamma']**factor)
@@ -112,12 +115,13 @@ class Base(object):
         """Warmup"""
         if 'warmup_epoch' in self.current_schedule and epoch < self.current_schedule['warmup_epoch']:
             lr = lr*float(1 + step + epoch*len_epoch)/(self.current_schedule['warmup_epoch']*len_epoch)
-
+        # 对优化器中的学习率进行赋值更新
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
 
     def train(self, schedule=None):
-        # 加载一些schedule
+        # schedule:type = dict
+        # 为self.current_schedule注入schedule(计划表)
         if schedule is None and self.global_schedule is None:
             raise AttributeError("Training schedule is None, please check your schedule setting.")
         elif schedule is not None and self.global_schedule is None:
@@ -128,15 +132,12 @@ class Base(object):
             self.current_schedule = deepcopy(schedule)
         # 设置日志文件存储位置
         work_dir = osp.join(self.current_schedule['save_dir'], self.current_schedule['experiment_name'] + '_' + time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()))
+        # 注入work_dir属性
         self.work_dir = work_dir
         os.makedirs(work_dir, exist_ok=True)
+        # 声明出一个log实例
         log = Log(osp.join(work_dir, 'log.txt'))
         self.log = log
-        # log and output:
-        # 1. experiment config
-        # 2. ouput loss and time
-        # 3. test and output statistics
-        # 4. save checkpoint
 
         log('==========Schedule parameters==========\n')
         log(str(self.current_schedule)+'\n')
@@ -194,7 +195,7 @@ class Base(object):
                 self.train_dataset,
                 batch_size=self.current_schedule['batch_size'],
                 shuffle=True,
-                # num_workers=self.current_schedule['num_workers'],
+                num_workers=self.current_schedule['num_workers'],
                 drop_last=False,
                 pin_memory=False,
                 worker_init_fn=self._seed_worker
@@ -202,10 +203,10 @@ class Base(object):
         elif self.current_schedule['benign_training'] is False:
             # attack train
             train_loader = DataLoader(
-                self.poisoned_train_dataset,
+                self.poisoned_train_dataset, # Base下边的子类（例如BadNets）的属性
                 batch_size=self.current_schedule['batch_size'], # default:128
                 shuffle=True,
-                # num_workers=self.current_schedule['num_workers'],
+                num_workers=self.current_schedule['num_workers'],
                 drop_last=False,
                 pin_memory=False,
                 worker_init_fn=self._seed_worker
@@ -221,7 +222,7 @@ class Base(object):
         # params_1x = [param for name, param in self.model.named_parameters() if 'fc' not in str(name)]
         # optimizer = torch.optim.Adam([{'params':params_1x}, {'params': self.model.fc.parameters(), 'lr': self.current_schedule['lr']*10}], lr=self.current_schedule['lr'], weight_decay=self.current_schedule['weight_decay'])
 
-        # 迭代次数，每个batch,iteration++
+        # 总迭代次数，每个batch,iteration++
         iteration = 0
         last_time = time.time()
 
@@ -230,20 +231,22 @@ class Base(object):
 
         best_acc = 0
         for i in range(self.current_schedule['epochs']):
+            # 每次epoch都进入train mode
             self.model.train()
-            # 训练轮次
+            # steps
             for batch_id, batch in enumerate(train_loader):
                 # 每一轮中的批次
                 # 动态调整 optimizer 中的学习率
                 self.adjust_learning_rate(optimizer, i, batch_id, int(math.ceil(len(self.train_dataset) / self.current_schedule['batch_size'])))
                 batch_img = batch[0]
-                batch_label = batch[1]
+                batch_label = batch[1] # num
                 batch_img = batch_img.to(device)
                 batch_label = batch_label.to(device)
-                # 优化器参数梯度清零
-                optimizer.zero_grad()
+                # forward
                 predict_digits = self.model(batch_img)
                 loss = self.loss(predict_digits, batch_label)
+                # backward
+                optimizer.zero_grad()
                 # 计算损失函数中参数导数
                 loss.backward()
                 # 优化器优化参数
@@ -257,8 +260,8 @@ class Base(object):
                     log(msg)
 
             # 每轮次过后，寻找下best model并保存
-
             predict_digits, labels, mean_loss = self._test(self.poisoned_train_dataset, device, self.current_schedule['batch_size'])
+            # 总共预测样本的数量
             total_num = labels.size(0)
             prec1, prec5 = accuracy(predict_digits, labels, topk=(1, 5))
             save_path = os.path.join(work_dir, "best_model.pth")
@@ -309,7 +312,7 @@ class Base(object):
 
     def _test(self, dataset, device, batch_size=16, model=None, test_loss=None):
         '''
-        测试一下model在dataset上的效果
+        测试一下self.model在dataset上的效果
         return:
             predict_digits: model在dataset的output
             labels: dataset的gt_label
@@ -321,7 +324,7 @@ class Base(object):
             model = model
 
         if test_loss is None:
-            test_loss = self.loss
+            test_loss = self.loss # 损失函数：nn.CrossEntropyLoss()
         else:
             test_loss = test_loss
 
@@ -331,7 +334,7 @@ class Base(object):
                 dataset,
                 batch_size=batch_size,
                 shuffle=False,
-                # num_workers=num_workers,
+                num_workers=self.current_schedule['num_workers'],
                 drop_last=False,
                 pin_memory=True,
                 worker_init_fn=self._seed_worker

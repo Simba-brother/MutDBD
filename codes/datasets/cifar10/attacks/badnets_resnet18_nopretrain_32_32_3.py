@@ -18,7 +18,6 @@ from codes.core.attacks import BadNets
 from codes.core.models.resnet import ResNet
 from codes.modelMutat import ModelMutat
 from codes.eval_model import EvalModel
-from codes import draw
 from codes.utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
@@ -27,15 +26,19 @@ global_seed = 666
 deterministic = True
 torch.manual_seed(global_seed)
 
-def _seed_worker():
+def _seed_worker(worker_id):
     worker_seed =666
-    np.random.seed(worker_seed)
-    random.seed(worker_seed)
+    np.random.seed(global_seed)
+    random.seed(global_seed)
 
 # 训练集transform    
 transform_train = Compose([
-    ToPILImage(),
-    RandomHorizontalFlip(),
+    # Convert a tensor or an ndarray to PIL Image
+    ToPILImage(), 
+    # 训练数据增强
+    RandomHorizontalFlip(), # 随机水平翻转
+    # Converts a PIL Image or numpy.ndarray (H x W x C) in the range
+    # [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
     ToTensor()
 ])
 # 测试集transform
@@ -44,12 +47,12 @@ transform_test = Compose([
     ToTensor()
 ])
 
-# target model
+# victim model
 model = ResNet(num=18,num_classes=10)
 # 获得数据集
 trainset = DatasetFolder(
     root='/data/mml/backdoor_detect/dataset/cifar10/train',
-    loader=cv2.imread, # ndarray
+    loader=cv2.imread, # ndarray (H,W,C)
     extensions=('png',),
     transform=transform_train,
     target_transform=None,
@@ -103,7 +106,6 @@ class PureCleanTrainDataset(Dataset):
         x,y=self.pureCleanTrainDataset[index]
         return x,y
 
-
 class PurePoisonedTrainDataset(Dataset):
     def __init__(self, poisoned_train_dataset, poisoned_ids):
         self.poisoned_train_dataset = poisoned_train_dataset
@@ -150,13 +152,13 @@ schedule = {
     
     'benign_training': False,
     'batch_size': 128,
-    'num_workers': 1,
+    'num_workers': 4,
 
     'lr': 0.1,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [150, 180],
+    'schedule': [150, 180], # epoch区间
 
     'epochs': 200,
 
