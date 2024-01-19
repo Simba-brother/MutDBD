@@ -272,16 +272,18 @@ class PoisonedDatasetFolder(DatasetFolder):
         """
         path, target = self.samples[index] # 父类（DatasetFolder）属性
         sample = self.loader(path) # self.loader也是调用父类构造时注入的
+        isPoisoned = False
         if index in self.poisoned_set: # self.poisoned_set 本类构造注入的
             sample = self.poisoned_transform(sample)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         else:
             if self.transform is not None:
                 sample = self.transform(sample)
             if self.target_transform is not None:
                 target = self.target_transform(target)
 
-        return sample, target
+        return sample, target, isPoisoned
 
 
 class PoisonedMNIST(MNIST):

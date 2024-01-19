@@ -71,9 +71,6 @@ class AddDatasetFolderTrigger(AddTrigger):
         self.grid = torch.clamp(grid * self.grid_rescale, -1, 1)
         self.noise_rescale = noise_rescale
 
-
-
-
     def __call__(self, img):
         """Get the poisoned image.
 
@@ -272,10 +269,11 @@ class PoisonedDatasetFolder(DatasetFolder):
         """
         path, target = self.samples[index]
         sample = self.loader(path)
-
+        isPoisoned = False
         if index in self.poisoned_set:
             sample = self.poisoned_transform(sample)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         # add noise mode
         elif index in self.noise_set and self.noise == True:
             sample = self.poisoned_transform_noise(sample)
@@ -289,7 +287,7 @@ class PoisonedDatasetFolder(DatasetFolder):
             if self.target_transform is not None:
                 target = self.target_transform(target)
 
-        return sample, target
+        return sample, target, isPoisoned
 
 
 class PoisonedMNIST(MNIST):

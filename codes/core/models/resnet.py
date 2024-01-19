@@ -17,6 +17,7 @@ np.random.seed(666)
 random.seed(666)
 
 class BasicBlock(nn.Module):
+    # 属性
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
@@ -80,7 +81,8 @@ class _ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.linear = nn.Linear(512*block.expansion, num_classes)
+        self.linear = nn.Linear(512*block.expansion, 512*block.expansion)
+        self.classifier = nn.Linear(512*block.expansion, num_classes)
 
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1]*(num_blocks-1)
@@ -99,37 +101,8 @@ class _ResNet(nn.Module):
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
+        out = self.classifier(out)
         return out
-    
-    def forword_mutate(self,x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        out = self.switch(out)
-        out = self.linear(out)
-        return out
-
-    def switch(self,out):
-        out_copy = copy.deepcopy(out)
-        batch_size = out.shape[0]
-        features = out.shape[1]
-        mutate_num = math.ceil(features*self.mutate_ratio)
-        feature_ids = list(range(features))
-        selected_feature_ids = random.sample(feature_ids, mutate_num)
-        shuffled_neuron_ids = np.random.permutation(selected_feature_ids)
-        for id in range(batch_size):
-            feature = out[id]
-            feature_copy = out_copy[id]
-            for id1, id2 in zip(selected_feature_ids, shuffled_neuron_ids):
-                feature[id1] = feature_copy[id2]
-        return out
-    
-    def set_mutate_ratio(self,mutate_ratio):
-        self.mutate_ratio = mutate_ratio
 
 def ResNet(num, num_classes=10):
     if num == 18:
@@ -147,6 +120,12 @@ def ResNet(num, num_classes=10):
     
 if __name__ == "__main__":
     model = ResNet(18)
-    input_shape = (2,3,32,32)
-    x = torch.randn(input_shape)
-    model.forword_mutate(x)
+    print(model)
+    layers = [module for module in model.modules()]
+    for layer in layers:
+        if isinstance(layer, nn.Linear):
+            weight = layer.weight
+            out_features, in_features = weight.shape
+            print("fjal")
+    # input_shape = (2,3,32,32)
+    # x = torch.randn(input_shape)

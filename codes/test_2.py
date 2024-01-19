@@ -258,6 +258,14 @@ def test34():
     data = [1,2,3,4,5]
     random.shuffle(data)
     print(data)
+def test35():
+    d = (np.random.uniform(0,1,5) < 0.3)
+    print(d)
+def test36():
+    a,_ = 1
+    # new_data_list = np.random.permutation(data_list)
+    # print(new_data_list)
+    # print(data_list)
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
@@ -266,5 +274,5 @@ if __name__ == "__main__":
     # test16()
     # test19()
     #test31()
-    test34()
+    test36()
     pass

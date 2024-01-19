@@ -52,7 +52,7 @@ class AddTriggerMixin(object):
         # generate random numbers for refelection-based trigger generation and keep them fixed during training 
         self.reflection_candidates_index = np.random.randint(0,len(self.reflection_candidates),total_num)
         self.alpha_bs = 1.-np.random.uniform(0.05,0.45,total_num) if alpha_b<0 else np.zeros(total_num)+alpha_b
-        self.ghost_values = (np.random.uniform(0,1,total_num) < ghost_rate)
+        self.ghost_values = (np.random.uniform(0,1,total_num) < ghost_rate) # [TrueOrFalse]
         if offset == (0,0):
             self.offset_xs = np.random.random_integers(3,8,total_num)
             self.offset_ys = np.random.random_integers(3,8,total_num)
@@ -74,7 +74,7 @@ class AddTriggerMixin(object):
             sample (torch.Tensor): shape (C,H,W),
             index (interger): index of sample in original dataset
         """
-        img_b = sample.permute(1,2,0).numpy() # background
+        img_b = sample.permute(1,2,0).numpy() # background # HWC
         img_r = self.reflection_candidates[self.reflection_candidates_index[index]] # reflection
         h, w, channels = img_b.shape
         if channels == 1 and img_r.shape[-1]==3: 
@@ -184,8 +184,8 @@ class AddDatasetFolderTriggerMixin(AddTriggerMixin):
     """Add reflection-based trigger to DatasetFolder images."""
     def add_trigger(self, img, index):
         if type(img) == PIL.Image.Image:
-            img = F.pil_to_tensor(img)
-            img = self._add_trigger(img,index)
+            img = F.pil_to_tensor(img) # CHW
+            img = self._add_trigger(img,index) # 其父类中方法
             # 1 x H x W
             if img.size(0) == 1:
                 img = Image.fromarray(img.squeeze().numpy(), mode='L')
@@ -290,6 +290,7 @@ class PoisonedDatasetFolder(DatasetFolder, AddDatasetFolderTriggerMixin):
         # 修改target
         self.poisoned_target_transform.transforms.insert(poisoned_target_transform_index, ModifyTarget(y_target))
         
+        # 第二个父类的构造函数
         # Add Trigger
         AddDatasetFolderTriggerMixin.__init__(
             self, 
@@ -312,20 +313,21 @@ class PoisonedDatasetFolder(DatasetFolder, AddDatasetFolderTriggerMixin):
         """
         path, target = self.samples[index]
         sample = self.loader(path)
-
+        isPoisoned = False
         if index in self.poisoned_set:
             if len(self.pre_poisoned_transform.transforms):
                 sample = self.pre_poisoned_transform(sample)
-            sample = self.add_trigger(sample, index)
+            sample = self.add_trigger(sample, index) # 第二个父类方法
             sample = self.post_poisoned_transform(sample)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         else:
             if self.transform is not None:
                 sample = self.transform(sample)
             if self.target_transform is not None:
                 target = self.target_transform(target)
 
-        return sample, target
+        return sample, target, isPoisoned
    
 class PoisonedCIFAR10(CIFAR10, AddCIFAR10TriggerMixin):
     def __init__(self, benign_dataset, y_target, poisoned_rate, poisoned_transform_index, \

@@ -199,6 +199,146 @@ class ModelMutat(object):
     
 
 
+class ModelMutat_2(object):
+    def __init__(self, original_model, mutation_rate):
+        self.original_model = original_model
+        self.mutation_rate = mutation_rate
+        
+    def _gf_mut(self, scale=None):
+        model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
+        layers = [module for module in model_copy.modules()]
+        linear_layers = []
+        for layer in layers:
+            if isinstance(layer, nn.Linear):
+                linear_layers.append(layer)
+        mutated_layer = linear_layers[-2]
+        with torch.no_grad():
+            layer = mutated_layer
+            weight = layer.weight
+            if scale is None:
+                scale = np.std(weight.tolist())
+            out_features, in_features = weight.shape
+            out_neuron_num = out_features
+            selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
+            out_neuron_id_list = list(range(out_neuron_num))
+            random.shuffle(out_neuron_id_list)
+            selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
+            # add GF
+            normal_size = selected_neuron_num*in_features
+            disturb_array = np.random.normal(scale=scale, size=normal_size) 
+            start_idx = 0
+            for selected_out_neuron_id in selected_out_neuron_id_list:
+                row = weight[selected_out_neuron_id:]
+                end_idx = start_idx + in_features
+                cur_disturb_array = disturb_array[start_idx:end_idx]
+                start_idx = end_idx
+                row += cur_disturb_array
+                weight[selected_out_neuron_id,:] = row
+        return model_copy
+    
+    def _neuron_activation_inverse(self):
+        model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
+        layers = [module for module in model_copy.modules()]
+        linear_layers = []
+        for layer in layers:
+            if isinstance(layer, nn.Linear):
+                linear_layers.append(layer)
+        mutated_layer = linear_layers[-2]
+        # 遍历各层
+        with torch.no_grad():
+            layer = mutated_layer
+            weight = layer.weight # weight shape:output, input
+            out_features, in_features = weight.shape
+            out_neuron_num = out_features
+            selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
+            out_neuron_id_list = list(range(selected_neuron_num))
+            random.shuffle(out_neuron_id_list)
+            selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
+            for selected_out_neuron_id in selected_out_neuron_id_list:
+                weight[selected_out_neuron_id,:] *= -1
+        return model_copy
+    
+    def _neuron_block(self):
+        model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
+        layers = [module for module in model_copy.modules()]
+        linear_layers = []
+        for layer in layers:
+            if isinstance(layer, nn.Linear):
+                linear_layers.append(layer)
+        mutated_layer = linear_layers[-2]
+        # 遍历各层
+        with torch.no_grad():
+            layer = mutated_layer
+            weight = layer.weight # weight shape:output, input
+            out_features, in_features = weight.shape
+            out_neuron_num = out_features
+            selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
+            out_neuron_id_list = list(range(selected_neuron_num))
+            random.shuffle(out_neuron_id_list)
+            selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
+            for selected_out_neuron_id in selected_out_neuron_id_list:
+                weight[selected_out_neuron_id,:] *= 0
+        return model_copy
+    
+    def _neuron_switch(self):
+        # 产生一个copy model
+        model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
+        # 获得所有层
+        layers = [module for module in model_copy.modules()]
+        linear_layers = []
+        for layer in layers:
+            if isinstance(layer, nn.Linear):
+                linear_layers.append(layer)
+        mutated_layer = linear_layers[-2]
+        with torch.no_grad():
+            layer = mutated_layer
+            weight = layer.weight # weight shape:output, input
+            out_features, in_features = weight.shape
+            # bias = layer.bias
+            out_neuron_num = out_features
+            selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
+            out_neuron_id_list = list(range(selected_neuron_num))
+            random.shuffle(out_neuron_id_list)
+            selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
+            # switch
+            shuffled_selected_out_neuron_id_list = np.random.permutation(selected_out_neuron_id_list)
+            weight_copy = copy.deepcopy(weight)
+            for neuron_id, shuffled_neuron_id in zip(selected_out_neuron_id_list,shuffled_selected_out_neuron_id_list):
+                weight[neuron_id,:] = weight_copy[shuffled_neuron_id,neuron_id]
+        return model_copy
+    
+    def _weight_shuffling(self):
+        model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
+        layers = [module for module in model_copy.modules()]
+        linear_layers = []
+        for layer in layers:
+            if isinstance(layer, nn.Linear):
+                linear_layers.append(layer)
+        mutated_layer = linear_layers[-2]
+        # 遍历各层
+        with torch.no_grad():
+            layer = mutated_layer
+            weight = layer.weight # weight shape:output, input
+            out_features, in_features = weight.shape
+            out_neuron_num = out_features
+            selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
+            out_neuron_id_list = list(range(selected_neuron_num))
+            random.shuffle(out_neuron_id_list)
+            selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
+            for neuron_id in selected_out_neuron_id_list:
+                row = weight[neuron_id,:]
+                idx = torch.randperm(row.nelement())
+                row = row.view(-1)[idx].view(row.size())
+                row.requires_grad_()
+                weight[neuron_id,:] = row
+        return model_copy
+    
+
 # dataset_name = "cifar10"    
 # model_name = "resnet18"
 # attack_name = "badnets"

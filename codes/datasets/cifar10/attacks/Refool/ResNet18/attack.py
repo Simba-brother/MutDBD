@@ -14,8 +14,10 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
-
+import setproctitle
 from codes.core.models.resnet import ResNet
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+
 from tqdm import tqdm
 
 global_seed = 666
@@ -99,7 +101,10 @@ refool= core.Refool(
     deterministic=deterministic, # True
     reflection_candidates = reflection_images, # reflection img list
 )
-
+exp_root_dir = "/data/mml/backdoor_detect/experiments"
+dataset_name = "CIFAR10"
+model_name = "ResNet18"
+attack_name = "Refool"
 schedule = {
     'device': 'cuda:1',
     'GPU_num': 4,
@@ -120,95 +125,25 @@ schedule = {
     'test_epoch_interval': 10, # epoch
     'save_epoch_interval': 10,  # epoch
 
-    'save_dir': '/data/mml/backdoor_detect/experiments',
-    'experiment_name': 'cifar10_resnet_nopretrained_32_32_3_Refool'
+    'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
+    'experiment_name': 'attack'
 }
 
-class PureCleanTrainDataset(Dataset):
-    def __init__(self, poisoned_train_dataset, poisoned_ids):
-        self.poisoned_train_dataset = poisoned_train_dataset
-        self.poisoned_ids  = poisoned_ids
-        self.pureCleanTrainDataset = self._getPureCleanTrainDataset()
-    def _getPureCleanTrainDataset(self):
-        pureCleanTrainDataset = []
-        for id in range(len(self.poisoned_train_dataset)):
-            sample, label = self.poisoned_train_dataset[id]
-            if id not in self.poisoned_ids:
-                pureCleanTrainDataset.append((sample,label))
-        return pureCleanTrainDataset
-    
-    def __len__(self):
-        return len(self.pureCleanTrainDataset)
-    
-    def __getitem__(self, index):
-        x,y=self.pureCleanTrainDataset[index]
-        return x,y
-
-class PurePoisonedTrainDataset(Dataset):
-    def __init__(self, poisoned_train_dataset, poisoned_ids):
-        self.poisoned_train_dataset = poisoned_train_dataset
-        self.poisoned_ids  = poisoned_ids
-        self.purePoisonedTrainDataset = self._getPureCleanTrainDataset()
-
-    def _getPureCleanTrainDataset(self):
-        purePoisonedTrainDataset = []
-        for id in range(len(self.poisoned_train_dataset)):
-            sample, label = self.poisoned_train_dataset[id]
-            if id in self.poisoned_ids:
-                purePoisonedTrainDataset.append((sample,label))
-        return purePoisonedTrainDataset
-
-    def __len__(self):
-        return len(self.purePoisonedTrainDataset)
-    
-    def __getitem__(self, index):
-        x,y=self.purePoisonedTrainDataset[index]
-        return x,y
-    
-class PoisonedTrainset(Dataset):
-    def __init__(self, poisoned_trainset_origin):
-        self.poisoned_trainset_oigin = poisoned_trainset_origin
-        self.poisoned_trainset = self.jiekai()
-    def jiekai(self):
-        poisonedTrainDataset = []
-        for id in range(len(self.poisoned_trainset_oigin)):
-            sample, label = self.poisoned_trainset_oigin[id]
-            poisonedTrainDataset.append((sample,label))
-        return poisonedTrainDataset
-    def __len__(self):
-        return len(self.poisoned_trainset)
-    
-    def __getitem__(self, index):
-        x,y=self.poisoned_trainset[index]
-        return x,y
-    
-class PoisonedTestset(Dataset):
-    def __init__(self, poisoned_testset_origin):
-        self.poisoned_testset_origin = poisoned_testset_origin
-        self.poisoned_testset = self.jiekai()
-    def jiekai(self):
-            poisonedTestDataset = []
-            for id in range(len(self.poisoned_testset_origin)):
-                sample, label = self.poisoned_testset_origin[id]
-                poisonedTestDataset.append((sample,label))
-            return poisonedTestDataset
-    def __len__(self):
-        return len(self.poisoned_testset)
-    
-    def __getitem__(self, index):
-        x,y=self.poisoned_testset[index]
-        return x,y
 
 def get_config():
     config = {}
     return config
 
 def attack():
+    print("开始attack train")
+    refool.train(schedule)
+    print("attack train结束")
+    work_dir = refool.work_dir
     poisoned_trainset = refool.poisoned_train_dataset
     poisoned_testset = refool.poisoned_test_dataset
     poisoned_ids = poisoned_trainset.poisoned_set
-    poisonedTrainset = PoisonedTrainset(poisoned_trainset)
-    poisonedTestset = PoisonedTestset(poisoned_testset)
+    poisonedTrainset = ExtractDataset(poisoned_trainset)
+    poisonedTestset = ExtractDataset(poisoned_testset)
     pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
     purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
 
@@ -220,10 +155,7 @@ def attack():
     dict_state["clean_testset"]=testset
     dict_state["poisoned_testset"]=poisonedTestset
 
-    print("开始attack train")
-    refool.train(schedule)
-    print("attack train结束")
-    work_dir = refool.work_dir
+
     # 获得backdoor model weights
     backdoor_weights = torch.load(osp.join(work_dir, "best_model.pth"), map_location="cpu")
     # backdoor model存入字典数据中
@@ -311,8 +243,8 @@ def update_dict_state():
 
 
 if __name__ == "__main__":
-    
-    # attack()
+    setproctitle.setproctitle(attack_name)
+    attack()
     # process_eval()
     # get_dict_state()
     # update_dict_state()

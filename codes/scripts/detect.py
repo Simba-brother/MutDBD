@@ -2,6 +2,7 @@ import sys
 sys.path.append("./")
 import numpy as np
 import random
+from collections import defaultdict
 import os
 import statistics
 import joblib
@@ -20,6 +21,7 @@ from codes.utils import entropy, create_dir
 from codes.scripts.baseData import BaseData
 import scipy.stats as stats
 import queue
+from codes import config
 from codes.draw import draw_box,draw_line,draw_stackbar
 from cliffs_delta import cliffs_delta
 from mutated_model_selected import select_by_suspected_nonsuspected_acc_dif, select_by_suspected_nonsuspected_confidence_distribution_dif
@@ -30,7 +32,7 @@ random.seed(555)
 model = ResNet(18)
 # model = VGG("VGG19")
 # 攻击name
-attack_name = "WaNet" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
+attack_name = "IAD" # BadNets, Blended, IAD, LabelConsistent, Refool, WaNet
 # 实验结果文件夹
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 # 数据集name
@@ -1183,6 +1185,168 @@ def get_targetclass_clean_poisoned_accuracy_variation():
     draw_line(x_ticks, title, xlabel, save_path, **y)
     print("get_targetclass_clean_poisoned_accuracy_variation() successful")
 
+def get_class_precision_variation_by_mutation_operator_name(mutation_operator_name = "gf"):
+    bdata = BaseData(dataset_name, model_name, attack_name, mutation_operator_name)
+    report_data = bdata.get_eval_poisoned_trainset_report_data()
+    mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8]
+
+    temp_dict = defaultdict(dict)
+    for class_i in range(10):
+        for mutation_rate in mutation_rate_list:
+            temp_dict[class_i][mutation_rate] = []
+
+    for mutation_rate in mutation_rate_list:
+        report_list = report_data[mutation_rate]
+        for report in report_list:
+            for class_i in range(10):
+                precision = report[str(class_i)]["precision"]
+                temp_dict[class_i][mutation_rate].append(precision)
+
+    y_dict = defaultdict(list)
+    for class_i in range(10):
+        for mutation_rate in mutation_rate_list:
+           y_dict[f"class_{class_i}"].append(np.mean(temp_dict[class_i][mutation_rate]))
+    x_ticks =  mutation_rate_list
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:{mutation_operator_name}"
+    xlabel = "mutation_rate"
+    save_dir = os.path.join(exp_root_dir,"images/line", dataset_name, model_name, attack_name, mutation_operator_name)
+    create_dir(save_dir)
+    save_file_name = "class_precision_variation.png"
+    save_path = os.path.join(save_dir, save_file_name) 
+    draw_line(x_ticks, title, xlabel, save_path, **y_dict)
+    print("get_class_precision_variation() successful")
+
+def get_class_precision_variation_by_all_mutation_operator_name():
+    mutation_operator_name_list = config.mutation_name_list
+    report_dict = {}
+    for mutation_operator_name in mutation_operator_name_list:
+        bdata = BaseData(dataset_name, model_name, attack_name, mutation_operator_name)
+        report_data = bdata.get_eval_poisoned_trainset_report_data()
+        report_dict[mutation_operator_name] = report_data
+    mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8]
+    temp_dict = defaultdict(dict)
+    for class_i in range(10):
+        for mutation_rate in mutation_rate_list:
+            temp_dict[class_i][mutation_rate] = []
+    for mutation_rate in mutation_rate_list:
+        for mutation_operator_name in mutation_operator_name_list:
+            report_data = report_dict[mutation_operator_name]
+            report_list = report_data[mutation_rate]
+            for report in report_list:
+                for class_i in range(10):
+                    precision = report[str(class_i)]["precision"]
+                    temp_dict[class_i][mutation_rate].append(precision)
+    y_dict = defaultdict(list)
+    for class_i in range(10):
+        for mutation_rate in mutation_rate_list:
+           y_dict[f"class_{class_i}"].append(np.mean(temp_dict[class_i][mutation_rate]))
+    x_ticks =  mutation_rate_list
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:All"
+    xlabel = "mutation_rate"
+    save_dir = os.path.join(exp_root_dir,"images/line", dataset_name, model_name, attack_name, "All")
+    create_dir(save_dir)
+    save_file_name = "class_precision_variation.png"
+    save_path = os.path.join(save_dir, save_file_name) 
+    draw_line(x_ticks, title, xlabel, save_path, **y_dict)
+    print("get_class_precision_variation() successful")
+
+def get_target_class_poisoned_clean_dif_variation_by_mutation_operator_name(mutation_operator_name = "gf"):
+    bdata = BaseData(dataset_name, model_name, attack_name, mutation_operator_name)
+    mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8]
+    report_data = bdata.get_eval_poisoned_trainset_target_class_report_data()
+    y_dict = defaultdict(list)
+    for mutation_rate in mutation_rate_list:
+        report_list = report_data[mutation_rate]
+        for report in report_list:
+            dif = report["target_class_poisoned_acc"] - report["target_class_clean_acc"]
+            y_dict[mutation_rate].append(dif)
+    all_y = []
+    labels = []
+    for mutation_rate in mutation_rate_list:
+        all_y.append(y_dict[mutation_rate])
+        labels.append(str(mutation_rate))
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:{mutation_operator_name}"
+    xlabel = "mutation_rate"
+    ylabel = "Acc(poisoned) - Acc(clean)"
+    save_dir = os.path.join(exp_root_dir,"images/box", dataset_name, model_name, attack_name, mutation_operator_name)
+    create_dir(save_dir)
+    save_file_name = "target_class_poisoned_clean_dif_variation.png"
+    save_path = os.path.join(save_dir, save_file_name) 
+    draw_box(data=all_y, labels=labels, title=title, xlabel=xlabel, ylabel=ylabel, save_path=save_path)
+    print("get_target_class_poisoned_clean_dif_variation_by_mutation_operator_name() success")
+
+
+def get_target_class_poisoned_clean_dif_variation_by_All_mutation_operator():
+    mutation_operator_name_list = config.mutation_name_list
+    report_dict = {}
+    for mutation_operator_name in mutation_operator_name_list:
+        bdata = BaseData(dataset_name, model_name, attack_name, mutation_operator_name)
+        report_data = bdata.get_eval_poisoned_trainset_target_class_report_data()
+        report_dict[mutation_operator_name] = report_data
+    
+    y_dict = defaultdict(list)
+    mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8]
+    for mutation_rate in mutation_rate_list:
+        for mutation_operator_name in mutation_operator_name_list:
+            report_data = report_dict[mutation_operator_name]
+            report_list = report_data[mutation_rate]
+            for report in report_list:
+                dif = report["target_class_poisoned_acc"] - report["target_class_clean_acc"]
+                y_dict[mutation_rate].append(dif)
+    all_y = []
+    labels = []
+    for mutation_rate in mutation_rate_list:
+        all_y.append(y_dict[mutation_rate])
+        labels.append(str(mutation_rate))
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:All"
+    xlabel = "mutation_rate"
+    ylabel = "Acc(poisoned) - Acc(clean)"
+    save_dir = os.path.join(exp_root_dir,"images/box", dataset_name, model_name, attack_name, "All")
+    create_dir(save_dir)
+    save_file_name = "target_class_poisoned_clean_dif_variation.png"
+    save_path = os.path.join(save_dir, save_file_name) 
+    draw_box(data=all_y, labels=labels, title=title, xlabel=xlabel, ylabel=ylabel, save_path=save_path)
+    print("get_target_class_poisoned_clean_dif_variation_by_mutation_operator_name() success")
+
+def get_target_class_poisoned_clean_dif_variation_by_All_mutation_operator_adaptive_rate():
+    mutation_operator_name_list = config.mutation_name_list
+
+    mutation_operator_dict = {}
+    for mutation_operator_name in mutation_operator_name_list:
+        adaptive_ratio = adaptive_ratio_dic[attack_name][mutation_operator_name]["adaptive_ratio"]
+        mutation_operator_dict[mutation_operator_name] = adaptive_ratio
+
+    report_dict = {}
+    for mutation_operator_name in mutation_operator_name_list:
+        bdata = BaseData(dataset_name, model_name, attack_name, mutation_operator_name)
+        report_data = bdata.get_eval_poisoned_trainset_target_class_report_data()
+        report_dict[mutation_operator_name] = report_data
+
+    y_dict = defaultdict(list)
+    for mutation_operator_name in mutation_operator_name_list:
+        report_data = report_dict[mutation_operator_name]
+        mutation_rate = mutation_operator_dict[mutation_operator_name]
+        if mutation_rate == -1:
+            continue
+        report_list = report_data[mutation_rate]
+        for report in report_list:
+            dif = report["target_class_poisoned_acc"] - report["target_class_clean_acc"]
+            y_dict["adaptive_mutation_rate"].append(dif)
+    all_y = []
+    labels = []
+    all_y = y_dict["adaptive_mutation_rate"]
+    labels.append("adaptive_mutation_rate")
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, adaptive_rate:{mutation_operator_dict}"
+    xlabel = "adaptive_mutation_rate"
+    ylabel = "Acc(poisoned) - Acc(clean)"
+    save_dir = os.path.join(exp_root_dir,"images/box", dataset_name, model_name, attack_name, "All_adaptive_rate")
+    create_dir(save_dir)
+    save_file_name = "target_class_poisoned_clean_dif_variation.png"
+    save_path = os.path.join(save_dir, save_file_name) 
+    draw_box(data=all_y, labels=labels, title=title, xlabel=xlabel, ylabel=ylabel, save_path=save_path)
+    print("get_target_class_poisoned_clean_dif_variation_by_All_mutation_operator_adaptive_rate() success")
+    
+
 if __name__ == "__main__":
     # 模型选择:suspected_nonsuspected_confidence_distribution_dif 
     ## 根据变异模型预测confidence
@@ -1199,6 +1363,12 @@ if __name__ == "__main__":
     # vote_truecount()
     # vote_difcount()
     # vote_confidence()
-    setproctitle.setproctitle(attack_name)
-    get_targetclass_clean_poisoned_accuracy_variation()
+    # setproctitle.setproctitle(attack_name)
+    # get_targetclass_clean_poisoned_accuracy_variation()
+
+    # get_class_precision_variation_by_mutation_operator_name()
+    # get_class_precision_variation_by_all_mutation_operator_name()
+
+    # get_target_class_poisoned_clean_dif_variation_by_All_mutation_operator()
+    get_target_class_poisoned_clean_dif_variation_by_All_mutation_operator_adaptive_rate()
     pass

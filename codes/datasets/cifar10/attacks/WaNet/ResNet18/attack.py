@@ -8,7 +8,7 @@ import os
 import joblib
 import random
 import time
-
+import setproctitle
 import numpy as np
 import cv2
 import torch
@@ -19,7 +19,8 @@ from torch.utils.data import DataLoader,Dataset
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
 from codes.core import WaNet
-from codes.datasets.cifar10.models.resnet18_32_32_3 import ResNet
+from codes.core.models.resnet import ResNet
+from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
 global_seed = 666
@@ -138,45 +139,6 @@ wanet = WaNet(
     deterministic=deterministic
 )
 
-class PureCleanTrainDataset(Dataset):
-    def __init__(self, poisoned_train_dataset, poisoned_ids):
-        self.poisoned_train_dataset = poisoned_train_dataset
-        self.poisoned_ids  = poisoned_ids
-        self.pureCleanTrainDataset = self._getPureCleanTrainDataset()
-    def _getPureCleanTrainDataset(self):
-        pureCleanTrainDataset = []
-        for id in range(len(self.poisoned_train_dataset)):
-            sample, label = self.poisoned_train_dataset[id]
-            if id not in self.poisoned_ids:
-                pureCleanTrainDataset.append((sample,label))
-        return pureCleanTrainDataset
-    
-    def __len__(self):
-        return len(self.pureCleanTrainDataset)
-    
-    def __getitem__(self, index):
-        x,y=self.pureCleanTrainDataset[index]
-        return x,y
-
-class PurePoisonedTrainDataset(Dataset):
-    def __init__(self, poisoned_train_dataset, poisoned_ids):
-        self.poisoned_train_dataset = poisoned_train_dataset
-        self.poisoned_ids  = poisoned_ids
-        self.purePoisonedTrainDataset = self._getPureCleanTrainDataset()
-    def _getPureCleanTrainDataset(self):
-        purePoisonedTrainDataset = []
-        for id in range(len(self.poisoned_train_dataset)):
-            sample, label = self.poisoned_train_dataset[id]
-            if id in self.poisoned_ids:
-                purePoisonedTrainDataset.append((sample,label))
-        return purePoisonedTrainDataset
-    
-    def __len__(self):
-        return len(self.purePoisonedTrainDataset)
-    
-    def __getitem__(self, index):
-        x,y=self.purePoisonedTrainDataset[index]
-        return x,y
 
 
 # Show an Example of Poisoned Training Samples
@@ -197,14 +159,16 @@ class PurePoisonedTrainDataset(Dataset):
 #     print()
 
 
-
-# Train Infected Model
+exp_root_dir = "/data/mml/backdoor_detect/experiments"
+dataset_name = "CIFAR10"
+model_name = "ResNet18"
+attack_name = "WaNet"
 schedule = {
-    'device': 'cuda:0',  # | cpu
+    'device': 'cuda:1',  # | cpu
 
     'benign_training': False,
     'batch_size': 128,
-    'num_workers': 1,
+    'num_workers': 4,
 
     # 优化器需要的
     'lr': 0.1,
@@ -219,8 +183,8 @@ schedule = {
     'test_epoch_interval': 10, # 每经过10个epoch,去测试下model效果
     'save_epoch_interval': 10, # 每经过10个epoch,保存下训练的model ckpt
 
-    'save_dir': '/data/mml/backdoor_detect/experiments',
-    'experiment_name': 'cifar10_resnet18_nopretrained_32_32_18_WaNet'
+    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
+    'experiment_name': 'attack'
 }
 
 
@@ -326,16 +290,11 @@ def get_dict_state():
     return dict_state
 
 def update_dict_state():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/dict_state.pth", map_location="cpu")
-    poisoned_trainset = dict_state["poisoned_trainset"]
-    for i in range(len(poisoned_trainset.samples)):
-        path, label = poisoned_trainset.samples[i]
-        new_path = path.replace("./dataset/cifar10/train", "/data/mml/backdoor_detect/dataset/cifar10/train")
-        poisoned_trainset.samples[i] = (new_path, label)
-    dict_state["poisoned_trainset"] = poisoned_trainset
-    torch.save(dict_state, "/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/dict_state.pth")
-    print("update successfully")
+    pass
+
 if __name__ == "__main__":
+    setproctitle.setproctitle(attack_name)
+    attack()
     # get_dict_state()
     pass
     # process_eval()

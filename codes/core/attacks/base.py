@@ -346,7 +346,7 @@ class Base(object):
             labels = []
             losses = []
             for batch in test_loader:
-                batch_img, batch_label = batch
+                batch_img, batch_label = batch[0],batch[1]
                 batch_img = batch_img.to(device)
                 batch_label = batch_label.to(device)
                 batch_img = model(batch_img)

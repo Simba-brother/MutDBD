@@ -250,17 +250,18 @@ class PoisonedDatasetFolder(DatasetFolder):
         """
         path, target = self.samples[index]
         sample = self.loader(path)
-
+        isPoisoned = False
         if index in self.poisoned_set:
             sample = self.poisoned_transform(sample)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         else:
             if self.transform is not None:
                 sample = self.transform(sample)
             if self.target_transform is not None:
                 target = self.target_transform(target)
 
-        return sample, target
+        return sample, target, isPoisoned
 
 
 class PoisonedMNIST(MNIST):
