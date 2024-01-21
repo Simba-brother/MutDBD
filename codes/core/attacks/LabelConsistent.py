@@ -261,17 +261,18 @@ class PoisonedDatasetFolder(DatasetFolder):
         """
         path, target = self.samples[index]
         sample = self.loader(path)
-
+        isPoisoned = False
         if index in self.poisoned_set:
             sample = self.poisoned_transform(sample)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         else:
             if self.transform is not None:
                 sample = self.transform(sample)
             if self.target_transform is not None:
                 target = self.target_transform(target)
 
-        return sample, target
+        return sample, target, isPoisoned
 
 
 class PoisonedMNIST(MNIST):
@@ -431,13 +432,14 @@ class CreatePoisonedTargetDataset(DatasetFolder):
         """
         path, target = self.samples[index]
         sample = self.loader(path)
-
+        isPoisoned = False
         if len(sample.shape) == 2:
             sample = sample.reshape((sample.shape[0], sample.shape[1], 1))
         
         img_index = int(path.split('/')[-1].split('.')[0])
         if img_index in self.poisoned_set:
             sample = self.poisoned_transform(sample) # add trigger to image
+            isPoisoned = True
         else:
             if self.transform is not None:
                 sample = self.transform(sample)
@@ -445,7 +447,7 @@ class CreatePoisonedTargetDataset(DatasetFolder):
         if self.target_transform is not None: # The process of target transform is the same. 
             target = self.target_transform(target)
 
-        return sample, target
+        return sample, target, isPoisoned
 
 
 class LabelConsistent(Base):
@@ -560,14 +562,14 @@ class LabelConsistent(Base):
             # y_target: 1
             # poisoned_rate: 0.1
             '''
-            # if self.current_schedule is None and self.global_schedule is None:
-            #     self.current_schedule = {
-            #         'device': 'CPU',
-            #         'batch_size': 128,
-            #         'num_workers': 8
-            #     }
-            # elif self.current_schedule is None and self.global_schedule is not None:
-            #     self.current_schedule = deepcopy(self.global_schedule)
+            if self.current_schedule is None and self.global_schedule is None:
+                self.current_schedule = {
+                    'device': 'CPU',
+                    'batch_size': 128,
+                    'num_workers': 8
+                }
+            elif self.current_schedule is None and self.global_schedule is not None:
+                self.current_schedule = deepcopy(self.global_schedule)
             '''
             if 'device' in self.current_schedule and self.current_schedule['device'] == 'GPU':
                 if 'CUDA_VISIBLE_DEVICES' in self.current_schedule:

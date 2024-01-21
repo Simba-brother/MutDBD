@@ -66,16 +66,43 @@ class IAD_Dataset(Dataset):
     def __init__(self, data, label):
         self.data = data
         self.label = label
-        
+        self.dataset = self._get_dataset()
+
+    def _get_dataset(self):
+        dataset = []
+        for id in range(len(self.data)):
+            sample, label =  torch.tensor(self.data[id]), torch.tensor(self.label[id])
+            dataset.append((sample, label))
+        assert len(dataset) == len(self.data), "数量不对"
+        return dataset 
+    
     def __len__(self):
-        return len(self.label)
+        return len(self.dataset)
     
     def __getitem__(self, index):
-        x = self.data[index]
-        y = self.label[index]
-        x = torch.tensor(x)
-        y = torch.tensor(y)
+        x,y = self.dataset[index][0], self.dataset[index][1]
         return x,y
+    
+class ExtractTargetClassDataset(Dataset):
+    def __init__(self, dataset, target_class_idx):
+        self.dataset = dataset
+        self.target_class_idx = target_class_idx
+        self.targetClassDataset = self._getTargetClassDataset()
+
+    def _getTargetClassDataset(self):
+        targetClassDataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id][0], self.dataset[id][1]
+            if label == self.target_class_idx:
+                targetClassDataset.append((sample,label))
+        return targetClassDataset
+    
+    def __len__(self):
+        return len(self.targetClassDataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.targetClassDataset[index]
+        return sample,label
 
 
 

@@ -92,7 +92,7 @@ def progress_bar(current, total, msg=None):
 
 def create_dir(dir_path):
     if os.path.exists(dir_path):
-        print(f"文件夹{dir_path}已经存在!")
+        pass
     else:
         print(f"成功创建文件夹{dir_path}")
         os.makedirs(dir_path)

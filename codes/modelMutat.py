@@ -229,7 +229,7 @@ class ModelMutat_2(object):
             disturb_array = np.random.normal(scale=scale, size=normal_size) 
             start_idx = 0
             for selected_out_neuron_id in selected_out_neuron_id_list:
-                row = weight[selected_out_neuron_id:]
+                row = weight[selected_out_neuron_id, :]
                 end_idx = start_idx + in_features
                 cur_disturb_array = disturb_array[start_idx:end_idx]
                 start_idx = end_idx
@@ -308,7 +308,7 @@ class ModelMutat_2(object):
             shuffled_selected_out_neuron_id_list = np.random.permutation(selected_out_neuron_id_list)
             weight_copy = copy.deepcopy(weight)
             for neuron_id, shuffled_neuron_id in zip(selected_out_neuron_id_list,shuffled_selected_out_neuron_id_list):
-                weight[neuron_id,:] = weight_copy[shuffled_neuron_id,neuron_id]
+                weight[neuron_id, :] = weight_copy[shuffled_neuron_id, :]
         return model_copy
     
     def _weight_shuffling(self):

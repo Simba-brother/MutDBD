@@ -355,7 +355,7 @@ def draw_box_all():
         ylabel = "Accuracy difference"
         draw.draw_box(all_y, labels,title, xlable, ylabel,save_path)
 
-def mutate():
+def mutate(mutation_name):
     if mutation_name == "gf":
         gf_mutate()
     if mutation_name == "neuron_activation_inverse":
@@ -394,7 +394,7 @@ def mutate():
 
 if __name__ == "__main__":
     # 生成变异模型
-    # mutate()
+    mutate(mutation_name="gf")
 
     # 在poisoned trainset上对变异模型进行评估
     # for mutation_name in tqdm(mutation_name_list[2:]):
@@ -409,8 +409,8 @@ if __name__ == "__main__":
 
     # test_2()
 
-    for mutation_name in tqdm(mutation_name_list):
-        draw_box_by_mutaion_name(mutation_name)
+    # for mutation_name in tqdm(mutation_name_list):
+    #     draw_box_by_mutaion_name(mutation_name)
 
     # draw_box_all()
     pass

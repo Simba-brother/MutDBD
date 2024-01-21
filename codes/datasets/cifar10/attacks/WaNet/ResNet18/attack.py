@@ -190,7 +190,7 @@ schedule = {
 
 def eval(model, testset):
     model.eval()
-    device = torch.device("cuda:5")
+    device = torch.device("cuda:0")
     model.to(device)
     # 加载trigger set
     testset_loader = DataLoader(
@@ -243,9 +243,8 @@ def attack():
     # pure poisoned trainset
     purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
 
-
     work_dir = wanet.work_dir
-    backdoor_weight = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/best_model.pth", map_location="cpu")
+    backdoor_weight = torch.load(os.path.join(work_dir, "best_model.pth"), map_location="cpu")
     model.load_state_dict(backdoor_weight)
     dict_state = {}
     # 中毒训练集
@@ -263,42 +262,55 @@ def attack():
     dict_state["backdoor_model"] = model
     dict_state["identity_grid"]=identity_grid
     dict_state["noise_grid"]=noise_grid
-    save_path = os.path.join(wanet.work_dir,"dict_state.pth")
+    save_path = os.path.join(work_dir,"dict_state.pth")
     torch.save(dict_state, save_path)
     print(f"数据被保存在:{save_path}")
 
 
 def process_eval():
-    dict_state = get_dict_state()
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_22:20:43", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path, map_location="cpu")
+    
     backdoor_model = dict_state["backdoor_model"]
-    clean_testset = dict_state["clean_testset"]
+    poisoned_trainset = dict_state["poisoned_trainset"]
     poisoned_testset = dict_state["poisoned_testset"]
-    pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
+    clean_testset = dict_state["clean_testset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
-    clean_testset_acc = eval(backdoor_model,clean_testset)
+    pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
+    
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
     poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
-    pure_clean_trainset_acc = eval(backdoor_model, pureCleanTrainDataset)
+    clean_testset_acc = eval(backdoor_model,clean_testset)
     pure_poisoned_trainset_acc = eval(backdoor_model, purePoisonedTrainDataset)
-    print("clean_testset_acc", clean_testset_acc)
+    pure_clean_trainset_acc = eval(backdoor_model, pureCleanTrainDataset)
+    
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
     print("poisoned_testset_acc", poisoned_testset_acc)
-    print("pure_clean_trainset_acc", pure_clean_trainset_acc)
+    print("clean_testset_acc", clean_testset_acc)
     print("pure_poisoned_trainset_acc", pure_poisoned_trainset_acc)
+    print("pure_clean_trainset_acc", pure_clean_trainset_acc)
+    
 
 
 def get_dict_state():
-    dict_state = torch.load("/data/mml/backdoor_detect/experiments/cifar10_resnet18_nopretrained_32_32_18_WaNet_2023-10-27_18:49:02/dict_state.pth", map_location="cpu")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_22:20:43", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    pass
-
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_22:20:43", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path, map_location="cpu")
+    dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"])
+    dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"])
+    torch.save(dict_state, dict_state_file_path)
+    print("update_dict_state(), success")
 if __name__ == "__main__":
     setproctitle.setproctitle(attack_name)
-    attack()
+    # attack()
     # get_dict_state()
-    pass
-    # process_eval()
+    process_eval()
     # update_dict_state()
+    pass
     # attack()
     # infected_model = wanet.get_model()
     
