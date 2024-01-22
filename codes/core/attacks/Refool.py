@@ -454,20 +454,21 @@ class PoisonedMNIST(MNIST, AddMNISTTriggerMixin):
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
         img = Image.fromarray(img.numpy(), mode='L')
-
+        isPoisoned = False
         if index in self.poisoned_set:
             if len(self.pre_poisoned_transform.transforms):
                 img = self.pre_poisoned_transform(img)
             img = self.add_trigger(img, index)
             img = self.post_poisoned_transform(img)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         else:
             if self.transform is not None:
                 img = self.transform(img)
 
             if self.target_transform is not None:
                 target = self.target_transform(target)
-        return img, target
+        return img, target, isPoisoned
 
 def CreatePoisonedDataset(benign_dataset, y_target, poisoned_rate, poisoned_transform_index, poisoned_target_transform_index, reflection_cadidates, \
     max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.):

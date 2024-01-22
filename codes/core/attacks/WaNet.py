@@ -326,11 +326,11 @@ class PoisonedMNIST(MNIST):
         else:
             self.poisoned_transform = copy.deepcopy(self.transform)
             self.poisoned_transform_noise = copy.deepcopy(self.transform) # add noise
-        # self.poisoned_transform.transforms.insert(poisoned_transform_index, AddMNISTTrigger(identity_grid, noise_grid,  noise=False))
-        self.poisoned_transform.transforms.append(AddMNISTTrigger(identity_grid, noise_grid,  noise=False))
-        #add noise transform
-        # self.poisoned_transform_noise.transforms.insert(poisoned_transform_index, AddMNISTTrigger(identity_grid, noise_grid,  noise=True))
-        self.poisoned_transform_noise.transforms.append(AddMNISTTrigger(identity_grid, noise_grid,  noise=True))
+        self.poisoned_transform.transforms.insert(poisoned_transform_index, AddMNISTTrigger(identity_grid, noise_grid,  noise=False))
+        # self.poisoned_transform.transforms.append(AddMNISTTrigger(identity_grid, noise_grid,  noise=False))
+        # add noise transform
+        self.poisoned_transform_noise.transforms.insert(poisoned_transform_index, AddMNISTTrigger(identity_grid, noise_grid,  noise=True))
+        # self.poisoned_transform_noise.transforms.append(AddMNISTTrigger(identity_grid, noise_grid,  noise=True))
         # Modify labels
         if self.target_transform is None:
             self.poisoned_target_transform = Compose([])
@@ -344,10 +344,11 @@ class PoisonedMNIST(MNIST):
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
         img = Image.fromarray(img.numpy(), mode='L')
-
+        isPoisoned = False
         if index in self.poisoned_set:
             img = self.poisoned_transform(img)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         # add noise mode
         elif index in self.noise_set and self.noise == True:
             img = self.poisoned_transform_noise(img)
@@ -360,7 +361,7 @@ class PoisonedMNIST(MNIST):
             if self.target_transform is not None:
                 target = self.target_transform(target)
 
-        return img, target
+        return img, target, isPoisoned
 
 
 class PoisonedCIFAR10(CIFAR10):
@@ -480,8 +481,8 @@ class WaNet(Base):
                  identity_grid,
                  noise_grid,
                  noise,
-                 poisoned_transform_train_index=1,
-                 poisoned_transform_test_index=1,
+                 poisoned_transform_train_index=0,
+                 poisoned_transform_test_index=0,
                  poisoned_target_transform_index=0,
                  schedule=None,
                  seed=0,

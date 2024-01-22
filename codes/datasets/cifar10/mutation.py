@@ -103,5 +103,5 @@ def combination_mutate():
 
 
 if __name__ == "__main__":
-    combination_mutate()
+    # combination_mutate()
     pass

@@ -313,7 +313,7 @@ class PoisonedMNIST(MNIST):
 
     def __getitem__(self, index):
         img, target = self.data[index], int(self.targets[index])
-
+        isPoisoned = False
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
         img = Image.fromarray(img.numpy(), mode='L')
@@ -321,6 +321,7 @@ class PoisonedMNIST(MNIST):
         if index in self.poisoned_set:
             img = self.poisoned_transform(img)
             target = self.poisoned_target_transform(target)
+            isPoisoned = True
         else:
             if self.transform is not None:
                 img = self.transform(img)
@@ -328,7 +329,7 @@ class PoisonedMNIST(MNIST):
             if self.target_transform is not None:
                 target = self.target_transform(target)
 
-        return img, target
+        return img, target, isPoisoned
 
 
 class PoisonedCIFAR10(CIFAR10):
