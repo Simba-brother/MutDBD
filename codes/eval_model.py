@@ -45,7 +45,9 @@ class EvalModel(object):
         total_num = len(self.testset)
         correct_num = 0 # 攻击成功数量
         with torch.no_grad():
-            for X, Y in testset_loader:
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 preds = self.model(X)
@@ -73,7 +75,9 @@ class EvalModel(object):
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         trueOrFalse_list = []
         with torch.no_grad():
-            for X, Y in testset_loader:
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 preds = self.model(X)
@@ -104,7 +108,9 @@ class EvalModel(object):
         # total_count_dict = defaultdict(int)
         # acc_dict = defaultdict(int)
         with torch.no_grad():
-            for X, Y in testset_loader:
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 outputs = self.model(X)
@@ -145,7 +151,9 @@ class EvalModel(object):
         pred_labels = []
         true_labels = []
         with torch.no_grad():
-            for X, Y in testset_loader:
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 preds = self.model(X)
@@ -172,7 +180,9 @@ class EvalModel(object):
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         outputs = []
         with torch.no_grad():
-            for X, Y in testset_loader:
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 preds = self.model(X)
@@ -198,7 +208,9 @@ class EvalModel(object):
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         outputs = []
         with torch.no_grad():
-            for X, Y in testset_loader:
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 preds = self.model(X)
@@ -225,7 +237,9 @@ class EvalModel(object):
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         confidence_list = []
         with torch.no_grad():
-            for X, Y in testset_loader:
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 preds = self.model(X)

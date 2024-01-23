@@ -27,6 +27,7 @@ def _seed_worker(worker_id):
     worker_seed =666
     np.random.seed(worker_seed)
     random.seed(worker_seed)
+
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "CIFAR10"
 model_name = "VGG19"
@@ -38,9 +39,9 @@ torch.manual_seed(global_seed) # cpu随机数种子
 victim_model = VGG("VGG19")
 adv_model =  VGG("VGG19")
 # 这个是先通过benign训练得到的clean model weight
-# clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "clean", "best_model.pth")
-# adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
-# adv_model.load_state_dict(adv_model_weight)
+clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign_attack", "best_model.pth")
+adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
+adv_model.load_state_dict(adv_model_weight)
 # 对抗样本保存目录
 # 获得数据集
 transform_train = Compose([
@@ -101,7 +102,7 @@ weight[-3:,-3:] = 1.0
 schedule = {
     'device': 'cuda:0',
 
-    'benign_training': True, # 先训练处来一benign model
+    'benign_training': False, # 先训练处来一benign model
     'batch_size': 128,
     'num_workers': 4,
 
@@ -126,7 +127,7 @@ eps = 8
 alpha = 1.5
 steps = 100
 max_pixel = 255
-poisoned_rate = 0
+poisoned_rate = 0.1
 
 label_consistent = core.LabelConsistent(
     train_dataset=trainset,
@@ -134,7 +135,7 @@ label_consistent = core.LabelConsistent(
     model=victim_model,
     adv_model=adv_model,
     # The directory to save adversarial dataset
-    adv_dataset_dir= None, # os.path.join(exp_root_dir,"attack", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
+    adv_dataset_dir= os.path.join(exp_root_dir,"attack", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
     loss=nn.CrossEntropyLoss(),
     y_target=1,
     poisoned_rate=poisoned_rate,
@@ -258,9 +259,9 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_benign_vgg19")
-    benign_attack()
-    # attack()
+    setproctitle.setproctitle(attack_name+"_vgg19")
+    # benign_attack()
+    attack()
     # process_eval()
     # get_dict_state()
     # update_dict_state()

@@ -40,7 +40,7 @@ def inverse_mutate():
     mutation_operator_name = "neuron_activation_inverse"
     for mutation_rate in tqdm(mutation_rate_list):
         for m_i in range(mutation_num):
-            mm = ModelMutat_2(original_model =backdoor_model, mutation_rate=mutation_rate)
+            mm = ModelMutat_2(original_model=backdoor_model, mutation_rate=mutation_rate)
             mutated_model = mm._neuron_activation_inverse()
             save_dir = os.path.join(exp_root_dir, "mutations", dataset_name, model_name, attack_name, mutation_operator_name, str(mutation_rate))
             create_dir(save_dir)
