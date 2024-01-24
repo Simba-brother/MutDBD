@@ -117,9 +117,47 @@ iad = IAD(
 def attack():
     iad.train()
 
+def eval(model,testset):
+    '''
+    评估接口
+    '''
+    model.eval()
+    device = torch.device("cuda:0")
+    model.to(device)
+    batch_size = 128
+    # 加载trigger set
+    testset_loader = DataLoader(
+        testset,
+        batch_size = batch_size,
+        shuffle=False,
+        # num_workers=self.current_schedule['num_workers'],
+        drop_last=False,
+        pin_memory=False,
+        worker_init_fn=_seed_worker
+    )
+    # 测试集总数
+    total_num = len(testset_loader.dataset)
+    # 评估开始时间
+    start = time.time()
+    acc = torch.tensor(0., device=device)
+    correct_num = 0 # 攻击成功数量
+    with torch.no_grad():
+        for batch_id, batch in enumerate(testset_loader):
+            X = batch[0]
+            Y = batch[1]
+            X = X.to(device)
+            Y = Y.to(device)
+            pridict_digits = model(X)
+            correct_num += (torch.argmax(pridict_digits, dim=1) == Y).sum()
+        acc = correct_num / total_num
+        acc = round(acc.item(),3)
+    end = time.time()
+    print("acc:",acc)
+    print(f'Total eval() time: {end-start:.1f} seconds')
+    return acc
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:14:26", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset = dict_state["poisoned_trainset"]
@@ -145,7 +183,7 @@ def process_eval():
 
 def update_dict_state():
     
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:14:26", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     # 加载
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     backdoor_weight = dict_state["model"]
@@ -189,15 +227,15 @@ def update_dict_state():
 
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:14:26", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_minist")
-    attack()
+    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
+    # attack()
     # get_dict_state()
-    # process_eval()
+    process_eval()
     # update_dict_state()
     pass

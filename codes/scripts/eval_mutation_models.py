@@ -29,7 +29,7 @@ backdoor_model = dict_state["backdoor_model"]
 mutation_num = 50
 target_class_idx = 1
 
-device = torch.device("cuda:0")
+device = torch.device("cuda:1")
 
 
 def eval_mutated_model(mutation_operator_name):
@@ -181,16 +181,16 @@ if __name__ == "__main__":
     #     print("mutation_operator:{mutation_operator}")
     #     eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
 
-    # setproctitle.setproctitle(attack_name+"_eval_mutated_models")
-    # for mutation_operator in mutation_operator_name_list[1:]:
-    #     # mutation_operator = "gf"
-    #     print(f"mutation_operator:{mutation_operator}")
-    #     eval_mutated_model(mutation_operator_name=mutation_operator)
-
-
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval_target_class")
-    print(attack_name+"_"+model_name+"_eval_target_class")
+    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval_mutated_models")
     for mutation_operator in mutation_operator_name_list[1:]:
-        print("mutation_operator:{mutation_operator}")
-        eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
+        # mutation_operator = "gf"
+        print(f"mutation_operator:{mutation_operator}")
+        eval_mutated_model(mutation_operator_name=mutation_operator)
+
+
+    # setproctitle.setproctitle(attack_name+"_"+model_name+"_eval_target_class")
+    # print(attack_name+"_"+model_name+"_eval_target_class")
+    # for mutation_operator in mutation_operator_name_list[1:]:
+    #     print("mutation_operator:{mutation_operator}")
+    #     eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
     pass

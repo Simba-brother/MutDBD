@@ -8,9 +8,7 @@ from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainData
 
 from codes.utils import create_dir
 from codes import config
-
-
-
+import setproctitle
 
 mutation_rate_list = config.mutation_rate_list
 exp_root_dir = config.exp_root_dir
@@ -91,7 +89,7 @@ def weight_shuffle_mutate():
     print("weight_shuffle_mutate() success")
 
 def combination_mutate():
-    # gf_mutate()
+    gf_mutate()
     inverse_mutate()
     block_mutate()
     switch_mutate()
@@ -103,7 +101,7 @@ def combination_mutate():
 '''
 # 获得Target class中的clean set 和poisoned set
 
-
 if __name__ == "__main__":
+    setproctitle.setproctitle(attack_name+"_"+model_name+"_mutation")
     combination_mutate()
     pass
