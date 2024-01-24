@@ -8,7 +8,7 @@ exp_root_dir = "/data/mml/backdoor_detect/experiments/"
 
 dataset_name = "CIFAR10"
 model_name = "ResNet18"
-attack_name = "WaNet"
+attack_name = "BadNets"
 
 
 

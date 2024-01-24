@@ -54,13 +54,13 @@ def gen_grid(height, k):
 model = VGG("VGG19")
 # transform
 # 获得transform
-transform_train = Compose([ # the data augmentation method is hard-coded in core.SleeperAgent, user-defined data augmentation is not allowed
-    ToPILImage(),
-    ToTensor()
+# 获得训练集transform
+transform_train = Compose([
+    ToTensor(),
+    RandomHorizontalFlip()
 ])
-
+# 获得测试集transform
 transform_test = Compose([
-    ToPILImage(),
     ToTensor()
 ])
 # 获得数据集

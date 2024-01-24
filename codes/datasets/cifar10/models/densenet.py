@@ -63,7 +63,8 @@ class DenseNet(nn.Module):
         num_planes += nblocks[3]*growth_rate
 
         self.bn = nn.BatchNorm2d(num_planes)
-        self.linear = nn.Linear(num_planes, num_classes)
+        self.linear = nn.Linear(num_planes, num_planes)
+        self.classifier = nn.Linear(num_planes, num_classes)
 
     def _make_dense_layers(self, block, in_planes, nblock):
         layers = []
@@ -81,6 +82,7 @@ class DenseNet(nn.Module):
         out = F.avg_pool2d(F.relu(self.bn(out)), 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
+        out = self.classifier(out)
         return out
 
 def DenseNet121():
@@ -100,6 +102,7 @@ def densenet_cifar():
 
 def test():
     net = densenet_cifar()
+    print(net)
     x = torch.randn(1,3,32,32)
     y = net(x)
     print(y)

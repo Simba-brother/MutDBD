@@ -182,14 +182,15 @@ if __name__ == "__main__":
     #     eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
 
     # setproctitle.setproctitle(attack_name+"_eval_mutated_models")
-    # for mutation_operator in mutation_operator_name_list:
-    #     print("mutation_operator:{mutation_operator}")
+    # for mutation_operator in mutation_operator_name_list[1:]:
+    #     # mutation_operator = "gf"
+    #     print(f"mutation_operator:{mutation_operator}")
     #     eval_mutated_model(mutation_operator_name=mutation_operator)
 
 
-    # setproctitle.setproctitle(attack_name+"draw_eval_mutated_model_in_target_class")
-    # print(attack_name+"_draw_eval_mutated_model_in_target_class")
-    # for mutation_operator in mutation_operator_name_list:
-    #     print("mutation_operator:{mutation_operator}")
-    #     draw_eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
+    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval_target_class")
+    print(attack_name+"_"+model_name+"_eval_target_class")
+    for mutation_operator in mutation_operator_name_list[1:]:
+        print("mutation_operator:{mutation_operator}")
+        eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
     pass

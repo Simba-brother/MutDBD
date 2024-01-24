@@ -17,8 +17,10 @@ exp_root_dir = config.exp_root_dir
 dataset_name = config.dataset_name
 model_name = config.model_name
 attack_name = config.attack_name
-from codes.datasets.cifar10.attacks.WaNet.ResNet18.attack import get_dict_state
-dict_state = get_dict_state()
+
+dict_state_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name,attack_name,"attack","dict_state.pth")
+dict_state = torch.load(dict_state_path, map_location="cpu")
+
 backdoor_model = dict_state["backdoor_model"]
 
 mutation_num = 50
@@ -89,7 +91,7 @@ def weight_shuffle_mutate():
     print("weight_shuffle_mutate() success")
 
 def combination_mutate():
-    gf_mutate()
+    # gf_mutate()
     inverse_mutate()
     block_mutate()
     switch_mutate()
@@ -103,5 +105,5 @@ def combination_mutate():
 
 
 if __name__ == "__main__":
-    # combination_mutate()
+    combination_mutate()
     pass

@@ -87,7 +87,7 @@ class ModelMutat(object):
         with torch.no_grad():
             for layer in layers[1:]:
                 if isinstance(layer, nn.Conv2d):
-                    weight = layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
+                    weight = layer.weight # weight shape:out_channels, in_channels, kernel_size_0,kernel_size_1
                     neuron_num = layer.out_channels
                     selected_neuron_num = math.ceil(neuron_num*self.mutation_ratio)
                     neuron_ids = list(range(neuron_num))
@@ -209,9 +209,13 @@ class ModelMutat_2(object):
         model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         linear_layers = []
+        conv2d_layers = []
+        
         for layer in layers:
             if isinstance(layer, nn.Linear):
                 linear_layers.append(layer)
+            if isinstance(layer, nn.Conv2d):
+                conv2d_layers.append(layer)
         mutated_layer = linear_layers[-2]
         with torch.no_grad():
             layer = mutated_layer
@@ -235,6 +239,7 @@ class ModelMutat_2(object):
                 start_idx = end_idx
                 row += cur_disturb_array
                 weight[selected_out_neuron_id,:] = row
+        
         return model_copy
     
     def _neuron_activation_inverse(self):
@@ -242,13 +247,27 @@ class ModelMutat_2(object):
         model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         linear_layers = []
+        conv2d_layers = []
         for layer in layers:
             if isinstance(layer, nn.Linear):
                 linear_layers.append(layer)
-        mutated_layer = linear_layers[-2]
+            if isinstance(layer, nn.Conv2d):
+                conv2d_layers.append(layer)
+        # 卷积层变异
+        with torch.no_grad():
+            for conv2d_layer in conv2d_layers:
+                weight = conv2d_layer.weight # weight shape:out_channels, in_channels, kernel_size_0,kernel_size_1
+                neuron_num = conv2d_layer.out_channels
+                selected_neuron_num = math.ceil(neuron_num*self.mutation_rate)
+                neuron_ids = list(range(neuron_num))
+                selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
+                for neuron_id in selected_neuron_ids:
+                    weight[neuron_id,:,:,:] *= -1
+        # 变异最后一层隐藏层
+        last_hidden_layer = linear_layers[-2]
         # 遍历各层
         with torch.no_grad():
-            layer = mutated_layer
+            layer = last_hidden_layer
             weight = layer.weight # weight shape:output, input
             out_features, in_features = weight.shape
             out_neuron_num = out_features
@@ -265,13 +284,27 @@ class ModelMutat_2(object):
         model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         linear_layers = []
+        conv2d_layers = []
         for layer in layers:
             if isinstance(layer, nn.Linear):
                 linear_layers.append(layer)
-        mutated_layer = linear_layers[-2]
-        # 遍历各层
+            if isinstance(layer, nn.Conv2d):
+                conv2d_layers.append(layer)
+        # 卷积层变异
         with torch.no_grad():
-            layer = mutated_layer
+            for conv2d_layer in conv2d_layers:
+                weight = conv2d_layer.weight # weight shape:out_channels, in_channels, kernel_size_0,kernel_size_1
+                neuron_num = conv2d_layer.out_channels
+                selected_neuron_num = math.ceil(neuron_num*self.mutation_rate)
+                neuron_ids = list(range(neuron_num))
+                selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
+                for neuron_id in selected_neuron_ids:
+                    weight[neuron_id,:,:,:] *= 0
+        
+        last_hidden_layer = linear_layers[-2]
+        # 变异最后一层隐藏层
+        with torch.no_grad():
+            layer = last_hidden_layer
             weight = layer.weight # weight shape:output, input
             out_features, in_features = weight.shape
             out_neuron_num = out_features
@@ -290,12 +323,30 @@ class ModelMutat_2(object):
         # 获得所有层
         layers = [module for module in model_copy.modules()]
         linear_layers = []
+        conv2d_layers = []
         for layer in layers:
             if isinstance(layer, nn.Linear):
                 linear_layers.append(layer)
-        mutated_layer = linear_layers[-2]
+            if isinstance(layer, nn.Conv2d):
+                conv2d_layers.append(layer)
+        # 卷积层变异
         with torch.no_grad():
-            layer = mutated_layer
+            for conv2d_layer in conv2d_layers:
+                weight = conv2d_layer.weight # shape:(out_channels, in_channels, kernel_size_0, kernel_size_1)
+                neuron_num = conv2d_layer.out_channels
+                # Conv2d输入通道个数作为上层的神经元个数
+                # 算出上层多少个神经元需要被变异
+                selected_neuron_num = math.ceil(neuron_num*self.mutation_rate)
+                # 获得上层神经元的索引list
+                neuron_ids = list(range(neuron_num))
+                # 从上层神经元中随机采样变异数量了的神经元id list
+                selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
+                # 对该层权重进行变异
+                switch_conv2d_weights(weight, selected_neuron_ids)
+        # 变异最后一层隐藏层
+        last_hidden_layer = linear_layers[-2]
+        with torch.no_grad():
+            layer = last_hidden_layer
             weight = layer.weight # weight shape:output, input
             out_features, in_features = weight.shape
             # bias = layer.bias
@@ -316,13 +367,26 @@ class ModelMutat_2(object):
         model_copy.to(torch.device("cpu"))
         layers = [module for module in model_copy.modules()]
         linear_layers = []
+        conv2d_layers = []
         for layer in layers:
             if isinstance(layer, nn.Linear):
                 linear_layers.append(layer)
-        mutated_layer = linear_layers[-2]
-        # 遍历各层
+            if isinstance(layer, nn.Conv2d):
+                conv2d_layers.append(layer)
+        # 卷积层变异
         with torch.no_grad():
-            layer = mutated_layer
+            for conv2d_layer in conv2d_layers:
+                weight = conv2d_layer.weight # weight shape:our_channels, in_channels, kernel_size_0,kernel_size_1
+                neuron_num = conv2d_layer.out_channels
+                selected_neuron_num = math.ceil(neuron_num*self.mutation_rate)
+                selected_neuron_ids = list(range(selected_neuron_num))
+                selected_cur_layer_neuron_ids = random.sample(selected_neuron_ids,selected_neuron_num)
+                for neuron_id in selected_cur_layer_neuron_ids:
+                    shuffle_conv2d_weights(weight, neuron_id)
+        # 变异最后一层隐藏层
+        last_hidden_layer = linear_layers[-2]
+        with torch.no_grad():
+            layer = last_hidden_layer
             weight = layer.weight # weight shape:output, input
             out_features, in_features = weight.shape
             out_neuron_num = out_features

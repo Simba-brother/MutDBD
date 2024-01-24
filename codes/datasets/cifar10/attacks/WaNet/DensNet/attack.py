@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader,Dataset
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
 from codes.core import WaNet
-from codes.core.models.resnet import ResNet
+from codes.datasets.cifar10.models.densenet import densenet_cifar
 from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
@@ -51,8 +51,9 @@ def gen_grid(height, k):
     return identity_grid, noise_grid
 
 # model
-model = ResNet(18) # input shape:(1,32,32,3)
-
+model = densenet_cifar() 
+# transform
+# 获得transform
 # 获得训练集transform
 transform_train = Compose([
     ToTensor(),
@@ -160,7 +161,7 @@ wanet = WaNet(
 
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "CIFAR10"
-model_name = "ResNet18"
+model_name = "DensNet"
 attack_name = "WaNet"
 schedule = {
     'device': 'cuda:1',  # | cpu
@@ -303,9 +304,10 @@ def update_dict_state():
     dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"])
     torch.save(dict_state, dict_state_file_path)
     print("update_dict_state(), success")
+
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name)
-    attack()
+    # setproctitle.setproctitle(attack_name+"_"+model_name+"_"+"_attack")
+    # attack()
     # get_dict_state()
     # process_eval()
     # update_dict_state()

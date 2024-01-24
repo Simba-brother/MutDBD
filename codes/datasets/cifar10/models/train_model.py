@@ -108,7 +108,7 @@ def train_cifar10_resnet18():
     model_train.train()
     # 训练好了评估
     model.load_state_dict(torch.load(os.path.join(save_dir,"best_model.pth"), map_location="cpu"))
-    model_train = ModelTrain(model, transform_train, transform_test, trainset, testset, batch_size, epochs, device, loss_fn, optimizer, work_dir, scheduler)
+    model_train = ModelTrain(model, transform_train, transform_test, trainset, testset, batch_size, epochs, device, loss_fn, optimizer, save_dir, scheduler)
     testset_acc = model_train.test()
     print("testset_acc:",testset_acc)
 
