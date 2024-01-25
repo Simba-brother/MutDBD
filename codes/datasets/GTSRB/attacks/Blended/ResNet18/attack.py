@@ -12,7 +12,7 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
-from codes.core.attacks import BadNets
+from codes.core.attacks import Blended
 
 from codes.core.models.resnet import ResNet
 from codes.modelMutat import ModelMutat
@@ -55,7 +55,7 @@ trainset = DatasetFolder(
     is_valid_file=None)
 
 testset = DatasetFolder(
-    root='/data/mml/backdoor_detect/dataset/GTSRB/Test',
+    root='/data/mml/backdoor_detect/dataset/GTSRB/testset',
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -66,13 +66,13 @@ testset = DatasetFolder(
 model = ResNet(num = 18, num_classes=43)
 
 # backdoor pattern
-pattern = torch.zeros((32, 32), dtype=torch.uint8)
-pattern[-3:, -3:] = 255
-weight = torch.zeros((32, 32), dtype=torch.float32)
-weight[-3:, -3:] = 1.0
+pattern = torch.zeros((1, 32, 32), dtype=torch.uint8)
+pattern[0, -3:, -3:] = 255
+weight = torch.zeros((1, 32, 32), dtype=torch.float32)
+weight[0, -3:, -3:] = 0.2
 
 
-badnets = BadNets(
+badnets = Blended(
     train_dataset=trainset,
     test_dataset=testset,
     model=model,
@@ -81,6 +81,8 @@ badnets = BadNets(
     poisoned_rate=0.1,
     pattern=pattern,
     weight=weight,
+    poisoned_transform_train_index=2,
+    poisoned_transform_test_index=2,
     seed=global_seed,
     deterministic=deterministic
 )
@@ -88,23 +90,23 @@ badnets = BadNets(
     
 # Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/CIFAR/train_watermarked.py)
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
-dataset_name = "CIFAR10"
-model_name = "DensNet"
-attack_name = "BadNets"
+dataset_name = "GTSRB"
+model_name = "ResNet18"
+attack_name = "Blended"
 schedule = {
     'device': 'cuda:0',
-    
+
     'benign_training': False,
-    'batch_size': 128,
+    'batch_size': 1024,
     'num_workers': 4,
 
-    'lr': 0.1,
+    'lr': 0.01,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [150, 180], # epoch区间
+    'schedule': [20],
 
-    'epochs': 200,
+    'epochs': 30,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
@@ -238,7 +240,7 @@ def insert_dict_state():
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_attack")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_attack")
     attack()
     # update_dict_state()
     # process_eval()

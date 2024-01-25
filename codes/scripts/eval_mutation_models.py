@@ -176,13 +176,9 @@ def draw_eval_mutated_model_in_target_class(mutation_operator_name):
 
 
 if __name__ == "__main__":
-    # setproctitle.setproctitle(attack_name+"_eval_mutated_models_on_targetClass")
-    # for mutation_operator in mutation_operator_name_list:
-    #     print("mutation_operator:{mutation_operator}")
-    #     eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
 
     setproctitle.setproctitle(attack_name+"_"+model_name+"_eval_mutated_models")
-    for mutation_operator in mutation_operator_name_list[1:]:
+    for mutation_operator in mutation_operator_name_list:
         # mutation_operator = "gf"
         print(f"mutation_operator:{mutation_operator}")
         eval_mutated_model(mutation_operator_name=mutation_operator)

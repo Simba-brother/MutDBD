@@ -18,111 +18,141 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 import torchvision.transforms as transforms
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
-from codes.core import LabelConsistent
+from codes import core
 import setproctitle
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
+from codes.datasets.GTSRB.models.densenet import DenseNet121
 from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 def _seed_worker(worker_id):
     worker_seed =666
     np.random.seed(worker_seed)
     random.seed(worker_seed)
-
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
-dataset_name = "MNIST"
-model_name = "BaselineMNISTNetwork"
+dataset_name = "GTSRB"
+model_name = "DensNet"
 attack_name = "LabelConsistent"
 global_seed = 666
 deterministic = True
 
 torch.manual_seed(global_seed) # cpu随机数种子
-victim_model = BaselineMNISTNetwork()
-adv_model = BaselineMNISTNetwork()
+victim_model = DenseNet121(43)
+adv_model = DenseNet121(43)
 # 这个是先通过benign训练得到的clean model weight
-clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign_attack", "best_model.pth")
-adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
-adv_model.load_state_dict(adv_model_weight)
+# clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "clean", "best_model.pth")
+# adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
+# adv_model.load_state_dict(adv_model_weight)
 # 对抗样本保存目录
 # 获得数据集
-
-dataset = torchvision.datasets.MNIST
-datasets_root_dir = '/data/mml/backdoor_detect/dataset'
 transform_train = Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((32, 32)),
+    RandomHorizontalFlip(),
     ToTensor()
 ])
-trainset = dataset(datasets_root_dir, train=True, transform=transform_train, download=False)
-
 transform_test = Compose([
+    transforms.ToPILImage(),
+    transforms.Resize((32, 32)),
     ToTensor()
 ])
-testset = dataset(datasets_root_dir, train=False, transform=transform_test, download=False)
+trainset = DatasetFolder(
+    root='/data/mml/backdoor_detect/dataset/GTSRB/Train',
+    loader=cv2.imread, # ndarray
+    extensions=('png',),
+    transform=transform_train,
+    target_transform=None,
+    is_valid_file=None)
+testset = DatasetFolder(
+    root='/data/mml/backdoor_detect/dataset/GTSRB/testset',
+    loader=cv2.imread,
+    extensions=('png',),
+    transform=transform_test,
+    target_transform=None,
+    is_valid_file=None)
 
-# 图片四角白点
-pattern = torch.zeros((28, 28), dtype=torch.uint8)
-k = 6
-pattern[:k,:k] = 255
-pattern[:k,-k:] = 255
-pattern[-k:,:k] = 255
-pattern[-k:,-k:] = 255
 
-weight = torch.zeros((28, 28), dtype=torch.float32)
-weight[:k,:k] = 1.0
-weight[:k,-k:] = 1.0
-weight[-k:,:k] = 1.0
-weight[-k:,-k:] = 1.0
+pattern = torch.zeros((32, 32), dtype=torch.uint8)
+pattern[-1, -1] = 255
+pattern[-1, -3] = 255
+pattern[-3, -1] = 255
+pattern[-2, -2] = 255
+
+pattern[0, -1] = 255
+pattern[1, -2] = 255
+pattern[2, -3] = 255
+pattern[2, -1] = 255
+
+pattern[0, 0] = 255
+pattern[1, 1] = 255
+pattern[2, 2] = 255
+pattern[2, 0] = 255
+
+pattern[-1, 0] = 255
+pattern[-1, 2] = 255
+pattern[-2, 1] = 255
+pattern[-3, 0] = 255
+
+weight = torch.zeros((32, 32), dtype=torch.float32)
+weight[:3,:3] = 1.0
+weight[:3,-3:] = 1.0
+weight[-3:,:3] = 1.0
+weight[-3:,-3:] = 1.0
+
+
 
 schedule = {
-    'device': 'cuda:0',
+    'device': 'cuda:1',
 
-    'benign_training': False, # Train Attacked Model
-    'batch_size': 1024,
+    'benign_training': True, # Train Attacked Model
+    'batch_size': 256,
     'num_workers': 8,
 
-    'lr': 0.1,
+    'lr': 0.01,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [150, 180],
+    'schedule': [20],
 
-    'epochs': 200,
+    'epochs': 50,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
+    'experiment_name': 'benign_attack'
 }
 
 
-eps = 64
+
+eps = 16
 alpha = 1.5
 steps = 100
 max_pixel = 255
-poisoned_rate = 0.1
-
-label_consistent = LabelConsistent(
+poisoned_rate = 0
+label_consistent = core.LabelConsistent(
     train_dataset=trainset,
     test_dataset=testset,
-    model=BaselineMNISTNetwork(),
+    model=core.models.ResNet(18, 43),
     adv_model=adv_model,
-    adv_dataset_dir= os.path.join(exp_root_dir,"attack", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
+    adv_dataset_dir=None,# os.path.join(exp_root_dir,"attack", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
     loss=nn.CrossEntropyLoss(),
     y_target=1,
     poisoned_rate=poisoned_rate,
+    adv_transform=Compose([transforms.ToPILImage(), transforms.Resize((32, 32)), ToTensor()]),
     pattern=pattern,
     weight=weight,
     eps=eps,
     alpha=alpha,
     steps=steps,
     max_pixel=max_pixel,
-    poisoned_transform_train_index=0,
-    poisoned_transform_test_index=0,
+    poisoned_transform_train_index=2,
+    poisoned_transform_test_index=2,
     poisoned_target_transform_index=0,
     schedule=schedule,
     seed=global_seed,
     deterministic=True
 )
+
 
 def benign_attack():
     label_consistent.train()
@@ -192,7 +222,7 @@ def eval(model,testset):
     return acc
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
@@ -217,12 +247,12 @@ def process_eval():
     
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     poisoned_trainset=  ExtractDataset(dict_state["poisoned_trainset"])
     dict_state["poisoned_trainset"] = poisoned_trainset
@@ -230,8 +260,8 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_attack")
-    # benign_attack()
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_benign_attack")
+    benign_attack()
     # attack()
     # process_eval()
     # get_dict_state()

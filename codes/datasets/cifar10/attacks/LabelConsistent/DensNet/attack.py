@@ -260,8 +260,8 @@ def update_dict_state():
 if __name__ == "__main__":
     setproctitle.setproctitle(attack_name+"_"+model_name+"_attack")
     # benign_attack()
-    attack()
-    # process_eval()
+    # attack()
+    process_eval()
     # get_dict_state()
     # update_dict_state()
     pass
