@@ -95,7 +95,7 @@ dataset_name = "CIFAR10"
 model_name = "VGG19"
 attack_name = "BadNets"
 schedule = {
-    'device': 'cuda:1',
+    'device': 'cuda:0',
     
     'benign_training': False,
     'batch_size': 128,
@@ -236,7 +236,7 @@ def insert_dict_state():
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
     # attack()
     # update_dict_state()
     process_eval()

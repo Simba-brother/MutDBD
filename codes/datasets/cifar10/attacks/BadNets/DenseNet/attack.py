@@ -239,7 +239,7 @@ def insert_dict_state():
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
     # attack()
     # update_dict_state()
     process_eval()

@@ -134,7 +134,7 @@ wanet = WaNet(
     test_dataset=testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=0,
+    y_target=1,
     poisoned_rate=0.1,
     identity_grid=identity_grid,
     noise_grid=noise_grid,
@@ -254,7 +254,7 @@ def attack():
 
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_22:20:43", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     
     backdoor_model = dict_state["backdoor_model"]
@@ -278,17 +278,18 @@ def process_eval():
 
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_22:20:43", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_22:20:43", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"])
     dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"])
     torch.save(dict_state, dict_state_file_path)
     print("update_dict_state(), success")
+
 if __name__ == "__main__":
     setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_attack")
     attack()

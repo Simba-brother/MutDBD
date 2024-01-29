@@ -102,6 +102,6 @@ def combination_mutate():
 # 获得Target class中的clean set 和poisoned set
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_mutation")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_mutation")
     combination_mutate()
     pass

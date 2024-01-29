@@ -15,7 +15,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 
 from codes.core.attacks import IAD
 
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
+from codes.datasets.MNIST.models.model_1 import CNN_Model_1
 from codes.modelMutat import ModelMutat
 from codes.eval_model import EvalModel
 from codes.utils import create_dir
@@ -36,7 +36,7 @@ def _seed_worker(worker_id):
 # 数据集下载和加载路径
 datasets_root_dir = '/data/mml/backdoor_detect/dataset'
 dataset = torchvision.datasets.MNIST
-victim_model = BaselineMNISTNetwork()
+victim_model = CNN_Model_1(class_num=10)
 # 训练集变换
 transform_train = Compose([
     ToTensor()
@@ -51,12 +51,11 @@ transform_test = Compose([
 # 下载并加载测试集
 testset = dataset(datasets_root_dir, train=False, transform=transform_test, download=False)
 testset_1 = dataset(datasets_root_dir, train=False, transform=transform_test, download=False)
-# victim model
-victim_model = BaselineMNISTNetwork()
+
 
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "MNIST"
-model_name = "BaselineMNISTNetwork"
+model_name = "CNN_Model_1"
 attack_name = "IAD"
 
 schedule = {
@@ -99,7 +98,7 @@ iad = IAD(
     test_dataset=testset,
     train_dataset1=trainset_1,
     test_dataset1=testset_1,
-    model=BaselineMNISTNetwork(),
+    model=victim_model,
     loss=nn.CrossEntropyLoss(),
     y_target=1,
     poisoned_rate=0.1,      # it may not reach the best if we follow the default configure in the original paper
@@ -233,9 +232,9 @@ def get_dict_state():
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
-    # attack()
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_attack")
+    attack()
     # get_dict_state()
-    process_eval()
+    # process_eval()
     # update_dict_state()
     pass

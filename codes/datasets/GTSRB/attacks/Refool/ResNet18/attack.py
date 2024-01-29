@@ -169,7 +169,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -205,7 +205,7 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:19:11", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
@@ -233,7 +233,7 @@ def process_eval():
     
     
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:19:11", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
@@ -241,9 +241,9 @@ def update_dict_state():
     pass
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_attack")
-    attack()
-    # process_eval()
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
+    # attack()
+    process_eval()
     # get_dict_state()
     # update_dict_state()
 

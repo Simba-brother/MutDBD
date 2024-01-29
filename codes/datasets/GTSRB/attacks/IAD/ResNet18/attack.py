@@ -147,7 +147,7 @@ def eval(model,testset):
     model:(ResNet(18)) input shape:(1,32,32,3)
     '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -186,7 +186,7 @@ def attack():
     # dict_state = torch.load(os.path.join(work_dir, "dict_state.pth"))
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:14:26", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset = dict_state["poisoned_trainset"]
@@ -208,11 +208,9 @@ def process_eval():
     print("pure_poisoned_trainset_acc",pure_poisoned_trainset_acc)
     print("pure_clean_trainset_acc",pure_clean_trainset_acc)
     
-
-
 def update_dict_state():
     
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:14:26", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     # 加载
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     backdoor_weight = dict_state["model"]
@@ -256,14 +254,14 @@ def update_dict_state():
 
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-01-19_20:14:26", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_"+"_attack")
-    attack()
-    # process_eval()
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
+    # attack()
     # update_dict_state()
+    process_eval()
     pass
 

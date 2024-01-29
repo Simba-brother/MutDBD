@@ -262,10 +262,10 @@ def test35():
     d = (np.random.uniform(0,1,5) < 0.3)
     print(d)
 def test36():
-    a,_ = 1
-    # new_data_list = np.random.permutation(data_list)
-    # print(new_data_list)
-    # print(data_list)
+    a = [3,2,1]
+    b = sorted(a)
+    print(a)
+    print(b)
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))

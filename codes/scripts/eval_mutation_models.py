@@ -91,7 +91,7 @@ def eval_mutated_model_in_target_class(mutation_operator_name):
     # 把目标类数据集分为clean和poisoned
     target_class_poisoned_set = ExtractTargetClassDataset(dict_state["purePoisonedTrainDataset"], target_class_idx)
     target_class_clean_set = ExtractTargetClassDataset(dict_state["pureCleanTrainDataset"], target_class_idx)
-    whole_target_set = ExtractTargetClassDataset(dict_state["poisoned_trainset"], target_class_idx)
+    # whole_target_set = ExtractTargetClassDataset(dict_state["poisoned_trainset"], target_class_idx)
     
     # {mutation_ratio:[{"target_class_clean_acc":acc_clean, "target_class_poisoned_acc":acc_poisoned, "target_class_acc":acc_whole}]}
     res_dict = dict()
@@ -107,9 +107,9 @@ def eval_mutated_model_in_target_class(mutation_operator_name):
             acc_clean = e._eval_acc()
             e = EvalModel(backdoor_model, target_class_poisoned_set, device)
             acc_poisoned = e._eval_acc()
-            e = EvalModel(backdoor_model, whole_target_set, device)
-            acc_whole = e._eval_acc()
-            temp_list.append({"target_class_clean_acc":acc_clean, "target_class_poisoned_acc":acc_poisoned, "target_class_acc":acc_whole})
+            # e = EvalModel(backdoor_model, whole_target_set, device)
+            # acc_whole = e._eval_acc()
+            temp_list.append({"target_class_clean_acc":acc_clean, "target_class_poisoned_acc":acc_poisoned})
         res_dict[mutation_rate] = temp_list
     joblib.dump(res_dict, save_path)
     # 整理数据
@@ -177,16 +177,15 @@ def draw_eval_mutated_model_in_target_class(mutation_operator_name):
 
 if __name__ == "__main__":
 
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval_mutated_models")
+    # setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_mutated_models")
+    # for mutation_operator in mutation_operator_name_list:
+    #     # mutation_operator = "gf"
+    #     print(f"mutation_operator:{mutation_operator}")
+    #     eval_mutated_model(mutation_operator_name=mutation_operator)
+
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_target_class")
+    print(dataset_name+"_"+attack_name+"_"+model_name+"_eval_target_class")
     for mutation_operator in mutation_operator_name_list:
-        # mutation_operator = "gf"
         print(f"mutation_operator:{mutation_operator}")
-        eval_mutated_model(mutation_operator_name=mutation_operator)
-
-
-    # setproctitle.setproctitle(attack_name+"_"+model_name+"_eval_target_class")
-    # print(attack_name+"_"+model_name+"_eval_target_class")
-    # for mutation_operator in mutation_operator_name_list[1:]:
-    #     print("mutation_operator:{mutation_operator}")
-    #     eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
+        eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
     pass

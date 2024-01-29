@@ -244,7 +244,7 @@ def update_dict_state():
     pass
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
     # attack()
     process_eval()
     # get_dict_state()

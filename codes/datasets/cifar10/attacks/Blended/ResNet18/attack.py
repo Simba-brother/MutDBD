@@ -120,7 +120,7 @@ model_name = "ResNet18"
 attack_name = "Blended"
 # Train Benign Model
 schedule = {
-    'device': 'cuda:1',
+    'device': 'cuda:0',
     # 'CUDA_VISIBLE_DEVICES': '1',
     'GPU_num': 1,
 
@@ -213,7 +213,7 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack_2024-01-19_20:01:54", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
@@ -237,25 +237,23 @@ def process_eval():
 
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack_2024-01-19_20:01:54", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack_2024-01-19_20:01:54", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    poisoned_testset = ExtractDataset(dict_state["poisoned_testset"]) 
-    dict_state["poisoned_testset"] = poisoned_testset
-    poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"]) 
-    dict_state["poisoned_trainset"] = poisoned_trainset
+    dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"])
+    dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"]) 
     torch.save(dict_state, dict_state_file_path)
     print("update_dict_state() success")
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_eval")
+    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_eval")
     # attack()
-    # process_eval()
+    process_eval()
     # update_dict_state()
     # get_dict_state()
     pass

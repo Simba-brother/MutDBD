@@ -38,7 +38,7 @@ torch.manual_seed(global_seed) # cpu随机数种子
 victim_model = ResNet(18,num_classes=10)
 adv_model = ResNet(18,num_classes=10)
 # 这个是先通过benign训练得到的clean model weight
-clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "clean", "best_model.pth")
+clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign_attack", "best_model.pth")
 adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
 adv_model.load_state_dict(adv_model_weight)
 # 对抗样本保存目录
@@ -220,7 +220,7 @@ def eval(model,testset):
     return acc
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
@@ -245,12 +245,12 @@ def process_eval():
     
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     poisoned_trainset=  ExtractDataset(dict_state["poisoned_trainset"])
     dict_state["poisoned_trainset"] = poisoned_trainset
@@ -258,7 +258,7 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name)
+    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_eval")
     # benign_attack()
     # attack()
     process_eval()

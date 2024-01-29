@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
 import setproctitle
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
+from codes.datasets.MNIST.models.model_1 import CNN_Model_1
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 from tqdm import tqdm
@@ -29,7 +29,7 @@ def _seed_worker():
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 # target model
-model = BaselineMNISTNetwork()
+model = CNN_Model_1(class_num=10)
 # 存储反射照片
 reflection_images = []
 # URL：http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html#devkit
@@ -86,7 +86,7 @@ refool= core.Refool(
 )
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "MNIST"
-model_name = "BaselineMNISTNetwork"
+model_name = "CNN_Model_1"
 attack_name = "Refool"
 
 
@@ -155,7 +155,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -224,13 +224,19 @@ def get_dict_state():
     return dict_state
 
 def update_dict_state():
-    pass
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path, map_location="cpu")
+    dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"]) 
+    dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"]) 
+    torch.save(dict_state, dict_state_file_path)
+    print("update_dict_state() success")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
     # attack()
+    # update_dict_state()
     process_eval()
     # get_dict_state()
-    # update_dict_state()
+    # 
 
     pass

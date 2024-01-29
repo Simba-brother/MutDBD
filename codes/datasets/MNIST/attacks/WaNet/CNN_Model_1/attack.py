@@ -18,9 +18,9 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 from torchvision import transforms
 from torch.utils.data import DataLoader,Dataset
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
-
+from codes.datasets.MNIST.models.model_1 import CNN_Model_1
 from codes.core import WaNet
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
+
 from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
@@ -52,7 +52,7 @@ def gen_grid(height, k):
     return identity_grid, noise_grid
 
 # model
-victim_model = BaselineMNISTNetwork()
+victim_model = CNN_Model_1(class_num=10)
 dataset = torchvision.datasets.MNIST
 
 datasets_root_dir = '/data/mml/backdoor_detect/dataset'
@@ -75,7 +75,6 @@ identity_grid,noise_grid=gen_grid(28,4)
 wanet = WaNet(
     train_dataset=trainset,
     test_dataset=testset,
-    # model=core.models.ResNet(18),
     model=victim_model,
     loss=nn.CrossEntropyLoss(),
     y_target=1,
@@ -90,7 +89,7 @@ wanet = WaNet(
 
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "MNIST"
-model_name = "BaselineMNISTNetwork"
+model_name = "CNN_Model_1"
 attack_name = "WaNet"
 schedule = {
     'device': 'cuda:0',
@@ -116,7 +115,7 @@ schedule = {
 
 def eval(model, testset):
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -233,10 +232,10 @@ def update_dict_state():
     print("update_dict_state(), success")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
     # attack()
-    # get_dict_state()
-    # process_eval()
     # update_dict_state()
+    process_eval()
+    # get_dict_state()
     pass
 

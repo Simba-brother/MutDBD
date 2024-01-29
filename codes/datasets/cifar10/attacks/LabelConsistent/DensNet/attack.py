@@ -258,7 +258,7 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_attack")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_attack")
     # benign_attack()
     # attack()
     process_eval()

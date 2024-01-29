@@ -13,9 +13,9 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
-from codes.core.attacks import Blended
+from codes.core.attacks import BadNets
+from codes.datasets.MNIST.models.model_1 import CNN_Model_1
 
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
 from codes.modelMutat import ModelMutat
 from codes.eval_model import EvalModel
 from codes.utils import create_dir
@@ -36,7 +36,7 @@ def _seed_worker(worker_id):
 # 数据集下载和加载路径
 datasets_root_dir = '/data/mml/backdoor_detect/dataset'
 dataset = torchvision.datasets.MNIST
-victim_model = BaselineMNISTNetwork()
+victim_model = CNN_Model_1(class_num=10)
 # 训练集变换
 transform_train = Compose([
     ToTensor()
@@ -49,39 +49,36 @@ transform_test = Compose([
 ])
 # 下载并加载测试集
 testset = dataset(datasets_root_dir, train=False, transform=transform_test, download=False)
-# victim model
-victim_model = BaselineMNISTNetwork()
 
 # backdoor pattern
-pattern = torch.zeros((1, 28, 28), dtype=torch.uint8)
-pattern[0, -3:, -3:] = 255
-weight = torch.zeros((1, 28, 28), dtype=torch.float32)
-weight[0, -3:, -3:] = 0.2
+pattern = torch.zeros((28, 28), dtype=torch.uint8)
+pattern[-3:, -3:] = 255
+weight = torch.zeros((28, 28), dtype=torch.float32)
+weight[-3:, -3:] = 1.0
 
-blended = Blended(
+badnets = BadNets(
     train_dataset=trainset,
     test_dataset=testset,
-    # model=core.models.ResNet(18),
-    model=BaselineMNISTNetwork(),
+    model=victim_model,
     loss=nn.CrossEntropyLoss(),
-    pattern=pattern,
-    weight=weight,
     y_target=1,
     poisoned_rate=0.1,
+    pattern=pattern,
+    weight=weight,
     seed=global_seed,
     deterministic=deterministic
 )
 
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "MNIST"
-model_name = "BaselineMNISTNetwork"
-attack_name = "Blended"
-
+model_name = "CNN_Model_1"
+attack_name = "BadNets"
+# Train Attacked Model (schedule is set by yamengxi)
 schedule = {
     'device': 'cuda:0',
 
     'benign_training': False,
-    'batch_size': 128,
+    'batch_size': 1024,
     'num_workers': 4,
 
     'lr': 0.1,
@@ -100,40 +97,47 @@ schedule = {
     'experiment_name': 'attack'
 }
 
+
 def attack():
-    print("Blended开始攻击")
-    blended.train(schedule)
-    backdoor_model = blended.best_model
-    work_dir = blended.work_dir
-    poisoned_train_dataset, poisoned_test_dataset = blended.get_poisoned_dataset()
-    poisoned_ids = poisoned_train_dataset.poisoned_set
+    # 攻击
+    badnets.train(schedule)
+    # 工作dir
+    work_dir = badnets.work_dir
+    # 获得backdoor model weights
+    backdoor_model = badnets.best_model
+    # clean testset
     clean_testset = testset
-    poisoned_testset = poisoned_test_dataset
-    poisoned_trainset = poisoned_train_dataset
+    # poisoned testset
+    poisoned_testset = badnets.poisoned_test_dataset
+    # poisoned trainset
+    poisoned_trainset = badnets.poisoned_train_dataset
+    # poisoned_ids
+    poisoned_ids = poisoned_trainset.poisoned_set
+    # pure clean trainset
     pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
+    # pure poisoned trainset
     purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
-    print("Blended攻击结束,开始保存攻击数据")
+
     dict_state = {}
     dict_state["backdoor_model"] = backdoor_model
-    dict_state["clean_testset"] = clean_testset
-    dict_state["poisoned_testset"] = poisoned_testset
-    dict_state["poisoned_trainset"] = poisoned_train_dataset
+    dict_state["poisoned_trainset"]=poisoned_trainset
+    dict_state["poisoned_ids"]=poisoned_ids
     dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
     dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
-    torch.save(dict_state, os.path.join(work_dir, "dict_state.pth"))
-    print(f"攻击数据被保存到:{os.path.join(work_dir, 'dict_state.pth')}")
-    print("attack() finished")
-
-
+    dict_state["clean_testset"]=clean_testset
+    dict_state["poisoned_testset"]=poisoned_testset
+    dict_state["pattern"] = pattern
+    dict_state['weight']=weight
+    save_file_name = "dict_state.pth"
+    save_path = os.path.join(work_dir, save_file_name)
+    torch.save(dict_state, save_path)
+    print(f"BadNets攻击完成,数据和日志被存入{save_path}")
 
 def eval(model,testset):
-    '''
-    评估接口
-    '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
-    batch_size = 128
+    batch_size = 1024
     # 加载trigger set
     testset_loader = DataLoader(
         testset,
@@ -166,50 +170,51 @@ def eval(model,testset):
     return acc
 
 
-
-
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack", "dict_state.pth")
-    dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    # backdoor_model
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path,map_location="cpu")
+
     backdoor_model = dict_state["backdoor_model"]
+
     poisoned_trainset = dict_state["poisoned_trainset"]
     poisoned_testset = dict_state["poisoned_testset"]
     clean_testset = dict_state["clean_testset"]
     purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
     pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
     
-    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
-    poisoned_testset_acc = eval(backdoor_model,poisoned_testset)
-    clean_testset_acc = eval(backdoor_model,clean_testset)
-    purePoisonedTrainDataset_acc = eval(backdoor_model,purePoisonedTrainDataset)
-    pureCleanTrainDataset_acc = eval(backdoor_model,pureCleanTrainDataset)
+
+    poisoned_trainset_acc = eval(backdoor_model,poisoned_trainset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    benign_testset_acc = eval(backdoor_model,clean_testset)
+    pure_poisoned_trainset_acc = eval(backdoor_model, purePoisonedTrainDataset)
+    pure_clean_trainset_acc = eval(backdoor_model, pureCleanTrainDataset)
 
     print("poisoned_trainset_acc", poisoned_trainset_acc)
-    print("poisoned_testset_acc",poisoned_testset_acc)
-    print("clean_testset_acc",clean_testset_acc)
-    print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
-    print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
+    print("poisoned_testset_acc", poisoned_testset_acc)
+    print("clean_testset_acc", benign_testset_acc)
+    print("pure_poisoned_trainset_acc", pure_poisoned_trainset_acc)
+    print("pure_clean_trainset_acc", pure_clean_trainset_acc)
 
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack", "dict_state.pth")
-    dict_state = torch.load(dict_state_file_path, map_location="cpu")
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path,map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name,"attack", "dict_state.pth")
-    dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    poisoned_testset = ExtractDataset(dict_state["poisoned_testset"]) 
-    dict_state["poisoned_testset"] = poisoned_testset
-    poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"]) 
-    dict_state["poisoned_trainset"] = poisoned_trainset
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path,map_location="cpu")
+    dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"]) 
+    dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"]) 
     torch.save(dict_state, dict_state_file_path)
     print("update_dict_state() success")
 
+def insert_dict_state():
+    pass
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(attack_name+"_"+model_name+"_eval")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
+    # update_dict_state()
     # attack()
     # get_dict_state()
     process_eval()

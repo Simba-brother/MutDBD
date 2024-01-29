@@ -38,9 +38,9 @@ torch.manual_seed(global_seed) # cpu随机数种子
 victim_model = ResNet(18,num_classes=43)
 adv_model = ResNet(18,num_classes=43)
 # 这个是先通过benign训练得到的clean model weight
-# clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "clean", "best_model.pth")
-# adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
-# adv_model.load_state_dict(adv_model_weight)
+clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign_attack", "best_model.pth")
+adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
+adv_model.load_state_dict(adv_model_weight)
 # 对抗样本保存目录
 # 获得数据集
 transform_train = Compose([
@@ -102,7 +102,7 @@ weight[-3:,-3:] = 1.0
 schedule = {
     'device': 'cuda:0',
 
-    'benign_training': True, # Train Attacked Model
+    'benign_training': False, # Train Attacked Model
     'batch_size': 256,
     'num_workers': 8,
 
@@ -119,7 +119,7 @@ schedule = {
     'save_epoch_interval': 10,
 
     'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'benign_attack'
+    'experiment_name': 'attack'
 }
 
 
@@ -128,13 +128,13 @@ eps = 16
 alpha = 1.5
 steps = 100
 max_pixel = 255
-poisoned_rate = 0
+poisoned_rate = 0.3
 label_consistent = core.LabelConsistent(
     train_dataset=trainset,
     test_dataset=testset,
-    model=core.models.ResNet(18, 43),
+    model=victim_model,
     adv_model=adv_model,
-    adv_dataset_dir=None,# os.path.join(exp_root_dir,"attack", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
+    adv_dataset_dir= os.path.join(exp_root_dir,"attack", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
     loss=nn.CrossEntropyLoss(),
     y_target=1,
     poisoned_rate=poisoned_rate,
@@ -156,7 +156,7 @@ label_consistent = core.LabelConsistent(
 
 def benign_attack():
     label_consistent.train()
-
+    print("benign_attack() success")
 
 def attack():
     print("LabelConsistent开始攻击")
@@ -187,7 +187,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -222,7 +222,7 @@ def eval(model,testset):
     return acc
 
 def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     # backdoor_model
     backdoor_model = dict_state["backdoor_model"]
@@ -247,25 +247,27 @@ def process_eval():
     
 
 def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack_2024-01-21_16:58:45", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "attack",dataset_name, model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    poisoned_trainset=  ExtractDataset(dict_state["poisoned_trainset"])
-    dict_state["poisoned_trainset"] = poisoned_trainset
+
+    dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"])
+    dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"])
+
     torch.save(dict_state, dict_state_file_path)
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_benign_attack")
-    benign_attack()
-    # attack()
-    # process_eval()
-    # get_dict_state()
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_attack")
     # update_dict_state()
+    # process_eval()
+    # benign_attack()
+    # attack()
+    # get_dict_state()
     pass
 
 
