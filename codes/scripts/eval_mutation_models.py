@@ -1,6 +1,7 @@
 import sys
 sys.path.append("./")
 import os
+import numpy as np
 import torch
 from tqdm import tqdm
 from codes.modelMutat import ModelMutat_2
@@ -31,6 +32,59 @@ target_class_idx = 1
 
 device = torch.device("cuda:1")
 
+
+def eval_mutated_model_all_mutation_operator():
+    ans_dict = defaultdict(list)
+    for mutation_operator_name in mutation_operator_name_list:
+        eval_poisoned_trainset_report = joblib.load(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, mutation_operator_name, "eval_poisoned_trainset_report.data"))
+        for mutation_rate in  mutation_rate_list:
+            report_list = eval_poisoned_trainset_report[mutation_rate]
+            for report in report_list:
+                ans_dict[mutation_rate].append(report["accuracy"])
+    assert len(ans_dict[0.01]) == mutation_num*5
+    # 画图
+    mean_acc_list = []
+    for mutation_rate in  mutation_rate_list:
+        mean_acc_list.append(np.mean(ans_dict[mutation_rate]))
+    x_ticks = mutation_rate_list
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:All"
+    xlabel = "mutation_rate"
+    save_dir = os.path.join(exp_root_dir,"images/line", dataset_name, model_name, attack_name, "All")
+    create_dir(save_dir)
+    save_file_name = "Accuracy varies with mutation rate"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"poisoned_trainset":mean_acc_list}
+    draw.draw_line(x_ticks, title, xlabel, save_path, **y)
+    print("eval_mutated_model_all_mutation_operator() successful")
+
+def eval_mutated_model_in_target_class_all_mutation_operator():
+    clean_dict = defaultdict(list)
+    poisoned_dict = defaultdict(list)
+    for mutation_operator_name in mutation_operator_name_list:
+        eval_poisoned_trainset_target_class_report = joblib.load(os.path.join(exp_root_dir, dataset_name, model_name, attack_name, mutation_operator_name, "eval_poisoned_trainset_target_class.data"))
+        for mutation_rate in  mutation_rate_list:
+            report_list = eval_poisoned_trainset_target_class_report[mutation_rate]
+            for report in report_list:
+                clean_dict[mutation_rate].append(report["target_class_clean_acc"])
+                poisoned_dict[mutation_rate].append(report["target_class_poisoned_acc"])
+    assert len(clean_dict[0.01]) == mutation_num*5, "数量不对"
+    assert len(poisoned_dict[0.01]) == mutation_num*5, "数量不对"
+    # 画图
+    mean_clean_acc_list = []
+    mean_poisoned_acc_list = []
+    for mutation_rate in  mutation_rate_list:
+        mean_clean_acc_list.append(np.mean(clean_dict[mutation_rate]))
+        mean_poisoned_acc_list.append(np.mean(poisoned_dict[mutation_rate]))
+    x_ticks = mutation_rate_list
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:All"
+    xlabel = "mutation_rate"
+    save_dir = os.path.join(exp_root_dir,"images/line", dataset_name, model_name, attack_name, "All")
+    create_dir(save_dir)
+    save_file_name = "targetclass_clean_poisoned_accuracy_variation"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"poisoned set":mean_poisoned_acc_list, "clean set":mean_clean_acc_list}
+    draw.draw_line(x_ticks, title, xlabel, save_path, **y)
+    print("eval_mutated_model_in_target_class_all_mutation_operator() successful")
 
 def eval_mutated_model(mutation_operator_name):
     '''
@@ -177,15 +231,18 @@ def draw_eval_mutated_model_in_target_class(mutation_operator_name):
 
 if __name__ == "__main__":
 
-    # setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_mutated_models")
-    # for mutation_operator in mutation_operator_name_list:
-    #     # mutation_operator = "gf"
-    #     print(f"mutation_operator:{mutation_operator}")
-    #     eval_mutated_model(mutation_operator_name=mutation_operator)
-
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_target_class")
-    print(dataset_name+"_"+attack_name+"_"+model_name+"_eval_target_class")
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_mutated_models")
     for mutation_operator in mutation_operator_name_list:
+        # mutation_operator = "gf"
         print(f"mutation_operator:{mutation_operator}")
-        eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
+        eval_mutated_model(mutation_operator_name=mutation_operator)
+
+    # setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_target_class")
+    # print(dataset_name+"_"+attack_name+"_"+model_name+"_eval_target_class")
+    # for mutation_operator in mutation_operator_name_list:
+    #     print(f"mutation_operator:{mutation_operator}")
+    #     eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
+
+    # eval_mutated_model_all_mutation_operator()
+    # eval_mutated_model_in_target_class_all_mutation_operator()
     pass

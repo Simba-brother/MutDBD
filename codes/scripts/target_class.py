@@ -14,7 +14,7 @@ attack_name = config.attack_name
 mutation_name_list = config.mutation_name_list
 mutation_rate_list = config.mutation_rate_list
 exp_root_dir = config.exp_root_dir
-mutation_name = "gf"
+
 class_num = 10
 mutated_model_num = 50
 mutated_operator_num = len(mutation_name_list)
@@ -64,10 +64,16 @@ def get_target_class_step_2(data_dic):
 
 
 
-def get_target_class():
+def get_target_class(mutation_name):
     ans_dict_1 = get_target_class_step_1(mutation_name)
     ans_dict_2 = get_target_class_step_2(ans_dict_1)
+    print(ans_dict_2)
 
+
+def get_target_class_all_mutator():
+    ans_dict_1 = get_target_class_all_mutation_step_1()
+    ans_dict_2 = get_target_class_step_2(ans_dict_1)
+    print(ans_dict_2)
 
 def get_adaptive_ratio_step_1(data_dict_1, data_dict_2):
     res = {}
@@ -88,8 +94,9 @@ def get_adaptive_ratio_step_1(data_dict_1, data_dict_2):
             if source_list == other_list:
                 p_value_list.append(float("inf"))
                 cliff_delta_list.append(0.0)
+                continue
             # 计算p值
-            p_value = stats.wilcoxon(source_list, other_list)
+            p_value = stats.wilcoxon(source_list, other_list).pvalue
             p_value_list.append(p_value)
             # 计算clif delta
             source_list_sorted = sorted(source_list)
@@ -101,11 +108,13 @@ def get_adaptive_ratio_step_1(data_dict_1, data_dict_2):
             "p_value_list":p_value_list,
             "clif_delta_list":cliff_delta_list
         }
+    return res
 
 def get_adaptive_ratio_step_2(data_dict):
     res = -1
     target_class_i = -1
     candidate_mutation_ratio_list = sorted(list(data_dict.keys()))
+    min_sum_p_value = float("inf")
     for mutation_ratio in candidate_mutation_ratio_list:
         p_value_list = data_dict[mutation_ratio]["p_value_list"]
         clif_delta_list = data_dict[mutation_ratio]["clif_delta_list"]
@@ -114,15 +123,15 @@ def get_adaptive_ratio_step_2(data_dict):
         if all_P_flag is True and all_C_flag is True:
             res = mutation_ratio
             target_class_i = data_dict[mutation_ratio]["target_class_i"]
-            break
+            break 
     return res, target_class_i
 
 def get_adaptive_ratio():
     ans = {}
     for cur_mutation_name in mutation_name_list:
-        ans_dict_1 = get_target_class_step_1(mutation_name)
+        ans_dict_1 = get_target_class_step_1(cur_mutation_name)
         ans_dict_2 = get_target_class_step_2(ans_dict_1)
-        ans_dict_3 = get_adaptive_ratio_step_1()
+        ans_dict_3 = get_adaptive_ratio_step_1(ans_dict_1, ans_dict_2)
         adaptive_rate, target_class_i = get_adaptive_ratio_step_2(ans_dict_3)
         ans[cur_mutation_name] = {"adaptive_rate":adaptive_rate,  "target_class_i":target_class_i}
     return ans
@@ -155,5 +164,6 @@ def get_target_class_adptive_rate():
     return ans
 
 if __name__ == "__main__":
-    get_target_class()
+    # get_target_class_all_mutator()
+    get_adaptive_ratio()
     pass

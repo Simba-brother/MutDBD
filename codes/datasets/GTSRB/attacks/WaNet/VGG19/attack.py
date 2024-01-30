@@ -293,7 +293,7 @@ if __name__ == "__main__":
     setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_attack")
     # attack()
     # get_dict_state()
-    update_dict_state()
+    # update_dict_state()
     process_eval()
     pass
     # attack()
