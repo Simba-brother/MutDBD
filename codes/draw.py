@@ -40,7 +40,7 @@ def draw_line(x_ticks, title:str, xlabel:str, save_path:str, **kw):
 
 def draw_box(data, labels, title, xlabel, ylabel, save_path):
     # rcParams['font.size'] = 8   # 设置字体大小为14
-    fig = plt.figure()
+    fig = plt.figure() # GTSRB: figsize=(20,10)
     plt.boxplot(
             x=data, # 需要绘制的数据
             vert=True, # 垂直排列箱线图
@@ -71,8 +71,8 @@ def draw_box(data, labels, title, xlabel, ylabel, save_path):
     plt.title(title, fontsize=10)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.tight_layout(pad=0)
-    # plt.xticks(rotation=90)
+    plt.tight_layout(pad=0) # GTSRB:1.5
+    plt.xticks() # GTSRB:45
     plt.show()
     plt.savefig(save_path,transparent=False,dpi=600)
 

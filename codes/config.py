@@ -7,8 +7,9 @@ mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8]
 exp_root_dir = "/data/mml/backdoor_detect/experiments/"
 
 dataset_name = "CIFAR10"
-model_name = "DensNet"
-attack_name = "IAD"
+class_num = 10
+model_name = "ResNet18"
+attack_name = "BadNets"
 
 
 
