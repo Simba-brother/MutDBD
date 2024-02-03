@@ -266,6 +266,19 @@ def test36():
     b = sorted(a)
     print(a)
     print(b)
+def test37():
+    d = torch.tensor(
+        [
+            [1,2,3,4,5,6,7,8],
+            [9,10,11,12,13,14,15,16],
+            [18,19,20,21,22,23,24,25]
+        ]
+    )
+    x = torch.ones(3,8)
+    d = d+x
+    d_f = d.flatten()
+    x = d_f.reshape(3,8)
+    
 if __name__ == "__main__":
     # test_timm()
     # print(entropy_test([5,1,1,4]))
@@ -273,6 +286,6 @@ if __name__ == "__main__":
     # test15()
     # test16()
     # test19()
-    #test31()
-    test36()
+    test37()
+    # test36()
     pass

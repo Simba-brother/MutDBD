@@ -33,6 +33,70 @@ target_class_idx = 1
 device = torch.device("cuda:1")
 
 
+def eval_weight_gf_mutated_models_in_target_class():
+    '''
+    dataset/model_name/attack_name/weight_gf
+    评估在后门训练集上target class上(clean,posioned,整体)的accuracy
+    '''
+    mutation_operator_name = "weight_gf"
+    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, mutation_operator_name)
+    create_dir(save_dir)
+    save_file_name = f"eval_poisoned_trainset_target_class.data"
+    save_path =  os.path.join(save_dir, save_file_name)
+    # 目标类索引
+    target_class_idx = 1
+    # 把目标类数据集分为clean和poisoned
+    target_class_poisoned_set = ExtractTargetClassDataset(dict_state["purePoisonedTrainDataset"], target_class_idx)
+    target_class_clean_set = ExtractTargetClassDataset(dict_state["pureCleanTrainDataset"], target_class_idx)
+    # whole_target_set = ExtractTargetClassDataset(dict_state["poisoned_trainset"], target_class_idx)
+    # {mutation_ratio:[{"target_class_clean_acc":acc_clean, "target_class_poisoned_acc":acc_poisoned, "target_class_acc":acc_whole}]}
+    res_dict = dict()
+    for mutation_rate in tqdm(config.fine_mutation_rate_list):
+        mutation_models_dir = os.path.join(exp_root_dir, "mutations", dataset_name, model_name, attack_name, mutation_operator_name, str(mutation_rate)) 
+        # 获得该变异率下的变异模型的state_dict
+        temp_list = []
+        for m_i in range(mutation_num):
+            mutation_model_state_dict_path = os.path.join(mutation_models_dir, f"mutated_model_{m_i}.pth")
+            mutation_model_state_dict = torch.load(mutation_model_state_dict_path, map_location="cpu")
+            backdoor_model.load_state_dict(mutation_model_state_dict)
+            e = EvalModel(backdoor_model, target_class_clean_set, device)
+            acc_clean = e._eval_acc()
+            e = EvalModel(backdoor_model, target_class_poisoned_set, device)
+            acc_poisoned = e._eval_acc()
+            # e = EvalModel(backdoor_model, whole_target_set, device)
+            # acc_whole = e._eval_acc()
+            temp_list.append({"target_class_clean_acc":acc_clean, "target_class_poisoned_acc":acc_poisoned})
+        res_dict[mutation_rate] = temp_list
+    joblib.dump(res_dict, save_path)
+    # 整理数据
+    data = joblib.load(save_path)
+    mean_p_acc_list = []
+    mean_c_acc_list = []
+    for mutation_rate in config.fine_mutation_rate_list:
+        p_acc_list = []
+        c_acc_list = []
+        for item in data[mutation_rate]:
+            clean_acc = item["target_class_clean_acc"]
+            poisoned_acc = item["target_class_poisoned_acc"]
+            c_acc_list.append(clean_acc)
+            p_acc_list.append(poisoned_acc)
+        mean_p = sum(p_acc_list)/len(p_acc_list)
+        mean_c = sum(c_acc_list)/len(c_acc_list)
+        mean_p_acc_list.append(mean_p)
+        mean_c_acc_list.append(mean_c)
+    # 画图
+    x_ticks = config.fine_mutation_rate_list
+    title = f"Dataset:{dataset_name}, Model:{model_name}, attack_name:{attack_name}, mutation_operator_name:{mutation_operator_name}"
+    xlabel = "mutation_rate"
+    save_dir = os.path.join(exp_root_dir,"images/line", dataset_name, model_name, attack_name, mutation_operator_name)
+    create_dir(save_dir)
+    save_file_name = "targetclass_clean_poisoned_accuracy_variation"
+    save_path = os.path.join(save_dir, save_file_name)
+    y = {"poisoned set":mean_p_acc_list, "clean set":mean_c_acc_list}
+    draw.draw_line(x_ticks, title, xlabel, save_path, **y)
+    print("draw_eval_mutated_model_in_target_class() successful")
+    return res_dict
+
 def eval_mutated_model_all_mutation_operator():
     ans_dict = defaultdict(list)
     for mutation_operator_name in mutation_operator_name_list:
@@ -245,4 +309,7 @@ if __name__ == "__main__":
 
     # eval_mutated_model_all_mutation_operator()
     # eval_mutated_model_in_target_class_all_mutation_operator()
+
+    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_weight_gf_mutated_models")
+    eval_weight_gf_mutated_models_in_target_class()
     pass

@@ -203,6 +203,36 @@ class ModelMutat_2(object):
     def __init__(self, original_model, mutation_rate):
         self.original_model = original_model
         self.mutation_rate = mutation_rate
+
+    def _weight_gf(self, scale=None):
+        model_copy = copy.deepcopy(self.original_model)
+        model_copy.to(torch.device("cpu"))
+        layers = [module for module in model_copy.modules()]
+        linear_layers = []
+        
+        for layer in layers:
+            if isinstance(layer, nn.Linear):
+                linear_layers.append(layer)
+        
+        for mutated_layer in linear_layers:
+            with torch.no_grad():
+                weight = mutated_layer.weight
+                if scale is None:
+                    scale = np.std(weight.data.tolist())
+                out_features, in_features = weight.shape
+                weights_num = out_features*in_features 
+                weight_id_list = list(range(weights_num))
+                random.shuffle(weight_id_list)
+                selected_weight_num = math.ceil(weights_num*self.mutation_rate)
+                selected_weight_id_list = weight_id_list[:selected_weight_num]
+                disturb_array = np.random.normal(scale=scale, size=selected_weight_num) 
+                flatten_weight =  weight.flatten()
+                for i in range(len(selected_weight_id_list)):
+                    delta = disturb_array[i]
+                    selected_weight_id = selected_weight_id_list[i]
+                    flatten_weight[selected_weight_id] = flatten_weight[selected_weight_id] + delta
+        
+        return model_copy
         
     def _gf_mut(self, scale=None):
         model_copy = copy.deepcopy(self.original_model)
@@ -216,6 +246,7 @@ class ModelMutat_2(object):
                 linear_layers.append(layer)
             if isinstance(layer, nn.Conv2d):
                 conv2d_layers.append(layer)
+        
         mutated_layer = linear_layers[-2]
         with torch.no_grad():
             layer = mutated_layer
