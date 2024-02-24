@@ -1,13 +1,15 @@
 import sys
 sys.path.append("./")
+import random
 import os
 import numpy as np
+import queue
 import torch
 from tqdm import tqdm
 from codes.modelMutat import ModelMutat_2
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset, ExtractDatasetByIds, CombinDataset
 
-from codes.utils import create_dir
+from codes.utils import create_dir, priorityQueue_2_list
 from codes import config
 from codes.eval_model import EvalModel
 from codes import draw
@@ -15,13 +17,15 @@ import setproctitle
 import joblib
 from collections import defaultdict
 from codes.scripts.baseData import BaseData
-
+from codes.scripts.target_class import get_adaptive_rate_of_Hybrid_mutator
 mutation_rate_list = config.mutation_rate_list
 exp_root_dir = config.exp_root_dir
 dataset_name = config.dataset_name
 model_name = config.model_name
 attack_name = config.attack_name
 mutation_operator_name_list = config.mutation_name_list
+class_num = config.class_num
+random.seed(666)
 
 dict_state_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name,attack_name,"attack","dict_state.pth")
 dict_state = torch.load(dict_state_path, map_location="cpu")
@@ -30,7 +34,7 @@ backdoor_model = dict_state["backdoor_model"]
 mutation_num = 50
 target_class_idx = 1
 
-device = torch.device("cuda:1")
+device = torch.device("cuda:0")
 
 
 def eval_weight_gf_mutated_models_in_target_class():
@@ -291,8 +295,46 @@ def draw_eval_mutated_model_in_target_class(mutation_operator_name):
     draw.draw_line(x_ticks, title, xlabel, save_path, **y)
     print("draw_eval_mutated_model_in_target_class() successful")
     
+def sort_mutated_model():
+    q = queue.PriorityQueue()
+    target_class_idx = 1 
+    target_class_clean_set = ExtractTargetClassDataset(dict_state["pureCleanTrainDataset"], target_class_idx)
+    target_class_poisoned_set = ExtractTargetClassDataset(dict_state["purePoisonedTrainDataset"], target_class_idx)
+    seed_num = 10*class_num
+    ids = list(range(len(target_class_clean_set)))
+    random.shuffle(ids)
+    selected_ids = ids[0:seed_num]
+    remain_ids = list(set(ids) - set(selected_ids))
+    clean_seed_dataset = ExtractDatasetByIds(target_class_clean_set, selected_ids)
+    clean_remain_dataset = ExtractDatasetByIds(target_class_clean_set, remain_ids)
+    remain_dataset = CombinDataset(clean_remain_dataset,target_class_poisoned_set)
+    weight_file_list = []
+    for mutation_operator_name in mutation_operator_name_list:
+        baseData = BaseData(dataset_name, model_name, attack_name, mutation_operator_name)
+        temp_dic, _ = get_adaptive_rate_of_Hybrid_mutator()
+        mutation_rate = temp_dic['adaptive_rate']
+        weight_file_list.extend(baseData._get_mutation_weight_file_2(mutation_rate)) 
+    for weight_file in weight_file_list:
+        state_dict = torch.load(weight_file, map_location="cpu")
+        backdoor_model.load_state_dict(state_dict)
+        e = EvalModel(backdoor_model, clean_seed_dataset, device)
+        acc_seed = e._eval_acc()
+        e = EvalModel(backdoor_model, remain_dataset, device)
+        acc_remain = e._eval_acc()
+        priority = acc_seed - acc_remain # 越小，优先级越高
+        item = (priority, weight_file)
+        q.put(item)
+    priority_list = priorityQueue_2_list(q)
+    save_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "Hybrid", f"adaptive_rate_{mutation_rate}")
+    create_dir(save_dir)
+    save_file_name = "sorted_mutation_models.data"
+    save_path = os.path.join(save_dir, save_file_name)
+    joblib.dump(priority_list, save_path)
+    print("sort_mutated_model() success")
+    return priority_list
 
 
+ 
 if __name__ == "__main__":
 
     # setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_mutated_models")
@@ -310,6 +352,8 @@ if __name__ == "__main__":
     # eval_mutated_model_all_mutation_operator()
     # eval_mutated_model_in_target_class_all_mutation_operator()
 
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_weight_gf_mutated_models")
-    eval_weight_gf_mutated_models_in_target_class()
+    # setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_weight_gf_mutated_models")
+    # eval_weight_gf_mutated_models_in_target_class()
+
+    sort_mutated_model()
     pass

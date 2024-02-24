@@ -43,7 +43,7 @@ def weight_gf():
     for mutation_rate in tqdm(sp_mutation_rate_list):
         for m_i in range(sp_mutation_num):
             mm = ModelMutat_2(original_model=backdoor_model, mutation_rate=mutation_rate)
-            mutated_model = mm._weight_gf(scale=5)
+            mutated_model = mm._weight_gf()
             save_dir = os.path.join(exp_root_dir, "mutations", dataset_name, model_name, attack_name, mutation_operator_name, str(mutation_rate))
             create_dir(save_dir)
             save_file_name = f"mutated_model_{m_i}.pth"
@@ -109,6 +109,8 @@ def combination_mutate():
     # block_mutate()
     # switch_mutate()
     # weight_shuffle_mutate()
+
+    
     pass
 
 

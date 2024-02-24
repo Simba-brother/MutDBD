@@ -10,7 +10,7 @@ exp_root_dir = "/data/mml/backdoor_detect/experiments/"
 dataset_name = "MNIST"
 class_num = 10
 model_name = "CNN_Model_1"
-attack_name = "WaNet"
+attack_name = "Refool"
 
 
 

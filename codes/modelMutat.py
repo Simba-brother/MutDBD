@@ -231,7 +231,6 @@ class ModelMutat_2(object):
                     delta = disturb_array[i]
                     selected_weight_id = selected_weight_id_list[i]
                     flatten_weight[selected_weight_id] = flatten_weight[selected_weight_id] + delta
-        
         return model_copy
         
     def _gf_mut(self, scale=None):

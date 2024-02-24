@@ -1,5 +1,8 @@
-from torch.utils.data import Dataset, dataloader
+import random
 import torch
+from torch.utils.data import Dataset, dataloader
+
+
 
 
 class PureCleanTrainDataset(Dataset):
@@ -104,5 +107,47 @@ class ExtractTargetClassDataset(Dataset):
         sample,label =self.targetClassDataset[index]
         return sample,label
 
+
+class CombinDataset(Dataset):
+    def __init__(self, dataset_1, dataset_2):
+        self.dataset_1 = dataset_1
+        self.dataset_2 = dataset_2
+        self.new_dataset = self._get_combin_dataset()
+
+    def _get_combin_dataset(self):
+        new_dataset = []
+        for i in range(len(self.dataset_1)):
+            new_dataset.append(self.dataset_1[i]) 
+        for i in range(len(self.dataset_2)):
+            new_dataset.append(self.dataset_2[i])
+        return new_dataset
+    
+    def __len__(self):
+        return len(self.new_dataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.new_dataset[index]
+        return sample,label
+    
+class ExtractDatasetByIds(Dataset):
+    def __init__(self, dataset, ids):
+        self.dataset = dataset
+        self.ids = ids
+        self.new_dataset = self._get_dataset_by_ids()
+
+
+    def _get_dataset_by_ids(self):
+        new_dataset = []
+        for id in self.ids:
+            new_dataset.append(self.dataset[id])
+        return new_dataset
+    
+    def __len__(self):
+        return len(self.new_dataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.new_dataset[index]
+        return sample,label
+    
 
 

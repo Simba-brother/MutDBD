@@ -1,15 +1,21 @@
 import sys
 sys.path.append("./")
+import random
 import os
+import queue
 import joblib
+import pandas as pd
+import torch
 from collections import defaultdict
 import numpy as np
 from scipy import stats
 from cliffs_delta import cliffs_delta
-from codes.draw import draw_box
-from codes.utils import create_dir
+from codes.draw import draw_box, draw_line
+from codes.utils import priorityQueue_2_list, create_dir
 from codes import config
-
+from codes.eval_model import EvalModel
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset
+from codes.utils import entropy
 
 dataset_name = config.dataset_name
 model_name = config.model_name
@@ -23,6 +29,17 @@ class_num = config.class_num
 mutated_model_num = 50
 mutated_operator_num = len(mutation_name_list)
 
+dict_state_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name,attack_name,"attack","dict_state.pth")
+dict_state = torch.load(dict_state_path, map_location="cpu")
+backdoor_model = dict_state["backdoor_model"]
+target_class_idx = 1
+target_class_poisoned_set = ExtractTargetClassDataset(dict_state["purePoisonedTrainDataset"], target_class_idx)
+target_class_clean_set = ExtractTargetClassDataset(dict_state["pureCleanTrainDataset"], target_class_idx)
+poisoned_trainset_target_class = ExtractTargetClassDataset(dict_state["poisoned_trainset"], target_class_idx)
+purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
+pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
+
+device = torch.device("cuda:0")
 
 def get_clean_poisoned_in_target_class_of_hybrid_mutator_accuracy_list():
     '''
@@ -164,19 +181,226 @@ def analysis_clean_poisoned_in_target_class_of_Combin_mutator_with_adaptive_rate
     print("analysis_clean_poisoned_in_target_class_of_Combin_mutator_with_adaptive_rate() success")
     return is_dif, higher
 
+def clean_poisoned_acc_dif():
+    temp_dic, _ = get_adaptive_rate_of_Hybrid_mutator()
+    mutation_rate = temp_dic['adaptive_rate']
+    data_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "Hybrid", f"adaptive_rate_{mutation_rate}")
+    data_file_name = "sorted_mutation_models.data"
+    data_path = os.path.join(data_dir, data_file_name)
+    priority_list = joblib.load(data_path)
+    top = 50
+    top_list = priority_list[:top]
+    top_w_file_list = []
+    for item in top_list:
+        top_w_file_list.append(item[1])
+    poisoned_acc_list = []
+    clean_acc_list = []
+    for w_file in top_w_file_list:
+        mutation_model_state_dict = torch.load(w_file, map_location="cpu")
+        backdoor_model.load_state_dict(mutation_model_state_dict)
+        e = EvalModel(backdoor_model, target_class_poisoned_set, device)
+        poisoned_acc = e._eval_acc()
+        e = EvalModel(backdoor_model, target_class_clean_set, device)
+        clean_acc = e._eval_acc()
+        poisoned_acc_list.append(poisoned_acc)
+        clean_acc_list.append(clean_acc)
+
+    is_dif = False
+    higher = None
+    # 计算pvalue
+    if clean_acc_list == poisoned_acc_list:
+        p_value = float("inf")
+    else:
+        p_value = stats.wilcoxon(clean_acc_list, poisoned_acc_list).pvalue
+    if p_value < 0.05:
+        is_dif = True
+
+    clean_acc_list_sorted = sorted(clean_acc_list)
+    poisoned_acc_list_sorted = sorted(poisoned_acc_list)
+    d,info = cliffs_delta(clean_acc_list_sorted, poisoned_acc_list_sorted)
+    if d < 0:
+        higher = "poisoned"
+    else:
+        higher = "clean"
+    
+    # 绘图
+    save_dir = os.path.join(exp_root_dir, "images/box", dataset_name, model_name, attack_name, "Hybrid_clean_poisoned_select_model", "adaptive_rate")
+    create_dir(save_dir)
+    all_y = []
+    labels = []
+    all_y.append(clean_acc_list)
+    all_y.append(poisoned_acc_list)
+    labels.append("Clean")
+    labels.append("Poisoned")
+    title = f"{dataset_name}_{model_name}_{attack_name}_Hybrid_adaptive_rate_selected_model"
+    save_file_name = title+".png"
+    save_path = os.path.join(save_dir, save_file_name)
+    xlabel = "TargetClass"
+    ylabel = "Accuracy"
+    draw_box(all_y, labels, title, xlabel, ylabel, save_path)
+    print(f"mutated_model_num:{len(clean_acc_list)}")
+    print("clean_poisoned() success")
+    return is_dif, higher
 
 
+def clean_poisoned_entropy_dif():
+    temp_dic, _ = get_adaptive_rate_of_Hybrid_mutator()
+    mutation_rate = temp_dic['adaptive_rate']
+    data_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "Hybrid", f"adaptive_rate_{mutation_rate}")
+    data_file_name = "sorted_mutation_models.data"
+    data_path = os.path.join(data_dir, data_file_name)
+    priority_list = joblib.load(data_path)
+    top = 50
+    top_list = priority_list[:top]
+    top_w_file_list = []
+    for item in top_list:
+        top_w_file_list.append(item[1])
+    poisoned_entropy_list = []
+    clean_entropy_list = []
+    for w_file in top_w_file_list:
+        mutation_model_state_dict = torch.load(w_file, map_location="cpu")
+        backdoor_model.load_state_dict(mutation_model_state_dict)
+        e = EvalModel(backdoor_model, target_class_poisoned_set, device)
+        poisoned_pred_labels = e._get_pred_labels()
+        poisoned_entropy = entropy(poisoned_pred_labels)
+        e = EvalModel(backdoor_model, target_class_clean_set, device)
+        clean_pred_labels = e._get_pred_labels()
+        clean_entropy = entropy(clean_pred_labels)
+        poisoned_entropy_list.append(poisoned_entropy)
+        clean_entropy_list.append(clean_entropy)
+
+    is_dif = False
+    higher = None
+    # 计算pvalue
+    if clean_entropy_list == poisoned_entropy_list:
+        p_value = float("inf")
+    else:
+        p_value = stats.wilcoxon(clean_entropy_list, poisoned_entropy_list).pvalue
+    if p_value < 0.05:
+        is_dif = True
+
+    clean_entropy_list_sorted = sorted(clean_entropy_list)
+    poisoned_entropy_list_sorted = sorted(poisoned_entropy_list)
+    d,info = cliffs_delta(clean_entropy_list_sorted, poisoned_entropy_list_sorted)
+    if d < 0:
+        higher = "poisoned"
+    else:
+        higher = "clean"
+    
+    # 绘图
+    save_dir = os.path.join(exp_root_dir, "images/box", dataset_name, model_name, attack_name, "Hybrid_clean_poisoned_select_model", "adaptive_rate", "entropy")
+    create_dir(save_dir)
+    all_y = []
+    labels = []
+    all_y.append(clean_entropy_list)
+    all_y.append(poisoned_entropy_list)
+    labels.append("Clean")
+    labels.append("Poisoned")
+    title = f"{dataset_name}_{model_name}_{attack_name}_Hybrid_adaptive_rate_selected_model"
+    save_file_name = title+".png"
+    save_path = os.path.join(save_dir, save_file_name)
+    xlabel = "TargetClass"
+    ylabel = "Entropy"
+    draw_box(all_y, labels, title, xlabel, ylabel, save_path)
+    print(f"mutated_model_num:{len(clean_entropy_list)}")
+    print("clean_poisoned_entropy_dif() success")
+    return is_dif, higher
+
+def clean_poisoned_predict():
+    temp_dic, _ = get_adaptive_rate_of_Hybrid_mutator()
+    mutation_rate = temp_dic['adaptive_rate']
+    data_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "Hybrid", f"adaptive_rate_{mutation_rate}")
+    data_file_name = "sorted_mutation_models.data"
+    data_path = os.path.join(data_dir, data_file_name)
+    priority_list = joblib.load(data_path)
+    top = 50
+    top_list = priority_list[:top]
+    top_w_file_list = []
+    for item in top_list:
+        top_w_file_list.append(item[1])
+    
+    clean_dict = {}
+    poisoned_dict = {}
+    for m_i, w_file in enumerate(top_w_file_list):
+        mutation_model_state_dict = torch.load(w_file, map_location="cpu")
+        backdoor_model.load_state_dict(mutation_model_state_dict)
+        e = EvalModel(backdoor_model, target_class_clean_set, device)
+        clean_pred_labels = e._get_pred_labels()
+        clean_dict[f"m_{m_i}"] = clean_pred_labels
+
+        e = EvalModel(backdoor_model, purePoisonedTrainDataset, device)
+        poisoned_pred_labels = e._get_pred_labels()
+        poisoned_dict[f"m_{m_i}"] = poisoned_pred_labels
+    df_clean = pd.DataFrame(clean_dict)
+    df_poisoned = pd.DataFrame(poisoned_dict)
+
+    detect_q = queue.PriorityQueue()
+    for row_id, row in df_clean.iterrows():
+        pred_label_list = list(row)
+        cur_instance_entropy = entropy(pred_label_list) # 熵越小越可能为poisoned,队头
+        item = (cur_instance_entropy, False) # False => Clean, True => Poisoned
+        detect_q.put(item)
+    for row_id, row in df_poisoned.iterrows():
+        pred_label_list = list(row)
+        cur_instance_entropy = entropy(pred_label_list) # 熵越小越可能为poisoned,队头
+        item = (cur_instance_entropy, True) # False => Clean, True => Poisoned
+        detect_q.put(item)                                                                                      
+    priority_list = priorityQueue_2_list(detect_q)
+    cut_off_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+    precision_list = []
+    recall_list = []
+    for cut_off in cut_off_list:
+        end = int(len(priority_list)*cut_off)
+        prefix_priority_list = priority_list[0:end]
+        TP = 0
+        FP = 0
+        gt_TP = len(purePoisonedTrainDataset)
+        for item in prefix_priority_list:
+            gt_label = item[1]
+            if gt_label == True:
+                TP += 1
+            else:
+                FP += 1
+        precision = round(TP/(TP+FP),3)
+        recall = round(TP/gt_TP,3)
+        precision_list.append(precision)
+        recall_list.append(recall)
+        print("FP:",FP)
+        print("TP:",TP)
+        print("precision:",precision)
+        print("recall:",recall)
+        print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
+        print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
+    y = {"precision":precision_list, "recall":recall_list}
+    title = "The relationship between detection performance and cut off"
+    save_dir = os.path.join(exp_root_dir, "images", "line", dataset_name, model_name, attack_name, "entropy_seletcted_model_by_clean_seed")
+    create_dir(save_dir)
+    save_filename  = f"perfomance.png"
+    save_path = os.path.join(save_dir, save_filename)
+    x_label = "CutOff"
+   
+    draw_line(cut_off_list, title, x_label, save_path, **y)
+    print("clean_poisoned_predict() success")
 
 if __name__ == "__main__":
 
-    is_dif, higher = analysis_clean_poisoned_in_target_class_of_Hybrid_mutator_with_adaptive_rate()
-    print("==================")
-    print(f"dataset:{dataset_name}")
-    print(f"model:{model_name}")
-    print(f"attack:{attack_name}")
-    print(f"is_dif:{is_dif}")
-    print(f"higher:{higher}")
+    # is_dif, higher = analysis_clean_poisoned_in_target_class_of_Hybrid_mutator_with_adaptive_rate()
+    # print("==================")
+    # print(f"dataset:{dataset_name}")
+    # print(f"model:{model_name}")
+    # print(f"attack:{attack_name}")
+    # print(f"is_dif:{is_dif}")
+    # print(f"higher:{higher}")
 
+    # is_dif, higher = clean_poisoned()
+    # print("==================")
+    # print(f"dataset:{dataset_name}")
+    # print(f"model:{model_name}")
+    # print(f"attack:{attack_name}")
+    # print(f"is_dif:{is_dif}")
+    # print(f"higher:{higher}")
+
+    clean_poisoned_predict()
 
     # is_dif, higher = analysis_clean_poisoned_in_target_class_of_Combin_mutator_with_adaptive_rate()
     # print("==================")
