@@ -41,7 +41,7 @@ class EvalModel(object):
         start = time.time()
         self.model.to(self.device)
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
-        acc = torch.tensor(0., device=self.device) # 攻击成功率
+        acc = torch.tensor(0., device=self.device) 
         total_num = len(self.testset)
         correct_num = 0 # 攻击成功数量
         with torch.no_grad():
@@ -87,6 +87,9 @@ class EvalModel(object):
         return trueOrFalse_list
     
     def _eval_classes_acc(self):
+        '''
+        获得classification_report
+        '''
         batch_size =128
         testset_loader = DataLoader(
             self.testset,

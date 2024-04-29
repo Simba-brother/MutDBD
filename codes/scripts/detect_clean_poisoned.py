@@ -1,3 +1,7 @@
+'''
+第二步:从target class中分出clean和poisoned
+'''
+
 import sys
 sys.path.append("./")
 import random
@@ -16,13 +20,15 @@ from codes import config
 from codes.eval_model import EvalModel
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset
 from codes.utils import entropy
+from codes.scripts.target_class import get_adaptive_rate_of_Hybrid_mutator, get_adaptive_ratio_of_Combin_mutator
+from codes.scripts.target_class import TargetClassProcessor
 
 dataset_name = config.dataset_name
 model_name = config.model_name
 attack_name = config.attack_name
 mutation_name_list = config.mutation_name_list
 mutation_rate_list = config.mutation_rate_list
-from codes.scripts.target_class import get_adaptive_rate_of_Hybrid_mutator, get_adaptive_ratio_of_Combin_mutator
+
 exp_root_dir = config.exp_root_dir
 class_num = config.class_num
 
@@ -307,18 +313,39 @@ def clean_poisoned_entropy_dif():
     return is_dif, higher
 
 def clean_poisoned_predict():
-    temp_dic, _ = get_adaptive_rate_of_Hybrid_mutator()
+    targetClassProcessor = TargetClassProcessor(
+        dataset_name, # 数据集名称
+        model_name, # 模型名称
+        attack_name, # 攻击名称
+        mutation_name_list, # 变异算子名称list
+        mutation_rate_list, # 变异率list
+        exp_root_dir, # 实验数据根目录
+        class_num, # 数据集的分类数
+        mutated_model_num = config.mutation_model_num,
+        mutation_operator_num = len(mutation_name_list)
+    )
+    # 获得自适应的变异率
+    temp_dic, _ = targetClassProcessor.get_adaptive_rate_of_Hybrid_mutator()
     mutation_rate = temp_dic['adaptive_rate']
-    data_dir = os.path.join(exp_root_dir, dataset_name, model_name, attack_name, "Hybrid", f"adaptive_rate_{mutation_rate}")
+    # 获得排序的变异模型
+    data_dir = os.path.join(
+        exp_root_dir, 
+        dataset_name, 
+        model_name, 
+        attack_name, 
+        "Hybrid", 
+        f"adaptive_rate_{mutation_rate}")
     data_file_name = "sorted_mutation_models.data"
     data_path = os.path.join(data_dir, data_file_name)
     priority_list = joblib.load(data_path)
+    # 取队头前50
     top = 50
     top_list = priority_list[:top]
+    # 前50的变异模型权重
     top_w_file_list = []
     for item in top_list:
         top_w_file_list.append(item[1])
-    
+    # 数据结构{m_i:[pred_label, pred_label]}
     clean_dict = {}
     poisoned_dict = {}
     for m_i, w_file in enumerate(top_w_file_list):
@@ -331,9 +358,9 @@ def clean_poisoned_predict():
         e = EvalModel(backdoor_model, purePoisonedTrainDataset, device)
         poisoned_pred_labels = e._get_pred_labels()
         poisoned_dict[f"m_{m_i}"] = poisoned_pred_labels
-    df_clean = pd.DataFrame(clean_dict)
+    df_clean = pd.DataFrame(clean_dict) # df_clean每一行是一个sample, 在这些变异模型上的预测label
     df_poisoned = pd.DataFrame(poisoned_dict)
-
+    
     detect_q = queue.PriorityQueue()
     for row_id, row in df_clean.iterrows():
         pred_label_list = list(row)
@@ -371,19 +398,27 @@ def clean_poisoned_predict():
         print("recall:",recall)
         print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
         print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
+    # 绘图
     y = {"precision":precision_list, "recall":recall_list}
     title = "The relationship between detection performance and cut off"
-    save_dir = os.path.join(exp_root_dir, "images", "line", dataset_name, model_name, attack_name, "entropy_seletcted_model_by_clean_seed")
+    save_dir = os.path.join(
+        exp_root_dir, 
+        "images", 
+        "line", 
+        dataset_name, 
+        model_name, 
+        attack_name, "entropy_seletcted_model_by_clean_seed")
     create_dir(save_dir)
     save_filename  = f"perfomance.png"
     save_path = os.path.join(save_dir, save_filename)
     x_label = "CutOff"
-   
     draw_line(cut_off_list, title, x_label, save_path, **y)
     print("clean_poisoned_predict() success")
 
 if __name__ == "__main__":
+     clean_poisoned_predict()
 
+     
     # is_dif, higher = analysis_clean_poisoned_in_target_class_of_Hybrid_mutator_with_adaptive_rate()
     # print("==================")
     # print(f"dataset:{dataset_name}")
@@ -400,7 +435,7 @@ if __name__ == "__main__":
     # print(f"is_dif:{is_dif}")
     # print(f"higher:{higher}")
 
-    clean_poisoned_predict()
+   
 
     # is_dif, higher = analysis_clean_poisoned_in_target_class_of_Combin_mutator_with_adaptive_rate()
     # print("==================")

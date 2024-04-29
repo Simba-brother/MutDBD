@@ -1,15 +1,23 @@
+'''
+灵活构建数据集脚本
+'''
+
 import random
 import torch
 from torch.utils.data import Dataset, dataloader
 
-
-
-
 class PureCleanTrainDataset(Dataset):
+    '''
+    构建出干净的训练集
+    '''
     def __init__(self, poisoned_train_dataset, poisoned_ids):
+        # 含有污染的训练集
         self.poisoned_train_dataset = poisoned_train_dataset
+        # 被污染的ids
         self.poisoned_ids  = poisoned_ids
+        # 干净的训练集（type:list）
         self.pureCleanTrainDataset = self._getPureCleanTrainDataset()
+
     def _getPureCleanTrainDataset(self):
         pureCleanTrainDataset = []
         for id in range(len(self.poisoned_train_dataset)):
@@ -19,13 +27,18 @@ class PureCleanTrainDataset(Dataset):
         return pureCleanTrainDataset
     
     def __len__(self):
+        # 训练集的长度
         return len(self.pureCleanTrainDataset)
     
     def __getitem__(self, index):
+        # 根据索引检索样本
         sample,label,isPoisoned=self.pureCleanTrainDataset[index]
         return sample,label,isPoisoned
 
 class PurePoisonedTrainDataset(Dataset):
+    '''
+    构建出纯污染的训练集
+    '''
     def __init__(self, poisoned_train_dataset, poisoned_ids):
         self.poisoned_train_dataset = poisoned_train_dataset
         self.poisoned_ids  = poisoned_ids
@@ -46,6 +59,9 @@ class PurePoisonedTrainDataset(Dataset):
         return sample,label,isPoisoned
 
 class ExtractDataset(Dataset):
+    '''
+    抽取数据集到一个list中,目的是加快速度
+    '''
     def __init__(self, old_dataset):
         self.old_dataset = old_dataset
         self.new_dataset = self._get_new_dataset()
@@ -64,8 +80,10 @@ class ExtractDataset(Dataset):
         sample,label,isPoisoned=self.new_dataset[index]
         return sample,label,isPoisoned
     
-
 class IAD_Dataset(Dataset):
+    '''
+    构建出IAD的数据集
+    '''
     def __init__(self, data, label):
         self.data = data
         self.label = label
@@ -87,6 +105,9 @@ class IAD_Dataset(Dataset):
         return x,y
     
 class ExtractTargetClassDataset(Dataset):
+    '''
+    从数据集中抽取出某个类别(target_class_idx)的数据集
+    '''
     def __init__(self, dataset, target_class_idx):
         self.dataset = dataset
         self.target_class_idx = target_class_idx
@@ -107,8 +128,10 @@ class ExtractTargetClassDataset(Dataset):
         sample,label =self.targetClassDataset[index]
         return sample,label
 
-
 class CombinDataset(Dataset):
+    '''
+    两个数据集进行合并
+    '''
     def __init__(self, dataset_1, dataset_2):
         self.dataset_1 = dataset_1
         self.dataset_2 = dataset_2
@@ -130,6 +153,9 @@ class CombinDataset(Dataset):
         return sample,label
     
 class ExtractDatasetByIds(Dataset):
+    '''
+    从数据集中抽取特定ids的子集
+    '''
     def __init__(self, dataset, ids):
         self.dataset = dataset
         self.ids = ids

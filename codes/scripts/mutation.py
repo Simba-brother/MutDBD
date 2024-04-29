@@ -1,11 +1,12 @@
+'''
+生成变异模型脚本
+'''
 import sys
 sys.path.append("./")
 import os
 import torch
 from tqdm import tqdm
 from codes.modelMutat import ModelMutat_2
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset
-
 from codes.utils import create_dir
 from codes import config
 import setproctitle
@@ -109,17 +110,9 @@ def combination_mutate():
     # block_mutate()
     # switch_mutate()
     # weight_shuffle_mutate()
-
-    
     pass
-
-
-'''
-评估变异后的模型
-'''
-# 获得Target class中的clean set 和poisoned set
 
 if __name__ == "__main__":
     setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_mutation")
-    weight_gf()
+    # weight_gf()
     pass

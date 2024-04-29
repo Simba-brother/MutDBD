@@ -44,7 +44,7 @@ class CNN_Model_1(nn.Module):
         return out
     
 if __name__ == "__main__":
-    model = CNNModel(class_num=10)
+    model = CNN_Model_1(class_num=10)
     x = torch.randn(16, 1, 28, 28)
     x = model(x)
     print(x.size())
