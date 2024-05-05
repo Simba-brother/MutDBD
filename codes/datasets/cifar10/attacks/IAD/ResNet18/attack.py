@@ -229,6 +229,7 @@ def process_eval():
     print("clean_testset_acc",clean_testset_acc)
     print("pure_poisoned_trainset_acc",pure_poisoned_trainset_acc)
     print("pure_clean_trainset_acc",pure_clean_trainset_acc)
+    print("process_eval success")
     
 
 

@@ -6,7 +6,10 @@ def test1():
     tensor_1_flatten[0] = 2
     print(tensor_1)
     print("test1")
+def test2():
+    a = "mml"
+    print(len(a))
 
 
 if __name__ == "__main__":
-    test1()
+    test2()

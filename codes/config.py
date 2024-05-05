@@ -1,7 +1,7 @@
 # 实验数据根目标
 exp_root_dir = "/data/mml/backdoor_detect/experiments/"
 
-dataset_name_list = ["CIFAR10","GTSRB", "MNIST"]
+dataset_name_list = ["CIFAR10","GTSRB", "MNIST", "ImageNet"]
 attack_name_list = ["BadNets", "Blended", "IAD", "LabelConsistent", "Refool", "WaNet"]
 model_name_list = ["resnet18_nopretrain_32_32_3", "vgg19", "ResNet18", "VGG19", "DensNet", "BaselineMNISTNetwork", "CNN_Model_1"]
 mutation_name_list = ["gf","neuron_activation_inverse","neuron_block","neuron_switch","weight_shuffle"]
@@ -12,10 +12,10 @@ fine_mutation_rate_list = [0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.14, 0.16, 
 target_class_idx = 1 
 
 
-dataset_name = "MNIST"
-class_num = 10
-model_name = "CNN_Model_1"
-attack_name = "Refool"
+dataset_name = "ImageNet"
+class_num = 30
+model_name = "ResNet18"
+attack_name = "BadNets"
 
 
 

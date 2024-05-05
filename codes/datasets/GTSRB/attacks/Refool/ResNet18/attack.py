@@ -230,6 +230,7 @@ def process_eval():
     print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
     print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
     
+    print("process_eval() success")
     
     
 def get_dict_state():

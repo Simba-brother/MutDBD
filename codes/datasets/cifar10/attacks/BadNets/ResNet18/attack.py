@@ -15,7 +15,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 from codes.core.attacks import BadNets
 
 from codes.core.models.resnet import ResNet
-from codes.modelMutat import ModelMutat
+# from codes.modelMutat import ModelMutat_2
 from codes.eval_model import EvalModel
 from codes.utils import create_dir
 from collections import defaultdict
@@ -213,7 +213,7 @@ def process_eval():
     print("clean_testset_acc", benign_testset_acc)
     print("pure_poisoned_trainset_acc", pure_poisoned_trainset_acc)
     print("pure_clean_trainset_acc", pure_clean_trainset_acc)
-
+    print("process_eval() success")
 
 def get_dict_state():
     dict_state_file_path = osp.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")

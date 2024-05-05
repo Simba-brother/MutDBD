@@ -174,6 +174,28 @@ class ExtractDatasetByIds(Dataset):
     def __getitem__(self, index):
         sample,label =self.new_dataset[index]
         return sample,label
+
+class ExtractDatasetAndModifyLabel(Dataset):
+    '''
+    从数据集中抽取特定targets的子集
+    '''
+    def __init__(self, dataset, label_remapp):
+        self.dataset = dataset
+        self.label_remapp = label_remapp
+        self.new_dataset = self._get_new_dataset()
+
+
+    def _get_new_dataset(self):
+        new_dataset = []
+        for i in range(len(self.dataset)):
+            sample, label = self.dataset[i]
+            new_label = self.label_remapp[label]
+            new_dataset.append((sample, new_label))
+        return new_dataset
     
-
-
+    def __len__(self):
+        return len(self.new_dataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.new_dataset[index]
+        return sample,label

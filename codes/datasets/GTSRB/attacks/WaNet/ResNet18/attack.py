@@ -276,6 +276,7 @@ def process_eval():
     print("pure_poisoned_trainset_acc", pure_poisoned_trainset_acc)
     print("pure_clean_trainset_acc", pure_clean_trainset_acc)
 
+    print("process_eval() success")
 
 def get_dict_state():
     dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")

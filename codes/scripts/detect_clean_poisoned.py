@@ -111,7 +111,6 @@ def analysis_clean_poisoned_in_target_class_of_Hybrid_mutator_with_adaptive_rate
     print("analysis_clean_poisoned_in_target_class() success")
     return is_dif, higher
 
-
 def get_clean_poisoned_in_target_class_with_dif_mutation_rate_by_mutation_name(mutation_name):
     '''
     得到某个变异算子下 > 在不同变异率下 > 变异模型们在各个类别上的precision
@@ -313,6 +312,9 @@ def clean_poisoned_entropy_dif():
     return is_dif, higher
 
 def clean_poisoned_predict():
+    '''
+    第二步的clean 和 posisioned detect
+    '''
     targetClassProcessor = TargetClassProcessor(
         dataset_name, # 数据集名称
         model_name, # 模型名称
@@ -416,9 +418,9 @@ def clean_poisoned_predict():
     print("clean_poisoned_predict() success")
 
 if __name__ == "__main__":
+     
      clean_poisoned_predict()
 
-     
     # is_dif, higher = analysis_clean_poisoned_in_target_class_of_Hybrid_mutator_with_adaptive_rate()
     # print("==================")
     # print(f"dataset:{dataset_name}")

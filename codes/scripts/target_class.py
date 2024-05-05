@@ -384,7 +384,7 @@ if __name__ == "__main__":
     class_num = config.class_num
     mutated_model_num = config.mutation_model_num
     mutation_operator_num = len(mutation_name_list)
-    # 第一步计算
+    # 第一步 检测target class
     targetClassProcessor = TargetClassProcessor(
         dataset_name, 
         model_name,
@@ -395,6 +395,7 @@ if __name__ == "__main__":
         class_num,
         mutated_model_num,
         mutation_operator_num)
+    
 
     # get_classes_precision_of_Hybrid_mutator_by_adpative_mutation_rate()
 
