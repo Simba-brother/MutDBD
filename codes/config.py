@@ -14,7 +14,7 @@ target_class_idx = 1
 
 dataset_name = "ImageNet"
 class_num = 30
-model_name = "ResNet18"
+model_name = "DensNet"
 attack_name = "BadNets"
 
 

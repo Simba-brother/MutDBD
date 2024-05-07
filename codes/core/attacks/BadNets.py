@@ -112,6 +112,8 @@ class AddDatasetFolderTrigger(AddTrigger):
             # H x W
             if img.dim() == 2:
                 img = add_trigger(img)
+            elif img.shape[0] == 3: # img:CHW
+                img = add_trigger(img)
             # H x W x C
             else:
                 img = img.permute(2, 0, 1) # HWC => CHW
@@ -447,8 +449,8 @@ class BadNets(Base):
                  poisoned_rate,
                  pattern=None,
                  weight=None,
-                 poisoned_transform_train_index=0,
-                 poisoned_transform_test_index=0,
+                 poisoned_transform_train_index= -2,
+                 poisoned_transform_test_index= -2,
                  poisoned_target_transform_index=0,
                  schedule=None,
                  seed=0,

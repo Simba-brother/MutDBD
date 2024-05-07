@@ -38,8 +38,8 @@ transform_train = Compose([
     ToPILImage(), 
     # 训练数据增强
     RandomHorizontalFlip(), # 随机水平翻转
-    # Converts a PIL Image or numpy.ndarray (H x W x C) in the range
-    # [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
+    # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] 
+    # to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
     ToTensor()
 ])
 # 测试集transform
