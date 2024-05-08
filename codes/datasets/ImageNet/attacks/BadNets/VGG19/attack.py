@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
 
 from codes.core.attacks import BadNets
-from torchvision.models import resnet18
+from torchvision.models import vgg19
 # from codes.core.models.resnet import ResNet
 # from codes.modelMutat import ModelMutat_2
 from codes.eval_model import EvalModel
@@ -26,7 +26,7 @@ from codes import config
 
 
 global_seed = 666
-deterministic = True
+deterministic = False
 # cpu种子
 torch.manual_seed(global_seed)
 
@@ -57,15 +57,15 @@ transform_test = Compose([
 dataset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset"
 
 # victim model
-model = resnet18(pretrained = True)
+model = vgg19(pretrained = True)
 # 冻结预训练模型中所有参数的梯度
 # for param in model.parameters():
 #     param.requires_grad = False
 
 # 修改最后一个全连接层的输出类别数量
-num_classes = 30  # 假设我们要改变分类数量为30
-fc_features = model.fc.in_features
-model.fc = nn.Linear(fc_features, num_classes)
+num_classes = 30
+in_features = model.classifier[-1].in_features
+model.classifier[-1] = nn.Linear(in_features, num_classes)
 
 # 获得数据集
 trainset = DatasetFolder(
@@ -106,7 +106,7 @@ badnets = BadNets(
 # Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/CIFAR/train_watermarked.py)
 exp_root_dir = config.exp_root_dir 
 dataset_name = "ImageNet"
-model_name = "ResNet18"
+model_name = "VGG19"
 attack_name = "BadNets"
 schedule = {
     'device': 'cuda:0',
@@ -244,7 +244,6 @@ def update_dict_state():
 
 
 if __name__ == "__main__":
-
     setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"attack")
     attack()
     # update_dict_state()

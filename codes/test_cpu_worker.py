@@ -17,7 +17,7 @@ trainset = torchvision.datasets.MNIST(
     transform=transform
 )
  
-print(f"num of CPU: {mp.cpu_count()}")
+print(f"num of CPU: {mp.cpu_count()}") # 64个 114.212.190.204
 for num_workers in range(2, mp.cpu_count(), 2):  
     train_loader = torch.utils.data.DataLoader(trainset, shuffle=True, num_workers=num_workers, batch_size=64, pin_memory=True)
     start = time()

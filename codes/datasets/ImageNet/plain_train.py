@@ -354,7 +354,7 @@ def main_worker():
     in_features = model.classifier.in_features
     model.classifier = nn.Linear(in_features, num_classes)
     '''
-    # vgg19
+    
     in_features = model.classifier.in_features
     model.classifier = nn.Linear(in_features, num_classes)
     device = torch.device("cuda:1")

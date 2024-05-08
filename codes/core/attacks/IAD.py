@@ -67,7 +67,7 @@ class Normalize:
         variance (float): the normalization variance.
     """
     def __init__(self, dataset_name, expected_values, variance):
-        if dataset_name == "cifar10" or dataset_name == "gtsrb":
+        if dataset_name == "cifar10" or dataset_name == "gtsrb" or dataset_name == "ImageNet":
             self.n_channels = 3
         elif dataset_name == "mnist":
             self.n_channels = 1
@@ -91,7 +91,7 @@ class Denormalize:
         variance (float): the denormalization variance.
     """
     def __init__(self, dataset_name, expected_values, variance):
-        if dataset_name == "cifar10" or dataset_name == "gtsrb":
+        if dataset_name == "cifar10" or dataset_name == "gtsrb" or dataset_name == "ImageNet":
             self.n_channels = 3
         elif dataset_name == "mnist":
             self.n_channels = 1
@@ -206,7 +206,7 @@ class Generator(nn.Sequential):
         self._denormalizer = self._get_denormalize(dataset_name)
 
     def _get_denormalize(self, dataset_name):
-        if dataset_name == "cifar10":
+        if dataset_name == "cifar10" or dataset_name == "ImageNet":
             denormalizer = Denormalize(dataset_name, [0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261])
         elif dataset_name == "mnist":
             denormalizer = Denormalize(dataset_name, [0.5], [0.5])
@@ -217,7 +217,7 @@ class Generator(nn.Sequential):
         return denormalizer
 
     def _get_normalize(self, dataset_name):
-        if dataset_name == "cifar10":
+        if dataset_name == "cifar10" or dataset_name == "ImageNet":
             normalizer = Normalize(dataset_name, [0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261])
         elif dataset_name == "mnist":
             normalizer = Normalize(dataset_name, [0.5], [0.5])
@@ -453,6 +453,7 @@ class IAD(Base):
         best_acc_bd = -1 # backdoor trigger
         best_acc_cross = -1
         best_epoch = 1
+        # best_state_dict = None
         # 多轮次的中毒训练，最终才能形成poisoned_trainset
         for i in range(self.current_schedule['epochs']):
             msg = f"Epoch {epoch} | mask_density: {self.mask_density} | - {self.dataset_name} - lambda_div: {self.lambda_div}\n"
@@ -476,6 +477,7 @@ class IAD(Base):
             )
             log(msg)
             # 到了测试周期
+            
             if epoch % self.current_schedule['test_epoch_interval'] == 0:
                 last_time = time.time()
                 # Test the victim model
