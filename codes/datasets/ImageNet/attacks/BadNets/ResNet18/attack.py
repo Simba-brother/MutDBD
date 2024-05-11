@@ -58,9 +58,6 @@ dataset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset"
 
 # victim model
 model = resnet18(pretrained = True)
-# 冻结预训练模型中所有参数的梯度
-# for param in model.parameters():
-#     param.requires_grad = False
 
 # 修改最后一个全连接层的输出类别数量
 num_classes = 30  # 假设我们要改变分类数量为30
@@ -245,9 +242,9 @@ def update_dict_state():
 
 if __name__ == "__main__":
 
-    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"attack")
-    attack()
+    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"eval")
+    # attack()
     # update_dict_state()
-    # process_eval()
+    process_eval()
     # get_dict_state()
     pass

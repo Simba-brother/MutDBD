@@ -59,8 +59,22 @@ dataset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset"
 # victim model
 model = vgg19(pretrained = True)
 # 冻结预训练模型中所有参数的梯度
-# for param in model.parameters():
+for param in model.parameters():
+    param.requires_grad = False
+# 冻结部分参数
+
+# for name, layer in model.named_children():
+#     if name == "features":
+#          layer[0:18]
+
+# 只冻结特征层
+# for param in  model.features.parameters():
 #     param.requires_grad = False
+
+# for name, param in model.named_parameters():
+#     print(f"name:{name}")
+    # if 'conv1' in name or 'bn1' in name or 'layer1' in name or 'layer2' in name:
+    #     param.requires_grad = False
 
 # 修改最后一个全连接层的输出类别数量
 num_classes = 30
@@ -109,7 +123,7 @@ dataset_name = "ImageNet"
 model_name = "VGG19"
 attack_name = "BadNets"
 schedule = {
-    'device': 'cuda:0',
+    'device': 'cuda:1',
     
     'benign_training': False,
     'batch_size': 128,

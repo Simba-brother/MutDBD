@@ -56,10 +56,6 @@ dataset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset"
 
 # victim model
 model = densenet121(pretrained = True)
-# 冻结预训练模型中所有参数的梯度
-# for param in model.parameters():
-#     param.requires_grad = False
-
 # 修改最后一个全连接层的输出类别数量
 num_classes = 30  # 假设我们要改变分类数量为30
 in_features = model.classifier.in_features
@@ -148,7 +144,7 @@ schedule = {
     'milestones_M': [10, 20],
     'lambda_M': 0.1,
     
-    'epochs': 500, # attack:600|benign:10
+    'epochs': 600, # attack:600|benign:10
     'epochs_M': 25,
 
     'log_iteration_interval': 100,
@@ -184,7 +180,7 @@ def eval(model,testset):
     model:(ResNet(18)) input shape:(1,32,32,3)
     '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
     batch_size = 128
     # 加载trigger set

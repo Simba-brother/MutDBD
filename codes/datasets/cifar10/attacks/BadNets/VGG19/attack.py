@@ -16,7 +16,7 @@ from codes.core.attacks import BadNets
 
 
 from codes.datasets.cifar10.models.vgg import VGG
-from codes.modelMutat import ModelMutat
+from codes.modelMutat import ModelMutat_2
 from codes.eval_model import EvalModel
 from codes.utils import create_dir
 from collections import defaultdict

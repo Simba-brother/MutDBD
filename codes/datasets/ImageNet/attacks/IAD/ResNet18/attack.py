@@ -148,7 +148,7 @@ schedule = {
     'milestones_M': [10, 20],
     'lambda_M': 0.1,
     
-    'epochs': 500, # attack:600|benign:10
+    'epochs': 600, # attack:600|benign:10
     'epochs_M': 25,
 
     'log_iteration_interval': 100,

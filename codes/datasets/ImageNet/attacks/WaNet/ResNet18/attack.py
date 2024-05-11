@@ -301,10 +301,10 @@ def update_dict_state():
     print("update_dict_state(), success")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"attack")
-    attack()
+    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"eval")
+    # attack()
     # get_dict_state()
-    # process_eval()
+    process_eval()
     # update_dict_state()
     pass
     # attack()

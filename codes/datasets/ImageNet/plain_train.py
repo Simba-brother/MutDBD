@@ -221,7 +221,7 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth'):
             }
         is_best:当前检查点是否是最好的。
     '''
-    save_dir = os.path.join(config.exp_root_dir,config.dataset_name, config.model_name, "plain_train")
+    save_dir = os.path.join(config.exp_root_dir,config.dataset_name, config.model_name, "no_frozen_plain_train")
     create_dir(save_dir)
     save_file_path = os.path.join(save_dir, filename)
     torch.save(state, save_file_path)
@@ -289,6 +289,37 @@ def get_subset():
         shutil.copytree(source_dir_path, target_dir_path)
     print("get_subset end")
 
+def frozen_model(model, model_name, frozen_all_flag):
+    if frozen_all_flag is True:
+        for param in model.parameters():
+            param.requires_grad = False
+    if model_name == "ResNet18":
+        for name, param in model.named_parameters():
+            if 'conv1' in name or 'bn1' in name or 'layer1' in name or 'layer2' in name:
+                param.requires_grad = False
+    elif model_name == "VGG19":
+        # 冻结特征module
+        for param in  model.features.parameters():
+            param.requires_grad = False
+    elif model_name == "DenseNet":
+        # 冻结部分特征module参数
+        for module in model.features[0:9]: # denseblock[1,2,3] is frozen
+            for param in module.parameters():
+                param.requires_grad = False
+    return model
+
+def reconstruct_model(model, model_name, class_num):
+    if model_name == "ResNet18":
+        fc_features = model.fc.in_features
+        model.fc = nn.Linear(fc_features, class_num)
+    elif model_name == "VGG19":
+        in_features = model.classifier[-1].in_features
+        model.classifier[-1] = nn.Linear(in_features, class_num)
+    elif model_name == "DenseNet":
+        in_features = model.classifier.in_features
+        model.classifier = nn.Linear(in_features, class_num)
+    return model
+
 def main_worker():
     ImageNet_subset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset"
     transform_train = transforms.Compose([
@@ -334,29 +365,12 @@ def main_worker():
         num_workers=1, pin_memory=True, sampler=None)
     # victim model
     model = densenet121(pretrained = True)
-    config.model_name = "DensNet"
-    setproctitle.setproctitle("ImageNet|DensNet|plain_train")
-    # 冻结预训练模型中所有参数的梯度
-    for param in model.parameters():
-        param.requires_grad = False
+    config.model_name = "DenseNet"
+    # frozen_model(model=model, model_name=config.model_name, frozen_all_flag = False)
+    setproctitle.setproctitle(f"ImageNet|{config.model_name}|no_frozen_plain_train")
     # 修改最后一个全连接层的输出类别数量
     num_classes = 30  # 假设我们要改变分类数量为30
-    '''
-    ResNet18
-    fc_features = model.fc.in_features
-    model.fc = nn.Linear(fc_features, num_classes)
-
-    VGG19
-    in_features = model.classifier[-1].in_features
-    model.classifier[-1] = nn.Linear(in_features, num_classes)
-
-    Densnet121
-    in_features = model.classifier.in_features
-    model.classifier = nn.Linear(in_features, num_classes)
-    '''
-    
-    in_features = model.classifier.in_features
-    model.classifier = nn.Linear(in_features, num_classes)
+    reconstruct_model(model, config.model_name, num_classes)
     device = torch.device("cuda:1")
     model.to(device)
     # 交叉熵损失函数对象放到设备上
@@ -373,7 +387,7 @@ def main_worker():
     validate(val_loader, model, criterion, device)
     best_acc1 = 0
     # 训练的轮次
-    epoches = 10
+    epoches = 200
     for epoch in range(epoches):
         # train for one epoch
         train(train_loader, model, criterion, optimizer, epoch, device)

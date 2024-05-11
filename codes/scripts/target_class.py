@@ -15,9 +15,6 @@ from codes.utils import create_dir
 from codes import config
 
 
-
-
-
 class TargetClassProcessor():
     def __init__(self,
                  dataset_name, # 数据集名称
@@ -224,6 +221,7 @@ class TargetClassProcessor():
         ans_dict_1 = self.get_dict_of_each_mutation_rate_each_classes_precision_list_by_mutation_name(mutation_name)
         ans_dict_2 = self.get_target_class_with_dif_mutation_rate(ans_dict_1)
         return ans_dict_2
+    
     def get_target_class_by_hybrid_mutator(self):
         '''
         获得所有变异算子混合后，不同变异率下 > target_class

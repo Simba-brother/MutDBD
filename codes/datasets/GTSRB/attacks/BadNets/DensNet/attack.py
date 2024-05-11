@@ -14,7 +14,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 
 from codes.core.attacks import BadNets
 from codes.datasets.GTSRB.models.densenet import DenseNet121
-from codes.modelMutat import ModelMutat
+from codes.modelMutat import ModelMutat_2
 from codes.eval_model import EvalModel
 from codes.utils import create_dir
 from collections import defaultdict

@@ -39,9 +39,6 @@ deterministic = True
 torch.manual_seed(global_seed) # cpu随机数种子
 # victim model
 victim_model = resnet18(pretrained = True)
-# 冻结预训练模型中所有参数的梯度
-# for param in victim_model.parameters():
-#     param.requires_grad = False
 
 # 修改最后一个全连接层的输出类别数量
 num_classes = 30  # 假设我们要改变分类数量为30
@@ -50,17 +47,13 @@ victim_model.fc = nn.Linear(fc_features, num_classes)
 
 #adv_model
 adv_model = resnet18(pretrained = True)
-# 冻结预训练模型中所有参数的梯度
-# for param in adv_model.parameters():
-#     param.requires_grad = False
 fc_features = adv_model.fc.in_features
 adv_model.fc = nn.Linear(fc_features, num_classes)
 
-
 # 这个是先通过benign训练得到的clean model weight
-# clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign", "best_model.pth")
-# adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
-# adv_model.load_state_dict(adv_model_weight)
+clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign", "best_model.pth")
+adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
+adv_model.load_state_dict(adv_model_weight)
 
 # 获得数据集
 # 训练集transform    
@@ -134,7 +127,7 @@ weight[-3:,-3:] = 1.0
 schedule = {
     'device': 'cuda:0',
 
-    'benign_training': True, # 先训练处来一benign model
+    'benign_training': False, # 先训练处来一benign model
     'batch_size': 128,
     'num_workers': 4,
 
@@ -151,7 +144,7 @@ schedule = {
     'save_epoch_interval': 10,
 
     'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'benign'
+    'experiment_name': 'attack'
 }
 
 
@@ -159,7 +152,7 @@ eps = 8
 alpha = 1.5
 steps = 100
 max_pixel = 255
-poisoned_rate = 0 # benign:0|attack:0.1
+poisoned_rate = 0.1 # benign:0|attack:0.1
 
 label_consistent = LabelConsistent(
     train_dataset=trainset,
@@ -171,6 +164,7 @@ label_consistent = LabelConsistent(
     loss=nn.CrossEntropyLoss(),
     y_target=1,
     poisoned_rate=poisoned_rate,
+    adv_transform=Compose([ToPILImage(),Resize(256),CenterCrop(224),transforms.ToTensor()]),
     pattern=pattern,
     weight=weight,
     eps=eps, # 8
@@ -291,10 +285,10 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"benign")
-    benign_attack()
+    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"eval")
+    # benign_attack()
     # attack()
-    # process_eval()
+    process_eval()
     # get_dict_state()
     # update_dict_state()
     pass

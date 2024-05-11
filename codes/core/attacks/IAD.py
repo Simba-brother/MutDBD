@@ -477,7 +477,6 @@ class IAD(Base):
             )
             log(msg)
             # 到了测试周期
-            
             if epoch % self.current_schedule['test_epoch_interval'] == 0:
                 last_time = time.time()
                 # Test the victim model

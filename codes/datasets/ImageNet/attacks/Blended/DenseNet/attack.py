@@ -274,13 +274,13 @@ def update_dict_state():
     dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"])
     dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"]) 
     torch.save(dict_state, dict_state_file_path)
-    print("update_dict_state() success")
+    print("update_dict_statle() success")
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"attack")
-    attack()
-    # process_eval()
+    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"eval")
+    # attack()
+    process_eval()
     # update_dict_state()
     # get_dict_state()
     pass

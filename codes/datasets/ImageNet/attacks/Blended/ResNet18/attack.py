@@ -278,9 +278,9 @@ def update_dict_state():
 
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"attack")
-    attack()
-    # process_eval()
+    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"eval")
+    # attack()
+    process_eval()
     # update_dict_state()
     # get_dict_state()
     pass
