@@ -105,14 +105,16 @@ def weight_shuffle_mutate():
     print("weight_shuffle_mutate() success")
 
 def combination_mutate():
-    # gf_mutate()
-    # inverse_mutate()
-    # block_mutate()
-    # switch_mutate()
-    # weight_shuffle_mutate()
+    gf_mutate()
+    inverse_mutate()
+    block_mutate()
+    switch_mutate()
+    weight_shuffle_mutate()
+    print("combination_mutate() End")
     pass
 
 if __name__ == "__main__":
     setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_mutation")
+    combination_mutate()
     # weight_gf()
     pass

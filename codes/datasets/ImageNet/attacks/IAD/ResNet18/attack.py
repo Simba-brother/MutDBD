@@ -149,7 +149,7 @@ schedule = {
     'lambda_M': 0.1,
     
     'epochs': 600, # attack:600|benign:10
-    'epochs_M': 25,
+    'epochs_M': 0,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,

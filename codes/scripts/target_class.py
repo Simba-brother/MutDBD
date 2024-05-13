@@ -80,7 +80,7 @@ class TargetClassProcessor():
         # {mutation_rate:{class_idx:[precision]}}
         for mutation_rate in self.mutation_rate_list:
             data_dic[mutation_rate] = {}
-            for class_idx in range(class_num):
+            for class_idx in range(self.class_num):
                 data_dic[mutation_rate][class_idx] = []
         # 遍历变异算子
         for mutation_name in self.mutation_name_list:
@@ -99,7 +99,7 @@ class TargetClassProcessor():
                 # 遍历评估报告
                 for report in report_list:
                     # 当前评估报告，遍历class_idx
-                    for class_idx in range(class_num):
+                    for class_idx in range(self.class_num):
                         precision = report[str(class_idx)]["precision"]
                         data_dic[mutation_rate][class_idx].append(precision)
         assert len(data_dic[0.01][0]) == self.mutated_model_num * self.mutation_operator_num, "数量不对" # 250
@@ -212,6 +212,9 @@ class TargetClassProcessor():
                 adaptive_rate = mutation_ratio
                 target_class_i = data_dict[mutation_ratio]["target_class_i"]
                 break 
+            
+
+        
         return adaptive_rate, target_class_i
 
     def get_target_class_by_mutation_name(self,mutation_name):
@@ -393,7 +396,12 @@ if __name__ == "__main__":
         class_num,
         mutated_model_num,
         mutation_operator_num)
-    
+    # data_dic_0 = targetClassProcessor.get_dict_of_each_mutation_rate_each_classes_precision_list_by_hybrid_mutator()
+    # data_dic_1 = targetClassProcessor.get_target_class_with_dif_mutation_rate(data_dic_0)
+    # data_dic_2 = targetClassProcessor.get_pValue_Ciff_with_dif_mutation_rate(data_dic_0,data_dic_1)
+    # data_dic_3 = targetClassProcessor.get_AdaptiveRate_and_TargetClass(data_dic_2)
+    data_dic_3, data_dic_0 = targetClassProcessor.get_adaptive_rate_of_Hybrid_mutator()
+    print(data_dic_3)
 
     # get_classes_precision_of_Hybrid_mutator_by_adpative_mutation_rate()
 

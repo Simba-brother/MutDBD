@@ -20,7 +20,7 @@ from codes import config
 from codes.eval_model import EvalModel
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset
 from codes.utils import entropy
-from codes.scripts.target_class import get_adaptive_rate_of_Hybrid_mutator, get_adaptive_ratio_of_Combin_mutator
+# from codes.scripts.target_class import get_adaptive_rate_of_Hybrid_mutator, get_adaptive_ratio_of_Combin_mutator
 from codes.scripts.target_class import TargetClassProcessor
 
 dataset_name = config.dataset_name
@@ -419,7 +419,7 @@ def clean_poisoned_predict():
 
 if __name__ == "__main__":
      
-     clean_poisoned_predict()
+    clean_poisoned_predict()
 
     # is_dif, higher = analysis_clean_poisoned_in_target_class_of_Hybrid_mutator_with_adaptive_rate()
     # print("==================")

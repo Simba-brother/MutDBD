@@ -6,7 +6,7 @@ Reference:
 [1] Input-Aware Dynamic Backdoor Attack. NeurIPS 2020.
 '''
 
-
+import sys
 import warnings
 warnings.filterwarnings("ignore")
 import os
@@ -428,7 +428,7 @@ class IAD(Base):
         if epoch == 1:
             # 开始之前先对 modelM训练
             self.modelM.train()
-            for i in range(25):
+            for i in range(self.current_schedule["epochs_M"]):
                 # self.modelM.train() train 25轮次
                 msg = "Epoch {} | mask_density: {} | - {}  - lambda_div: {}  - lambda_norm: {}\n".format(
                         epoch, self.mask_density, self.dataset_name, self.lambda_div, self.lambda_norm
@@ -444,7 +444,7 @@ class IAD(Base):
                     msg = time.strftime("[%Y-%m-%d_%H:%M:%S] ", time.localtime()) + "Test Norm: {:.3f} | Diversity: {:.3f}\n".format(loss_norm_eval, loss_div_eval)
                     log(msg)
                 epoch += 1
-        # 此时epoch = 26
+        # 此时epoch = 1+25 = 26
         # The backdoor trigger mask generator will been frozen
         self.modelM.eval()
         self.modelM.requires_grad_(False)
@@ -608,7 +608,8 @@ class IAD(Base):
         criterion = self.loss
         criterion_div = nn.MSELoss(reduction="none") # 可用于计算图像之间的距离
         # 该epoch得到poisoned_trainset
-        self.train_poisoned_data, self.train_poisoned_label = [], []
+        self.train_poisoned_data = []
+        self.train_poisoned_label = []
         self.pure_poisoned_trainset_data = []
         self.pure_poisoned_trainset_label = []
         self.pure_clean_trainset_data = []
@@ -640,17 +641,22 @@ class IAD(Base):
             total_inputs = torch.cat((inputs_bd, inputs_cross, inputs1[num_bd + num_cross :]), 0)
             total_targets = torch.cat((targets_bd, targets1[num_bd:]), 0)
             # 填充到poisoned_trainset
-            self.train_poisoned_data += total_inputs.detach().cpu().numpy().tolist()
-            self.train_poisoned_label += total_targets.detach().cpu().numpy().tolist()
+            self.train_poisoned_data.extend(total_inputs.detach().cpu().numpy().tolist())
+            self.train_poisoned_label.extend(total_targets.detach().cpu().numpy().tolist())
             # 填充pure_poisoned_trainset_data
-            self.pure_poisoned_trainset_data += inputs_bd.detach().cpu().numpy().tolist()
-            self.pure_poisoned_trainset_label += targets_bd.detach().cpu().numpy().tolist()
+            self.pure_poisoned_trainset_data.extend(inputs_bd.detach().cpu().numpy().tolist())
+            self.pure_poisoned_trainset_label.extend(targets_bd.detach().cpu().numpy().tolist())
             # 填充pure_clean_trainset_data
-            self.pure_clean_trainset_data += inputs1[num_bd + num_cross :].detach().cpu().numpy().tolist()
-            self.pure_clean_trainset_label += targets1[num_bd + num_cross :].detach().cpu().numpy().tolist()
+            self.pure_clean_trainset_data.extend(inputs1[num_bd + num_cross :].detach().cpu().numpy().tolist())
+            self.pure_clean_trainset_label.extend(targets1[num_bd + num_cross :].detach().cpu().numpy().tolist())
             # 填充pure_cross_trainset_data
-            self.cross_trainset_data += inputs_cross.detach().cpu().numpy().tolist()
-            self.cross_trainset_label += targets1[num_bd : num_bd + num_cross].detach().cpu().numpy().tolist()
+            self.cross_trainset_data.extend(inputs_cross.detach().cpu().numpy().tolist())
+            self.cross_trainset_label.extend(targets1[num_bd : num_bd + num_cross].detach().cpu().numpy().tolist())
+            print("batch_idx:========{}========".format(batch_idx))
+            print(f"train_poisoned_data size: {sys.getsizeof(self.train_poisoned_data)/1024}") 
+            print(f"pure_poisoned_trainset_data size: {sys.getsizeof(self.pure_poisoned_trainset_data)/1024}") 
+            print(f"pure_clean_trainset_data size: {sys.getsizeof(self.pure_clean_trainset_data)/1024}") 
+            print(f"cross_trainset_data size: {sys.getsizeof(self.cross_trainset_data)/1024}") 
             # Calculating the classification loss
             preds = model(total_inputs)
             loss_ce = criterion(preds, total_targets)

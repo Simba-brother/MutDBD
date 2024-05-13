@@ -270,7 +270,38 @@ class ModelMutat_2(object):
                 linear_layers.append(layer)
             if isinstance(layer, nn.Conv2d):
                 conv2d_layers.append(layer)
+        with torch.no_grad():
+            '''
+            只有ImageNet数据集采用
+            '''
+            for conv2d_layer in conv2d_layers:
+                weight = conv2d_layer.weight # shape:out_channel,in_channel,kernel_size_0, kernel_size_1
+                if scale is None:
+                    scale = np.std(weight.tolist())
+                out_channel, in_channel, kernel_size_0, kernel_size_1 = weight.shape
+                out_neuron_num = out_channel
+                # 对输出的神经元进行变异
+                selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
+                # 获得输出神经元的id
+                out_neuron_id_list = list(range(out_neuron_num))
+                # 打乱编号
+                random.shuffle(out_neuron_id_list)
+                # 随机选择一定数量的输出神经元来进行变异
+                selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
+                normal_size = selected_neuron_num*in_channel*kernel_size_0*kernel_size_1
+                disturb_array = np.random.normal(scale=scale, size=normal_size)
+                start_idx = 0
+                for selected_out_neuron_id in selected_out_neuron_id_list:
+                    row = weight[selected_out_neuron_id,:,:,:]
+                    end_idx = start_idx + in_channel*kernel_size_0*kernel_size_1
+                    cur_disturb_array = disturb_array[start_idx:end_idx]
+                    cur_disturb_array = cur_disturb_array.reshape(row.shape)
+                    row += cur_disturb_array
+                    weight[selected_out_neuron_id,:,:,:] = row
+                    start_idx = end_idx
         # 只变异倒数第2个全连接层,因为最后一个全连接层(output layer)直接影响最后的输出结果，不适合用于变异
+        if len(linear_layers) < 2:
+            return model_copy
         mutated_layer = linear_layers[-2]
         with torch.no_grad():
             layer = mutated_layer
@@ -321,6 +352,8 @@ class ModelMutat_2(object):
                 selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
                 for neuron_id in selected_neuron_ids:
                     weight[neuron_id,:,:,:] *= -1
+        if len(linear_layers) < 2:
+            return model_copy
         # 变异最后一层隐藏层
         last_hidden_layer = linear_layers[-2]
         # 遍历各层
@@ -358,7 +391,8 @@ class ModelMutat_2(object):
                 selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
                 for neuron_id in selected_neuron_ids:
                     weight[neuron_id,:,:,:] *= 0
-        
+        if len(linear_layers) < 2:
+            return model_copy
         last_hidden_layer = linear_layers[-2]
         # 变异最后一层隐藏层
         with torch.no_grad():
@@ -401,6 +435,8 @@ class ModelMutat_2(object):
                 selected_neuron_ids = random.sample(neuron_ids,selected_neuron_num)
                 # 对该层权重进行变异
                 switch_conv2d_weights(weight, selected_neuron_ids)
+        if len(linear_layers) < 2:
+            return model_copy
         # 变异最后一层隐藏层
         last_hidden_layer = linear_layers[-2]
         with torch.no_grad():
@@ -441,6 +477,8 @@ class ModelMutat_2(object):
                 selected_cur_layer_neuron_ids = random.sample(selected_neuron_ids,selected_neuron_num)
                 for neuron_id in selected_cur_layer_neuron_ids:
                     shuffle_conv2d_weights(weight, neuron_id)
+        if len(linear_layers) < 2:
+            return model_copy
         # 变异最后一层隐藏层
         last_hidden_layer = linear_layers[-2]
         with torch.no_grad():

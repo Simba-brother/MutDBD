@@ -21,7 +21,7 @@ from codes import config
 from codes.eval_model import EvalModel
 from codes import draw
 from codes.scripts.baseData import BaseData
-from codes.scripts.target_class import get_adaptive_rate_of_Hybrid_mutator
+
 from codes.scripts.target_class import TargetClassProcessor
 
 # 获得配置信息
@@ -42,7 +42,7 @@ backdoor_model = dict_state["backdoor_model"]
 mutation_num = config.mutation_model_num
 target_class_idx = config.target_class_idx 
 # GPU设备
-device = torch.device("cuda:0")
+device = torch.device("cuda:1")
 
 
 # def eval_weight_gf_mutated_models_in_target_class():
@@ -375,7 +375,7 @@ def sort_mutated_model():
         temp_dic, _ = targetClassProcessor.get_adaptive_rate_of_Hybrid_mutator()
         # 自适应的变异率
         mutation_rate = temp_dic['adaptive_rate']
-        weight_file_list.extend(baseData.get_mutation_weight_file_by_mutation_rate(mutation_rate)) 
+        weight_file_list.extend(baseData.get_mutation_weight_file_by_mutation_rate(mutation_rate))
     for weight_file in weight_file_list:
         state_dict = torch.load(weight_file, map_location="cpu")
         backdoor_model.load_state_dict(state_dict)
@@ -406,7 +406,7 @@ def sort_mutated_model():
 if __name__ == "__main__":
 
     # setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_mutated_models")
-    # for mutation_operator in mutation_operator_name_list:
+    # for mutation_operator in mutation_operator_name_list[1:]:
     #     # mutation_operator = "gf"
     #     print(f"mutation_operator:{mutation_operator}")
     #     eval_mutated_model(mutation_operator_name=mutation_operator)
@@ -418,6 +418,7 @@ if __name__ == "__main__":
     #     eval_mutated_model_in_target_class(mutation_operator_name=mutation_operator)
 
     # eval_mutated_model_all_mutation_operator()
+
     # eval_mutated_model_in_target_class_all_mutation_operator()
 
     # setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval_weight_gf_mutated_models")
