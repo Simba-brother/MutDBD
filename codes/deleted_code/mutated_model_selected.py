@@ -3,8 +3,8 @@ import queue
 import torch
 from cliffs_delta import cliffs_delta
 
-from codes.eval_model import EvalModel
-from codes.utils import priorityQueue_2_list
+from codes.tools.eval_model import EvalModel
+from utils import priorityQueue_2_list
 
 
 '''

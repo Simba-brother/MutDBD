@@ -10,12 +10,17 @@ mutation_model_num = 50
 fine_mutation_rate_list = [0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3]
 # 配置攻击类别
 target_class_idx = 1 
-
-
-dataset_name = "ImageNet"
-class_num = 30
-model_name = "DenseNet"
+dataset_name = "CIFAR10"
+class_num = 10
+model_name = "ResNet18"
 attack_name = "BadNets"
+# GPU设备
+gpu_id = 0
+
+# CIFAR-10 dataset dir
+CIFAR10_dataset_dir = "/data/mml/backdoor_detect/dataset/cifar10"
+
+
 
 
 

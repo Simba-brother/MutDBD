@@ -13,8 +13,8 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
-from codes.core.attacks import BadNets
-from codes.datasets.cifar10.models.densenet import densenet_cifar
+from core.attacks import BadNets
+from datasets.cifar10.models.densenet import densenet_cifar
 
 
 global_seed = 666

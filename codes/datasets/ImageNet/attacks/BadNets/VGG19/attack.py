@@ -12,16 +12,16 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
 
-from codes.core.attacks import BadNets
+from core.attacks import BadNets
 from torchvision.models import vgg19
-# from codes.core.models.resnet import ResNet
-# from codes.modelMutat import ModelMutat_2
-from codes.eval_model import EvalModel
-from codes.utils import create_dir
+# from core.models.resnet import ResNet
+# from modelMutat import ModelMutat_2
+from codes.tools.eval_model import EvalModel
+from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
 import setproctitle
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 
 

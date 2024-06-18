@@ -17,7 +17,7 @@ import torchvision
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip
 from codes import core
-from codes.datasets.cifar10.models.densenet import densenet_cifar
+from datasets.cifar10.models.densenet import densenet_cifar
 
 def _seed_worker():
     worker_seed =666

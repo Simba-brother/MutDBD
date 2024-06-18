@@ -17,7 +17,7 @@ import torchvision
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip
 from codes import core
-from codes.datasets.cifar10.models.vgg import VGG
+from datasets.cifar10.models.vgg import VGG
 
 def _seed_worker():
     worker_seed =666

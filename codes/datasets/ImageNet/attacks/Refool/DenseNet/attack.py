@@ -13,10 +13,10 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
-from codes.core import Refool
+from core import Refool
 import setproctitle
 from torchvision.models import densenet121
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 from tqdm import tqdm
 

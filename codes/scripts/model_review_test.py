@@ -1,10 +1,10 @@
 import sys
 sys.path.append("./")
 import torch
-from codes.ModelReview import ModelReview
-from codes.datasets.cifar10.models.resnet18_32_32_3 import ResNet
-from codes.datasets.cifar10.models.vgg import VGG
-from codes.datasets.cifar10.models.densenet import densenet_cifar
+from codes.tools.ModelReview import ModelReview
+from datasets.cifar10.models.resnet18_32_32_3 import ResNet
+from datasets.cifar10.models.vgg import VGG
+from datasets.cifar10.models.densenet import densenet_cifar
 
 resnet18 = ResNet(18)
 vgg19 = VGG("VGG19")

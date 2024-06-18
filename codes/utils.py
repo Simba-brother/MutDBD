@@ -124,7 +124,6 @@ def entropy(data):
         ent -= p * math.log2(p)
     return ent
 
-
 class Log:
     def __init__(self, log_path):
         self.log_path = log_path
@@ -143,6 +142,5 @@ def priorityQueue_2_list(q:queue.PriorityQueue):
     return res
 
 if __name__ == "__main__":
-
     pass
     # makdir("experiments/test")

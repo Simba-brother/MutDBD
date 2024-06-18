@@ -22,9 +22,9 @@ from torchvision.models import resnet18,vgg19,densenet121
 
 import setproctitle
 from torchvision.datasets import DatasetFolder
-# from codes.core.models.resnet import ResNet
-# from codes.scripts.dataset_constructor import ExtractDatasetAndModifyLabel
-from codes.utils import create_dir
+# from core.models.resnet import ResNet
+# from scripts.dataset_constructor import ExtractDatasetAndModifyLabel
+from utils import create_dir
 from codes import config
 
 class Summary(Enum):

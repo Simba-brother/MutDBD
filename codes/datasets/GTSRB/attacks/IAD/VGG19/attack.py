@@ -17,10 +17,10 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
-from codes.core.attacks import IAD
-from codes.datasets.GTSRB.models.vgg import VGG
+from core.attacks import IAD
+from datasets.GTSRB.models.vgg import VGG
 import setproctitle
-from codes.scripts.dataset_constructor import ExtractDataset, IAD_Dataset
+from scripts.dataset_constructor import ExtractDataset, IAD_Dataset
 # 设置随机种子
 global_seed = 666
 deterministic = True

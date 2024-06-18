@@ -15,8 +15,8 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
 import setproctitle
-from codes.datasets.GTSRB.models.densenet import DenseNet121
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from datasets.GTSRB.models.densenet import DenseNet121
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 from tqdm import tqdm
 

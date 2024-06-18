@@ -20,7 +20,7 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from codes import core
 
-from codes.core.models.resnet import ResNet
+from core.models.resnet import ResNet
 
 def _seed_worker(worker_id):
     worker_seed =666

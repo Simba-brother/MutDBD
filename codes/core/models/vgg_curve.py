@@ -9,7 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-import curves
+from codes.core.models import curves
+
+
 
 class VGGCurve(nn.Module):
 

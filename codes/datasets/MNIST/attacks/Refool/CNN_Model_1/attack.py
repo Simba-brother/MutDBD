@@ -16,8 +16,8 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
 import setproctitle
-from codes.datasets.MNIST.models.model_1 import CNN_Model_1
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from datasets.MNIST.models.model_1 import CNN_Model_1
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 from tqdm import tqdm
 

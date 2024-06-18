@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
 
-from codes.datasets.cifar10.models.vgg import VGG
+from datasets.cifar10.models.vgg import VGG
 
 global_seed = 666
 deterministic = True

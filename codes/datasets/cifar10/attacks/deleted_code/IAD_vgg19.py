@@ -17,8 +17,8 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
-from codes.core.attacks import IAD
-from codes.datasets.cifar10.models.vgg import VGG
+from core.attacks import IAD
+from datasets.cifar10.models.vgg import VGG
 
 # 设置随机种子
 global_seed = 666

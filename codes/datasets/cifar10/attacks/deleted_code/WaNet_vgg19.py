@@ -18,8 +18,8 @@ from torchvision import transforms
 from torch.utils.data import DataLoader,Dataset
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
-from codes.core import WaNet
-from codes.datasets.cifar10.models.vgg import VGG
+from core import WaNet
+from datasets.cifar10.models.vgg import VGG
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
 global_seed = 666

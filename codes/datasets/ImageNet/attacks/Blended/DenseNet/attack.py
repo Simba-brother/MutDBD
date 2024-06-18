@@ -17,9 +17,9 @@ from torch.utils.data import DataLoader
 
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
 from torchvision.models import densenet121
-from codes.core import Blended
+from core import Blended
 import setproctitle
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 
 def _seed_worker(worker_id):

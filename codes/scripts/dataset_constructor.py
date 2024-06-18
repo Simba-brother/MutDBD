@@ -1,10 +1,8 @@
 '''
 灵活构建数据集脚本
 '''
-
-import random
 import torch
-from torch.utils.data import Dataset, dataloader
+from torch.utils.data import Dataset
 
 class PureCleanTrainDataset(Dataset):
     '''
@@ -198,4 +196,28 @@ class ExtractDatasetAndModifyLabel(Dataset):
     
     def __getitem__(self, index):
         sample,label =self.new_dataset[index]
+        return sample,label
+
+class ExtractNoTargetClassDataset(Dataset):
+    '''
+    从数据集中抽取出不含某个类别(target_class_idx)的数据集
+    '''
+    def __init__(self, dataset, target_class_idx):
+        self.dataset = dataset
+        self.target_class_idx = target_class_idx
+        self.no_targetClassDataset = self._getTargetClassDataset()
+
+    def _getTargetClassDataset(self):
+        no_targetClassDataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id][0], self.dataset[id][1]
+            if label != self.target_class_idx:
+                no_targetClassDataset.append((sample,label))
+        return no_targetClassDataset
+    
+    def __len__(self):
+        return len(self.no_targetClassDataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.no_targetClassDataset[index]
         return sample,label

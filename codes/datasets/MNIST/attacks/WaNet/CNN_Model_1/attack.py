@@ -18,10 +18,10 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 from torchvision import transforms
 from torch.utils.data import DataLoader,Dataset
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
-from codes.datasets.MNIST.models.model_1 import CNN_Model_1
-from codes.core import WaNet
+from datasets.MNIST.models.model_1 import CNN_Model_1
+from core import WaNet
 
-from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
 global_seed = 555

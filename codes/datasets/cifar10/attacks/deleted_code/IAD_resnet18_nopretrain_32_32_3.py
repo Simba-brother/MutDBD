@@ -17,8 +17,8 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
-from codes.core.attacks import IAD
-from codes.core.models.resnet import ResNet
+from core.attacks import IAD
+from core.models.resnet import ResNet
 
 # 设置随机种子
 global_seed = 666

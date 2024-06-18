@@ -1,0 +1,15 @@
+{
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "/home/mml/workspace/backdoor_detect"
+    },
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "/home/mml/workspace/backdoor_detect"
+    },
+    "terminal.integrated.env.osx": {
+        "PYTHONPATH": "/home/mml/workspace/backdoor_detect"
+    },
+    "editor.codeActionsOnSave": {
+    
+        
+    }
+}

@@ -13,16 +13,16 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
-from codes.core.attacks import Blended
+from core.attacks import Blended
 
-from codes.datasets.MNIST.models.model_1 import CNN_Model_1
-from codes.modelMutat import ModelMutat
-from codes.eval_model import EvalModel
-from codes.utils import create_dir
+from datasets.MNIST.models.model_1 import CNN_Model_1
+from codes.ourMethod.modelMutat import ModelMutat
+from codes.tools.eval_model import EvalModel
+from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
 import setproctitle
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 global_seed = 666
 deterministic = True

@@ -5,11 +5,12 @@ Reference:
 [1] Bridging Mode Connectivity in Loss Landscapes and Adversarial Robustness. ICLR, 2020.
 '''
 from calendar import c
-import sys, os
-sys.path.append(os.path.join(os.getcwd(), 'codes/core/models'))
+# import sys, os
+# sys.path.append(os.path.join(os.getcwd(), 'codes/core/models'))
 import torch.nn as nn
 import torch.nn.functional as F
-import curves
+# import curves
+from codes.core.models import curves
 import math
 
 class BasicBlockCurves(nn.Module):

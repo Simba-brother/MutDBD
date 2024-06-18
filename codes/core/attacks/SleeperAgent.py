@@ -5,8 +5,8 @@ This code is developed based on its official codes (https://github.com/hsouri/Sl
 Reference:
 [1] Sleeper Agent: Scalable Hidden Trigger Backdoors for Neural Networks Trained from Scratch.arXiv, 2021.
 '''
-import sys
-# sys.path.append("./")
+
+
 from cv2 import compare
 from codes.core.attacks.base import *
 from copy import deepcopy

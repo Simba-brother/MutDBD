@@ -18,10 +18,10 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 import torchvision.transforms as transforms
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
-from codes.core import LabelConsistent
+from core import LabelConsistent
 import setproctitle
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
-from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from core.models.baseline_MNIST_network import BaselineMNISTNetwork
+from scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 def _seed_worker(worker_id):
     worker_seed =666

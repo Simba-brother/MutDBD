@@ -480,7 +480,7 @@ def CreatePoisonedDataset(benign_dataset, y_target, poisoned_rate, pattern, mask
         raise NotImplementedError
 
 class UAP:
-    def __init__(self, model,  train_dataset, test_dataset, class_name, use_cuda, target_class=0,
+    def __init__(self, model,  train_dataset, test_dataset, class_name, device, target_class=0,
                  mask=None, p_samples=0.01, loader=None):
         """
            This class is used to generating UAP given a benign dataset and a benign model.
@@ -488,7 +488,7 @@ class UAP:
            :param train_dataset : Benign training dataset.
            :param test_dataset: Benign testing dataset.
            :param class_name: The class name of the benign dataset ("MNIST", "CIFAR10", "DatasetFolder")
-           :param use_cuda: Whether or not use cuda
+           :param device: Whether or not use cuda
            :param target_class: N-to-1 attack target label.
            :param mask: Mask for generating perturbation "v"
            :param p_samples: ratio of samples used for generating UAP
@@ -496,7 +496,7 @@ class UAP:
         """
         #self.datasets_root_dir = datasets_root_dir
         self.model = model
-        self.use_cuda = use_cuda
+        self.device = device
         self.mask = mask
         self.target_class = target_class
         self.trainset =  train_dataset
@@ -557,7 +557,7 @@ class UAP:
         r_tot = np.zeros(input_shape)
 
         loop_i = 0
-        wrapped = tqdm(total=max_iter)
+        # wrapped = tqdm(total=max_iter)
 
         x = Variable(pert_image[None, :], requires_grad=True)
         fs = self.model(x)
@@ -582,19 +582,19 @@ class UAP:
             pert = pert_k
             # update description and progress bar
 
-            wrapped.set_description(f"perturbation: {pert:.5f}")
-            wrapped.update(1)
+            # wrapped.set_description(f"perturbation: {pert:.5f}")
+            # wrapped.update(1)
             w = w_k
 
             # compute r_i and r_tot
             # Added 1e-4 for numerical stability
             r_i = (pert+1e-4) * w / np.linalg.norm(w)
             r_tot = np.float32(r_tot + r_i)
-
-            if self.use_cuda:
-                pert_image = image + (1+overshoot)*torch.from_numpy(r_tot).cuda()
-            else:
-                pert_image = image + (1+overshoot)*torch.from_numpy(r_tot)
+            pert_image = image + (1+overshoot)*torch.from_numpy(r_tot).to(self.device)
+            # if self.use_cuda:
+            #     pert_image = image + (1+overshoot)*torch.from_numpy(r_tot).cuda()
+            # else:
+            #     pert_image = image + (1+overshoot)*torch.from_numpy(r_tot)
 
             x = Variable(pert_image, requires_grad=True)
             fs = self.model(x)
@@ -635,9 +635,8 @@ class UAP:
         :return: the universal perturbation.
         """
 
-        if self.use_cuda:
-            self.model.cuda()
-        device = torch.device("cuda" if self.use_cuda else "cpu")
+        
+        self.model.to(self.device)
         self.model.eval()
 
         v = torch.tensor(0)
@@ -661,7 +660,7 @@ class UAP:
                 cur_img, _ = self.trainset[k]  # (3,32,32)
                 perturb_img = cur_img + v
 
-                cur_img, perturb_img = cur_img.to(device), perturb_img.to(device)
+                cur_img, perturb_img = cur_img.to(self.device), perturb_img.to(self.device)
                 if int(self.model(cur_img.unsqueeze(0)).max(1)[1]) == \
                         int(self.model((perturb_img.unsqueeze(0)).type(torch.cuda.FloatTensor)).max(1)[1]):
 
@@ -689,9 +688,9 @@ class UAP:
                 for batch_idx, (inputs, _) in enumerate(self.testloader):
                     test_num_images += inputs.shape[0]
                     inputs_pert = inputs + v
-                    inputs = inputs.to(device)
+                    inputs = inputs.to(self.device)
                     outputs = self.model(inputs)
-                    inputs_pert = inputs_pert.to(device)
+                    inputs_pert = inputs_pert.to(self.device)
                     outputs_perturb = self.model(inputs_pert)
 
                     _, predicted = outputs.max(1)
@@ -753,7 +752,6 @@ class TUAP(Base):
                  test_dataset,
                  model,
                  loss,
-
                  benign_model,
                  y_target,
                  poisoned_rate,
@@ -801,9 +799,9 @@ class TUAP(Base):
         # the values of the pixels where pattern lies should be 1, and otherwise 0
 
         if pattern is None:
-
-            use_cuda = torch.cuda.is_available()
-            UAP_ins = UAP(benign_model, train_dataset,test_dataset,class_name, use_cuda, self.y_target, self.mask, p_samples)
+            device = torch.device(self.global_schedule["device"])
+            # use_cuda = torch.cuda.is_available()
+            UAP_ins = UAP(benign_model, train_dataset, test_dataset, class_name, device, self.y_target, self.mask, p_samples)
             self.pattern = UAP_ins.universal_perturbation(delta=delta, max_iter_uni=max_iter_uni, epsilon=epsilon, p_norm=p_norm, num_classes=num_classes,
                                                           overshoot=overshoot, max_iter_df=max_iter_df)
         else:

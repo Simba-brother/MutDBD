@@ -15,10 +15,10 @@ from torch.utils.data import Dataset
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip
-from codes.datasets.cifar10.models.vgg import VGG
+from datasets.cifar10.models.vgg import VGG
 from codes import core
 import setproctitle
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 
 def _seed_worker(worker_id):

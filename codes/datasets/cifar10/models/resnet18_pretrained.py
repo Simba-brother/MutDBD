@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 import timm
 
-from codes.utils import create_dir, random_seed
+from utils import create_dir, random_seed
 
 def get_model():
     '''

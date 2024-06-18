@@ -20,8 +20,8 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from codes import core
 import setproctitle
-from codes.datasets.GTSRB.models.densenet import DenseNet121
-from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from datasets.GTSRB.models.densenet import DenseNet121
+from scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 def _seed_worker(worker_id):
     worker_seed =666

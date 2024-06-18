@@ -12,16 +12,16 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
 
-from codes.core.attacks import IAD
+from core.attacks import IAD
 from torchvision.models import resnet18
-# from codes.core.models.resnet import ResNet
-# from codes.modelMutat import ModelMutat_2
-from codes.eval_model import EvalModel
-from codes.utils import create_dir
+# from core.models.resnet import ResNet
+# from modelMutat import ModelMutat_2
+from codes.tools.eval_model import EvalModel
+from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
 import setproctitle
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, IAD_Dataset
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, IAD_Dataset
 from codes import config
 
 global_seed = 666
@@ -149,7 +149,7 @@ schedule = {
     'lambda_M': 0.1,
     
     'epochs': 600, # attack:600|benign:10
-    'epochs_M': 0,
+    'epochs_M': 25,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
@@ -247,6 +247,83 @@ def process_eval():
     print("process_eval success")
     
 
+def generation_dict_state():
+    best_state_dict_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "best_state_dict.pth")
+    best_state_dict = torch.load(best_state_dict_path)
+    '''
+    best_state_dict = {
+                        "model": self.model.state_dict(),
+                        "modelG": self.modelG.state_dict(),
+                        "modelM": self.modelM.state_dict(),
+                        "optimizerC": optimizer.state_dict(),
+                        "optimizerG": optimizerG.state_dict(),
+                        "schedulerC": scheduler.state_dict(),
+                        "schedulerG": schedulerG.state_dict(),
+                        "best_acc_clean": best_acc_clean,
+                        "best_acc_bd": best_acc_bd,
+                        "best_acc_cross": best_acc_cross,
+                        "best_epoch": best_epoch,
+                        "poisoned_trainset_data": self.train_poisoned_data,
+                        "poisoned_trainset_label": self.train_poisoned_label,
+                        "flag_list":self.flag_list
+                    }
+    '''
+    device = torch.device(schedule["device"])
+    poisoned_trainset_data = best_state_dict["poisoned_trainset_data"]
+    poisoned_trainset_label = best_state_dict["poisoned_trainset_label"]
+    poisoned_trainset = IAD_Dataset(poisoned_trainset_data, poisoned_trainset_label)
+    pure_poisoned_trainset_data = []
+    pure_poisoned_trainset_label = []
+    pure_clean_trainset_data = []
+    pure_clean_trainset_label = []
+    flag_list = best_state_dict["flag_list"]
+    for i, flag in enumerate(flag_list):
+        if flag == 1:
+            # poisoned
+            pure_poisoned_trainset_data.append(poisoned_trainset_data[i])
+            pure_poisoned_trainset_label.append(poisoned_trainset_label[i])
+        elif flag == 0:
+            # clean
+            pure_clean_trainset_data.append(poisoned_trainset_data[i])
+            pure_clean_trainset_label.append(poisoned_trainset_label[i])
+
+    pure_poisoned_trainset = IAD_Dataset(pure_poisoned_trainset_data, pure_poisoned_trainset_label)
+    pure_clean_trainset = IAD_Dataset(pure_clean_trainset_data, pure_clean_trainset_label)
+
+    test_poisoned_data = []
+    test_poisoned_label = []
+    device = torch.device(schedule["device"])
+    modelG_state_dict = best_state_dict["modelG"]
+    modelM_state_dict = best_state_dict["modelM"]
+    modelG = iad.modelG
+    modelM = iad.modelM
+    modelG.load_state_dict(modelG_state_dict)
+    modelM.load_state_dict(modelM_state_dict)
+    for batch_idx, batch in enumerate(testset_loader):
+        X = batch[0]
+        Y = batch[1]
+        X = X.to(device)
+        Y = Y.to(device)
+        bd_inputs, bd_targets, patterns, masks_output = iad.create_bd(X,Y,modelG = modelG,modelM = modelM)    
+        test_poisoned_data.extend(bd_inputs.detach().cpu().numpy().tolist())
+        test_poisoned_label.extend(bd_targets.detach().cpu().numpy().tolist())
+    poisoned_testset = IAD_Dataset(test_poisoned_data, test_poisoned_label)
+
+
+    dict_state = {}
+    backdoor_model_state_dict = best_state_dict["model"]
+    model.load_state_dict(backdoor_model_state_dict)
+    dict_state["backdoor_model"] = model
+    dict_state["poisoned_trainset"] = poisoned_trainset
+    dict_state["poisoned_testset"] = poisoned_testset
+    dict_state["clean_testset"] = testset
+    dict_state["purePoisonedTrainDataset"] = pure_poisoned_trainset
+    dict_state["pureCleanTrainDataset"] = pure_clean_trainset
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
+    torch.save(dict_state, dict_state_file_path)
+
+
+
 def update_dict_state():
     
     dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
@@ -297,8 +374,9 @@ def get_dict_state():
     return dict_state
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_"+"attack")
-    attack()
+    setproctitle.setproctitle(dataset_name+"|"+model_name+"|"+attack_name+"|"+"generation_dict_state")
+    generation_dict_state()
+    # attack()
     # process_eval()
     # update_dict_state()
     pass

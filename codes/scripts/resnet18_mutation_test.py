@@ -11,12 +11,12 @@ from tqdm import tqdm
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 from torchvision.datasets import DatasetFolder
 
-from codes.modelMutat import ModelMutat
-from codes.eval_model import EvalModel
+from codes.ourMethod.modelMutat import ModelMutat
+from codes.tools.eval_model import EvalModel
 from codes import config
-from codes.core.models.resnet import ResNet
-from codes.draw import draw_line
-from codes.utils import create_dir
+from core.models.resnet import ResNet
+from codes.tools.draw import draw_line
+from utils import create_dir
 dataset_name = config.dataset_name
 model_name = config.model_name
 attack_name = config.attack_name

@@ -14,15 +14,15 @@ from sklearn.cluster import KMeans
 import scipy.stats as stats
 from tqdm import tqdm
 from torch.utils.data import DataLoader,Dataset
-from codes.datasets.cifar10.models.resnet18_32_32_3 import ResNet
-from codes.datasets.cifar10.models.vgg import VGG
-from codes.eval_model import EvalModel
-from codes.utils import entropy, create_dir
-from codes.scripts.baseData import BaseData
+from datasets.cifar10.models.resnet18_32_32_3 import ResNet
+from datasets.cifar10.models.vgg import VGG
+from codes.tools.eval_model import EvalModel
+from utils import entropy, create_dir
+from codes.ourMethod.baseData import BaseData
 import scipy.stats as stats
 import queue
 from codes import config
-from codes.draw import draw_box,draw_line,draw_stackbar
+from codes.tools.draw import draw_box,draw_line,draw_stackbar
 from cliffs_delta import cliffs_delta
 from mutated_model_selected import select_by_suspected_nonsuspected_acc_dif, select_by_suspected_nonsuspected_confidence_distribution_dif
 
@@ -50,30 +50,30 @@ adaptive_ratio_dic = joblib.load(adapive_ratio_dic_path)
 if dataset_name == "CIFAR10":
     if model_name == "resnet18_nopretrain_32_32_3":
         if attack_name == "BadNets":
-            from codes.datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import *
+            from datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import *
         if attack_name == "Blended":
-            from codes.datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import *
+            from datasets.cifar10.attacks.Blended_resnet18_nopretrain_32_32_3 import *
         if attack_name == "IAD":
-            from codes.datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import *
+            from datasets.cifar10.attacks.IAD_resnet18_nopretrain_32_32_3 import *
         if attack_name == "LabelConsistent":
-            from codes.datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import *
+            from datasets.cifar10.attacks.LabelConsistent_resnet18_nopretrain_32_32_3 import *
         if attack_name == "Refool":
-            from codes.datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import *
+            from datasets.cifar10.attacks.Refool_resnet18_nopretrain_32_32_3 import *
         if attack_name == "WaNet":
-            from codes.datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import *
+            from datasets.cifar10.attacks.WaNet_resnet18_nopretrain_32_32_3 import *
     if model_name == "vgg19":
         if attack_name == "BadNets":
-            from codes.datasets.cifar10.attacks.badnets_vgg19 import *
+            from datasets.cifar10.attacks.badnets_vgg19 import *
         if attack_name == "Blended":
-            from codes.datasets.cifar10.attacks.Blended_vgg19 import *
+            from datasets.cifar10.attacks.Blended_vgg19 import *
         if attack_name == "IAD":
-            from codes.datasets.cifar10.attacks.IAD_vgg19 import *
+            from datasets.cifar10.attacks.IAD_vgg19 import *
         if attack_name == "LabelConsistent":
-            from codes.datasets.cifar10.attacks.LabelConsistent_vgg19 import *
+            from datasets.cifar10.attacks.LabelConsistent_vgg19 import *
         if attack_name == "Refool":
-            from codes.datasets.cifar10.attacks.Refool_vgg19 import *
+            from datasets.cifar10.attacks.Refool_vgg19 import *
         if attack_name == "WaNet":
-            from codes.datasets.cifar10.attacks.WaNet_vgg19 import *
+            from datasets.cifar10.attacks.WaNet_vgg19 import *
 
 dict_state = get_dict_state()
 # attack category

@@ -7,8 +7,8 @@ import numpy as np
 import cv2
 
 sys.path.append("./")
-from codes.modelMutat import ModelMutat
-from codes.eval_model import EvalModel
+from codes.ourMethod.modelMutat import ModelMutat
+from codes.tools.eval_model import EvalModel
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 from torchvision.datasets import DatasetFolder
 from codes import config
@@ -20,7 +20,7 @@ attack_name = config.attack_name
 # mutation_name = config.mutation_name 
 # mutation_name_list =  config.mutation_name_list
 
-from codes.datasets.cifar10.models.vgg import VGG
+from datasets.cifar10.models.vgg import VGG
 
 model = VGG("VGG19")
 clean_state_dict_path = "/data/mml/backdoor_detect/experiments/CIFAR10/vgg19/clean/best_model.pth"

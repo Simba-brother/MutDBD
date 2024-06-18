@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
 
-from codes.core.models.resnet import ResNet
+from core.models.resnet import ResNet
 from tqdm import tqdm
 
 global_seed = 666

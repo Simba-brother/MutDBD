@@ -444,11 +444,16 @@ class IAD(Base):
                     msg = time.strftime("[%Y-%m-%d_%H:%M:%S] ", time.localtime()) + "Test Norm: {:.3f} | Diversity: {:.3f}\n".format(loss_norm_eval, loss_div_eval)
                     log(msg)
                 epoch += 1
+        # self.modelM被训练完成
         # 此时epoch = 1+25 = 26
         # The backdoor trigger mask generator will been frozen
         self.modelM.eval()
         self.modelM.requires_grad_(False)
-
+        modelM_state_dict = self.modelM.state_dict()
+        modelM_state_dict_file_name = "modelM_state_dict.pth"
+        modelM_state_dict_saved_path = os.path.join(work_dir, modelM_state_dict_file_name)
+        torch.save(modelM_state_dict, modelM_state_dict_saved_path)
+        print(f"ModelM is trained and its state_dict is saved in {modelM_state_dict_saved_path}")
         best_acc_clean = -1
         best_acc_bd = -1 # backdoor trigger
         best_acc_cross = -1
@@ -520,20 +525,20 @@ class IAD(Base):
                         "best_epoch": best_epoch,
                         "poisoned_trainset_data": self.train_poisoned_data,
                         "poisoned_trainset_label": self.train_poisoned_label,
-                        "pure_poisoned_trainset_data": self.pure_poisoned_trainset_data,
-                        "pure_poisoned_trainset_label": self.pure_poisoned_trainset_label,
-                        "pure_clean_trainset_data": self.pure_clean_trainset_data,
-                        "pure_clean_trainset_label": self.pure_clean_trainset_label,
-                        "cross_trainset_data":self.cross_trainset_data,
-                        "cross_trainset_label":self.cross_trainset_label,
-                        "test_poisoned_data":self.test_poisoned_data, 
-                        "test_poisoned_label":self.test_poisoned_label
+                        "flag_list":self.flag_list
+                        # "pure_poisoned_trainset_data": self.pure_poisoned_trainset_data,
+                        # "pure_poisoned_trainset_label": self.pure_poisoned_trainset_label,
+                        # "pure_clean_trainset_data": self.pure_clean_trainset_data,
+                        # "pure_clean_trainset_label": self.pure_clean_trainset_label,
+                        # "cross_trainset_data":self.cross_trainset_data,
+                        # "cross_trainset_label":self.cross_trainset_label,
+                        # "test_poisoned_data":self.test_poisoned_data, 
+                        # "test_poisoned_label":self.test_poisoned_label
                     }
             
             # Save the checkpoints
             # 到了检查点周期
             if epoch % self.current_schedule['save_epoch_interval'] == 0:
-                print(" Saving!!")
                 state_dict = {
                     "model": self.model.state_dict(),
                     "modelG": self.modelG.state_dict(),
@@ -547,25 +552,29 @@ class IAD(Base):
                     "avg_acc_cross": avg_acc_cross,
                     "epoch": epoch
                 }
+                
                 ckpt_model_filename = "ckpt_epoch_" + str(epoch) + ".pth"
                 ckpt_model_path = os.path.join(work_dir, ckpt_model_filename)
                 torch.save(state_dict, ckpt_model_path)
-            
+                print(f"save_ckpt:{ckpt_model_path}")
+
+                best_state_dict_filename = "best_state_dict.pth"
+                best_state_dict_file_path = os.path.join(work_dir, best_state_dict_filename)
+                torch.save(best_state_dict, best_state_dict_file_path)
+                print(f"save_best_state_dict:{ckpt_model_path}")
             epoch += 1
             if epoch > self.current_schedule['epochs']:
-                print(" Saving!!")
                 ckpt_model_filename = "dict_state.pth"
                 ckpt_model_path = os.path.join(work_dir, ckpt_model_filename)
                 # Save the best checkpoints
                 torch.save(best_state_dict, ckpt_model_path)
+                log(f"save best_state_dict in {ckpt_model_path}")
                 msg = time.strftime("[%Y-%m-%d_%H:%M:%S] ", time.localtime()) + \
                     "Best Epoch {}: | Best BA: {:.3f} | Best ASR: {:.3f} | Best Cross Accuracy: {:3f}\n".format(
                         best_epoch, best_acc_clean, best_acc_bd, best_acc_cross
                     )
                 log(msg)
-                break   
-       
-            
+                break       
 
     def train_step(
         self, 
@@ -610,14 +619,17 @@ class IAD(Base):
         # 该epoch得到poisoned_trainset
         self.train_poisoned_data = []
         self.train_poisoned_label = []
-        self.pure_poisoned_trainset_data = []
-        self.pure_poisoned_trainset_label = []
-        self.pure_clean_trainset_data = []
-        self.pure_clean_trainset_label = []
-        self.cross_trainset_data = []
-        self.cross_trainset_label = []
+        # flag[idx] = 0:clean, flag[idx] = 1: poisoned, flag[idx] = 2: 
+        self.flag_list = []
+        # self.pure_poisoned_trainset_data = []
+        # self.pure_poisoned_trainset_label = []
+        # self.pure_clean_trainset_data = []
+        # self.pure_clean_trainset_label = []
+        # self.cross_trainset_data = []
+        # self.cross_trainset_label = []
         # 一批次一批次的生成bd样本
-        for batch_idx, (inputs1, targets1), (inputs2, targets2) in zip(range(len(train_dl1)), train_dl1, train_dl2):
+        batch_num = range(len(train_dl1))
+        for batch_idx, (inputs1, targets1), (inputs2, targets2) in zip(batch_num, train_dl1, train_dl2):
             # victim model 优化器中的参数梯度清零
             optimizerC.zero_grad()
             # 获得一批数据和label
@@ -627,13 +639,16 @@ class IAD(Base):
             # Construct the benign samples, backdoored samples and cross samples
             # batchsize
             bs = inputs1.shape[0]
+            flag_array = np.zeros(bs, dtype=np.int64)
             # backdoor sample 数量
             num_bd = int(self.poisoned_rate * bs)
             # cross sample 数量
             num_cross = int(self.cross_rate * bs)
-            # 此时 modelM 已经被训练了
+            # 根据ModelM和ModelG，再根据IAD中的create_bd方法构建出backdoor数据。注意:此时 modelM 已经被训练了.
+            flag_array[:num_bd] = 1
             inputs_bd, targets_bd, patterns1, masks1 = self.create_bd(inputs1[:num_bd], targets1[:num_bd], modelG, modelM)
             # 从inputs2[num_bd : num_bd + num_cross]中生成pattern和mask 作用到inputs1[num_bd : num_bd + num_cross]！！！
+            flag_array[num_bd : num_bd + num_cross] = 2
             inputs_cross, patterns2, masks2 = self.create_cross(
                 inputs1[num_bd : num_bd + num_cross], inputs2[num_bd : num_bd + num_cross], modelG, modelM
             )
@@ -643,6 +658,9 @@ class IAD(Base):
             # 填充到poisoned_trainset
             self.train_poisoned_data.extend(total_inputs.detach().cpu().numpy().tolist())
             self.train_poisoned_label.extend(total_targets.detach().cpu().numpy().tolist())
+            self.flag_list.extend(flag_array.tolist())
+            '''
+            ImageNet-subset不能用,因为会爆内存
             # 填充pure_poisoned_trainset_data
             self.pure_poisoned_trainset_data.extend(inputs_bd.detach().cpu().numpy().tolist())
             self.pure_poisoned_trainset_label.extend(targets_bd.detach().cpu().numpy().tolist())
@@ -657,6 +675,7 @@ class IAD(Base):
             print(f"pure_poisoned_trainset_data size: {sys.getsizeof(self.pure_poisoned_trainset_data)/1024}") 
             print(f"pure_clean_trainset_data size: {sys.getsizeof(self.pure_clean_trainset_data)/1024}") 
             print(f"cross_trainset_data size: {sys.getsizeof(self.cross_trainset_data)/1024}") 
+            '''
             # Calculating the classification loss
             preds = model(total_inputs)
             loss_ce = criterion(preds, total_targets)
@@ -830,7 +849,6 @@ class IAD(Base):
         
         return avg_acc_clean, avg_acc_bd, avg_acc_cross
 
-
     def train_mask_step(
         self, 
         modelM, 
@@ -884,7 +902,6 @@ class IAD(Base):
         schedulerM.step()
         return total_loss, loss_norm, loss_div
 
-
     def eval_mask(
         self, 
         modelM, 
@@ -927,7 +944,6 @@ class IAD(Base):
 
         return loss_norm, loss_div
 
-
     def create_bd(
         self, 
         inputs, 
@@ -956,7 +972,6 @@ class IAD(Base):
         bd_inputs = inputs + (patterns - inputs) * masks_output
         return bd_inputs, bd_targets, patterns, masks_output
 
-
     def create_cross(
         self, 
         inputs1, 
@@ -979,13 +994,11 @@ class IAD(Base):
         inputs_cross = inputs1 + (patterns2 - inputs1) * masks_output
         return inputs_cross, patterns2, masks_output
 
-
     def get_model(self):
         """
             Return the victim model.
         """
         return self.model
-
 
     def get_modelM(self):
         """
@@ -993,13 +1006,11 @@ class IAD(Base):
         """
         return self.modelM
 
-
     def get_modelG(self):
         """
             Return the backdoor trigger pattern generator.
         """
         return self.modelG
-
 
     def get_poisoned_dataset(self):
         """

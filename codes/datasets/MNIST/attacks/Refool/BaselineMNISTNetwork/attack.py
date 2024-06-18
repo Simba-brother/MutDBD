@@ -16,8 +16,8 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from codes import core
 import setproctitle
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from core.models.baseline_MNIST_network import BaselineMNISTNetwork
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 from tqdm import tqdm
 

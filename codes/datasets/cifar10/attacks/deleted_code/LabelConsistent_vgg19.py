@@ -20,7 +20,7 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from codes import core
 
-from codes.datasets.cifar10.models.vgg import VGG
+from datasets.cifar10.models.vgg import VGG
 
 # CUDA_VISIBLE_DEVICES = '3'
 # os.environ['CUDA_VISIBLE_DEVICES'] = CUDA_VISIBLE_DEVICES

@@ -1,9 +1,7 @@
-import sys
-sys.path.append("./")
 import os
 import torch
 import config
-from scripts.dataset_constructor import (ExtractDataset, 
+from codes.scripts.dataset_constructor import (ExtractDataset, 
                                         PureCleanTrainDataset, 
                                         PurePoisonedTrainDataset, 
                                         ExtractTargetClassDataset, 

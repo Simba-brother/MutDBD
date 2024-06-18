@@ -13,16 +13,16 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
-from codes.core.attacks import IAD
+from core.attacks import IAD
 
-from codes.core.models.baseline_MNIST_network import BaselineMNISTNetwork
-from codes.modelMutat import ModelMutat
-from codes.eval_model import EvalModel
-from codes.utils import create_dir
+from core.models.baseline_MNIST_network import BaselineMNISTNetwork
+from codes.ourMethod.modelMutat import ModelMutat
+from codes.tools.eval_model import EvalModel
+from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
 import setproctitle
-from codes.scripts.dataset_constructor import IAD_Dataset
+from scripts.dataset_constructor import IAD_Dataset
 
 global_seed = 666
 deterministic = True

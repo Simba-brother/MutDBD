@@ -12,15 +12,15 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
-from codes.core.attacks import Blended
-from codes.datasets.GTSRB.models.densenet import DenseNet121
-from codes.modelMutat import ModelMutat_2
-from codes.eval_model import EvalModel
-from codes.utils import create_dir
+from core.attacks import Blended
+from datasets.GTSRB.models.densenet import DenseNet121
+from codes.ourMethod.modelMutat import ModelMutat_2
+from codes.tools.eval_model import EvalModel
+from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
 import setproctitle
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 global_seed = 666
 deterministic = True

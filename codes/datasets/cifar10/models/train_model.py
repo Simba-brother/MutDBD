@@ -17,8 +17,8 @@ from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizon
 
 from vgg import VGG
 # from resnet18_32_32_3 import ResNet
-from codes.core.models.resnet import ResNet
-from codes.tools.model_train import ModelTrain
+from core.models.resnet import ResNet
+from codes.tools.model_train_test import ModelTrain
 from codes import config
 
 exp_root_dir = config.exp_root_dir
