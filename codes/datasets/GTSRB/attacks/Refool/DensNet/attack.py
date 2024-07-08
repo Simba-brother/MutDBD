@@ -1,24 +1,21 @@
-import sys
-sys.path.append("./")
-import os.path as osp
 import os
 import random
 import time
 import cv2
 import numpy as np
+import setproctitle
+
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, dataloader
-from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip, ToPILImage, Resize, Normalize
+from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, RandomCrop
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
+from torchvision.datasets import DatasetFolder
 from codes import core
-import setproctitle
-from datasets.GTSRB.models.densenet import DenseNet121
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
-from tqdm import tqdm
+from codes.datasets.GTSRB.models.densenet import DenseNet121
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+
 
 global_seed = 666
 deterministic = True
@@ -103,7 +100,7 @@ refool= core.Refool(
 
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "GTSRB"
-model_name = "DensNet"
+model_name = "DenseNet"
 attack_name = "Refool"
 
 schedule = {
@@ -125,7 +122,7 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
+    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
     'experiment_name': 'attack'
 }
 
@@ -154,12 +151,12 @@ def attack():
 
 
     # 获得backdoor model weights
-    backdoor_weights = torch.load(osp.join(work_dir, "best_model.pth"), map_location="cpu")
+    backdoor_weights = torch.load(os.path.join(work_dir, "best_model.pth"), map_location="cpu")
     # backdoor model存入字典数据中
     model.load_state_dict(backdoor_weights)
     dict_state["backdoor_model"] = model
     save_file_name = "dict_state.pth"
-    save_path = osp.join(work_dir, save_file_name)
+    save_path = os.path.join(work_dir, save_file_name)
     print("开始保存攻击后数据")
     torch.save(dict_state, save_path)
     print(f"Refool攻击完成,数据和日志被存入{save_path}")
@@ -169,7 +166,7 @@ def eval(model,testset):
     评估接口
     '''
     model.eval()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:1")
     model.to(device)
     batch_size = 128
     # 加载trigger set
@@ -237,14 +234,57 @@ def get_dict_state():
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     return dict_state
 
-def update_dict_state():
-    pass
+def create_backdoor_data():
+    # creat
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack_2024-07-07_14:45:47", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path,map_location="cpu")
+    backdoor_model = dict_state["backdoor_model"]
+    poisoned_trainset =  refool.poisoned_train_dataset
+    poisoned_testset =  refool.poisoned_test_dataset
+    clean_testset = testset
+    # eval
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    clean_testset_acc = eval(backdoor_model,testset)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
+    print("poisoned_testset_acc", poisoned_testset_acc)
+    print("clean_testset_acc", clean_testset_acc)
+    # save
+    save_dir = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name)
+    save_file_name = "backdoor_data.pth"
+    backdoor_data = {
+        "backdoor_model":backdoor_model,
+        "poisoned_trainset":poisoned_trainset,
+        "poisoned_testset":poisoned_testset,
+        "clean_testset":testset,
+        "poisoned_ids":poisoned_trainset.poisoned_set
+    }
+    save_file_path = os.path.join(save_dir,save_file_name)
+    torch.save(backdoor_data,save_file_path)
+    print(f"backdoor_data is saved in {save_file_path}")
+    
+def eval_backdoor():
+    backdoor_data_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "backdoor_data.pth")
+    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_trainset = backdoor_data["poisoned_trainset"]
+    poisoned_testset = backdoor_data["poisoned_testset"]
+    clean_testset = backdoor_data["clean_testset"]
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # eval
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    clean_testset_acc = eval(backdoor_model,clean_testset)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
+    print("poisoned_testset_acc", poisoned_testset_acc)
+    print("clean_testset_acc", clean_testset_acc)
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
+    proc_title = "EvalBackdoor|"+dataset_name+"|"+attack_name+"|"+model_name
+    setproctitle.setproctitle(proc_title)
+    print(proc_title)
     # attack()
-    process_eval()
-    # get_dict_state()
-    # update_dict_state()
+    # create_backdoor_data()
+    eval_backdoor()
 
     pass

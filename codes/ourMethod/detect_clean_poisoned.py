@@ -28,36 +28,32 @@ pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
 device = torch.device(f"cuda:{config.gpu_id}")
 
 
-def detect_poisonedAndclean_from_targetClass(adaptive_mutation_rate):
-    # 1.获得排序的变异模型
-    data_dir = os.path.join(
-        config.exp_root_dir, 
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name, 
-        "Hybrid", 
-        f"adaptive_rate_{adaptive_mutation_rate}")
-    data_file_name = "sorted_mutation_models.data"
-    data_path = os.path.join(data_dir, data_file_name)
-    priority_list = joblib.load(data_path)
-    # 取队头前50
-    top = 50
-    top_list = priority_list[:top]
-    # 前50的变异模型权重
-    top_w_file_list = []
-    for item in top_list:
-        top_w_file_list.append(item[1])
-    # 数据结构{m_i:[pred_label, pred_label]}
+def detect_poisonedAndclean_from_targetClass(
+        sorted_weights_path_list,
+        model_struct,
+        target_class_clean_set,
+        purePoisonedTrainDataset
+    ):
+    '''
+    从target_class中分离出poisoned和clean
+    Args:
+        sorted_weights_path_list: 排好序的变异模型权重文件路径
+        model_struct: 变异模型结构
+        target_class_clean_set: target class中的clean
+        purePoisonedTrainDataset: target class中的poisoned
+    '''
+    top_weights_list = sorted_weights_path_list[:50]
+
     clean_dict = {}
     poisoned_dict = {}
-    for m_i, w_file in enumerate(top_w_file_list):
-        mutation_model_state_dict = torch.load(w_file, map_location="cpu")
-        backdoor_model.load_state_dict(mutation_model_state_dict)
-        e = EvalModel(backdoor_model, target_class_clean_set, device)
+    for m_i, weights_path in enumerate(top_weights_list):
+        weights = torch.load(weights_path, map_location="cpu")
+        model_struct.load_state_dict(weights)
+        e = EvalModel(model_struct, target_class_clean_set, device)
         clean_pred_labels = e._get_pred_labels()
         clean_dict[f"m_{m_i}"] = clean_pred_labels
 
-        e = EvalModel(backdoor_model, purePoisonedTrainDataset, device)
+        e = EvalModel(model_struct, purePoisonedTrainDataset, device)
         poisoned_pred_labels = e._get_pred_labels()
         poisoned_dict[f"m_{m_i}"] = poisoned_pred_labels
     df_clean = pd.DataFrame(clean_dict) # df_clean每一行是一个sample, 在这些变异模型上的预测label
@@ -98,6 +94,7 @@ def detect_poisonedAndclean_from_targetClass(adaptive_mutation_rate):
         recall = round(TP/gt_TP,3)
         precision_list.append(precision)
         recall_list.append(recall)
+        print("cut_off:",cut_off)
         print("FP:",FP)
         print("TP:",TP)
         print("precision:",precision)
@@ -123,6 +120,103 @@ def detect_poisonedAndclean_from_targetClass(adaptive_mutation_rate):
     print(f"结果图保存在:{save_path}")
     print("detect_poisonedAndclean_from_targetClass() End")
     return priority_list, target_class_clean_set, purePoisonedTrainDataset
+
+# def detect_poisonedAndclean_from_targetClass(
+#         adaptive_mutation_rate,):
+#     # 1.获得排序的变异模型
+#     data_dir = os.path.join(
+#         config.exp_root_dir, 
+#         config.dataset_name, 
+#         config.model_name, 
+#         config.attack_name, 
+#         "Hybrid", 
+#         f"adaptive_rate_{adaptive_mutation_rate}")
+#     data_file_name = "sorted_mutation_models.data"
+#     data_path = os.path.join(data_dir, data_file_name)
+#     priority_list = joblib.load(data_path)
+#     # 取队头前50
+#     top = 50
+#     top_list = priority_list[:top]
+#     # 前50的变异模型权重
+#     top_w_file_list = []
+#     for item in top_list:
+#         top_w_file_list.append(item[1])
+#     # 数据结构{m_i:[pred_label, pred_label]}
+#     clean_dict = {}
+#     poisoned_dict = {}
+#     for m_i, w_file in enumerate(top_w_file_list):
+#         mutation_model_state_dict = torch.load(w_file, map_location="cpu")
+#         backdoor_model.load_state_dict(mutation_model_state_dict)
+#         e = EvalModel(backdoor_model, target_class_clean_set, device)
+#         clean_pred_labels = e._get_pred_labels()
+#         clean_dict[f"m_{m_i}"] = clean_pred_labels
+
+#         e = EvalModel(backdoor_model, purePoisonedTrainDataset, device)
+#         poisoned_pred_labels = e._get_pred_labels()
+#         poisoned_dict[f"m_{m_i}"] = poisoned_pred_labels
+#     df_clean = pd.DataFrame(clean_dict) # df_clean每一行是一个sample, 在这些变异模型上的预测label
+#     df_poisoned = pd.DataFrame(poisoned_dict)
+    
+#     detect_q = queue.PriorityQueue()
+#     id = 0
+#     for row_id, row in df_clean.iterrows():
+#         id+=1
+#         pred_label_list = list(row)
+#         cur_instance_entropy = entropy(pred_label_list) # 熵越小越可能为poisoned,队头
+#         item = (cur_instance_entropy, False, id) # False => Clean, True => Poisoned
+#         detect_q.put(item)
+#     for row_id, row in df_poisoned.iterrows():
+#         id+=1
+#         pred_label_list = list(row)
+#         cur_instance_entropy = entropy(pred_label_list) # 熵越小越可能为poisoned,队头
+#         item = (cur_instance_entropy, True, id) # False => Clean, True => Poisoned
+#         detect_q.put(item)                                                                                      
+#     priority_list = priorityQueue_2_list(detect_q)
+    
+#     cut_off_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
+#     precision_list = []
+#     recall_list = []
+#     for cut_off in cut_off_list:
+#         end = int(len(priority_list)*cut_off)
+#         prefix_priority_list = priority_list[0:end]
+#         TP = 0
+#         FP = 0
+#         gt_TP = len(purePoisonedTrainDataset)
+#         for item in prefix_priority_list:
+#             gt_label = item[1]
+#             if gt_label == True:
+#                 TP += 1
+#             else:
+#                 FP += 1
+#         precision = round(TP/(TP+FP),3)
+#         recall = round(TP/gt_TP,3)
+#         precision_list.append(precision)
+#         recall_list.append(recall)
+#         print("FP:",FP)
+#         print("TP:",TP)
+#         print("precision:",precision)
+#         print("recall:",recall)
+#         print("pureCleanTrainDataset num:", len(pureCleanTrainDataset))
+#         print("purePoisonedTrainDataset num:", len(purePoisonedTrainDataset))
+#     # 绘图
+#     y = {"precision":precision_list, "recall":recall_list}
+#     title = "The relationship between detection performance and cut off"
+#     save_dir = os.path.join(
+#         config.exp_root_dir, 
+#         "images", 
+#         "line", 
+#         config.dataset_name, 
+#         config.model_name, 
+#         config.attack_name, 
+#         "entropy_seletcted_model_by_clean_seed")
+#     create_dir(save_dir)
+#     save_filename  = f"perfomance.png"
+#     save_path = os.path.join(save_dir, save_filename)
+#     x_label = "CutOff"
+#     draw_line(cut_off_list, title, x_label, save_path, **y)
+#     print(f"结果图保存在:{save_path}")
+#     print("detect_poisonedAndclean_from_targetClass() End")
+#     return priority_list, target_class_clean_set, purePoisonedTrainDataset
 
 # def get_clean_poisoned_in_target_class_of_hybrid_mutator_accuracy_list():
     '''

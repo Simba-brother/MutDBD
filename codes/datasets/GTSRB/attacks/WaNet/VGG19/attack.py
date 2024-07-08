@@ -2,10 +2,7 @@
 This is the test code of poisoned training on GTSRB, MNIST, CIFAR10, using dataset class of torchvision.datasets.DatasetFolder, torchvision.datasets.MNIST, torchvision.datasets.CIFAR10.
 The attack method is WaNet.
 '''
-import sys
-sys.path.append("./")
 import os
-import joblib
 import random
 import time
 import setproctitle
@@ -13,14 +10,14 @@ import numpy as np
 import cv2
 import torch
 import torch.nn as nn
-from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip, ToPILImage, Resize
+from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, RandomCrop,ToPILImage, Resize
 from torchvision import transforms
-from torch.utils.data import DataLoader,Dataset
-from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
+from torch.utils.data import DataLoader
+from torchvision.datasets import DatasetFolder
 
-from core import WaNet
-from datasets.GTSRB.models.vgg import VGG
-from scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from codes.core import WaNet
+from codes.datasets.GTSRB.models.vgg import VGG
+from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
 global_seed = 666
@@ -66,7 +63,6 @@ transform_test = Compose([
     transforms.ToPILImage(),
     transforms.Resize((32, 32)),
     ToTensor()
-
 ])
 # 获得数据集
 trainset = DatasetFolder(
@@ -139,6 +135,9 @@ wanet = WaNet(
     identity_grid=identity_grid,
     noise_grid=noise_grid,
     noise=True,
+    poisoned_transform_train_index=0,
+    poisoned_transform_test_index=0,
+    poisoned_target_transform_index=0,
     seed=global_seed,
     deterministic=deterministic
 )
@@ -289,26 +288,58 @@ def update_dict_state():
     dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"])
     torch.save(dict_state, dict_state_file_path)
     print("update_dict_state(), success")
+
+def create_backdoor_data():
+    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-07-08_11:32:40", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path, map_location="cpu")
+    backdoor_model = dict_state["backdoor_model"]
+    poisoned_trainset = wanet.poisoned_train_dataset
+    poisoned_testset = wanet.poisoned_test_dataset
+
+
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    clean_testset_acc = eval(backdoor_model,testset)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
+    print("poisoned_testset_acc", poisoned_testset_acc)
+    print("clean_testset_acc", clean_testset_acc)
+
+    save_dir = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name)
+    save_file_name = "backdoor_data.pth"
+    backdoor_data = {
+        "backdoor_model":backdoor_model,
+        "poisoned_trainset":poisoned_trainset,
+        "poisoned_testset":poisoned_testset,
+        "clean_testset":testset,
+        "poisoned_ids":poisoned_trainset.poisoned_set
+    }
+    save_file_path = os.path.join(save_dir,save_file_name)
+    torch.save(backdoor_data,save_file_path)
+    print(f"backdoor_data is saved in {save_file_path}")
+
+
+def eval_backdoor():
+    backdoor_data_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "backdoor_data.pth")
+    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_trainset = backdoor_data["poisoned_trainset"]
+    poisoned_testset = backdoor_data["poisoned_testset"]
+    clean_testset = backdoor_data["clean_testset"]
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # eval
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    clean_testset_acc = eval(backdoor_model,clean_testset)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
+    print("poisoned_testset_acc", poisoned_testset_acc)
+    print("clean_testset_acc", clean_testset_acc)
+
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_"+"eval")
+    proc_title = "EvalBackdoor|"+dataset_name+"|"+attack_name+"|"+model_name
+    setproctitle.setproctitle(proc_title)
+    print(proc_title)
     # attack()
-    # get_dict_state()
-    # update_dict_state()
-    process_eval()
-    pass
-    # attack()
-    # infected_model = wanet.get_model()
-    
-    # # Test Infected Model
-    # test_schedule = {
-    #     'device': 'GPU',
-    #     'CUDA_VISIBLE_DEVICES': '2',
-    #     'GPU_num': 1,
+    # create_backdoor_data()
+    eval_backdoor()
 
-    #     'batch_size': 128,
-    #     'num_workers': 4,
 
-    #     'save_dir': 'experiments',
-    #     'experiment_name': 'test_poisoned_CIFAR10_WaNet'
-    # }
-    # wanet.test(test_schedule)

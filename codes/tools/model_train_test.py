@@ -13,7 +13,7 @@ def random_seed():
     torch.manual_seed(worker_seed)
     deterministic = True
 
-def adjust_learning_rate(optimizer, init_lr, epoch, step, len_epoch):
+def adjust_learning_rate(optimizer, init_lr, epoch):
     # epoch: 当前训练进行时的epoch
     # step: batch_id
     # len_epoch: epoch中有多少个batch ,也就是每轮次（epoch）中迭代了多少步（step）,注意: 此处为向上取整
@@ -30,7 +30,22 @@ def adjust_learning_rate(optimizer, init_lr, epoch, step, len_epoch):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-def train(model, trainset, epochs, batch_size, optimizer, loss_fn, device, work_dir, scheduler):
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True) # https://blog.csdn.net/mystyle_/article/details/111242489
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].contiguous().view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+def train(model, trainset, epochs, batch_size, optimizer, init_lr, loss_fn, device, work_dir, scheduler):
     trainset_loader = DataLoader(
         trainset,
         batch_size = batch_size,
@@ -52,7 +67,7 @@ def train(model, trainset, epochs, batch_size, optimizer, loss_fn, device, work_
         correct = 0
         total = 0
         for batch_idx, (inputs, targets) in enumerate(trainset_loader):
-            adjust_learning_rate(optimizer, epoch, batch_idx, int(math.ceil(len(trainset) / batch_size)))
+            adjust_learning_rate(optimizer, init_lr, epoch)
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -63,8 +78,8 @@ def train(model, trainset, epochs, batch_size, optimizer, loss_fn, device, work_
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
-            utils.progress_bar(batch_idx, len(trainset_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                        % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            # utils.progress_bar(batch_idx, len(trainset_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+            #             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
         epoch_acc = round(correct/total,3)
         epoch_avg_batch_loss =  round(train_loss / (batch_idx+1),3)
         record_acc.append(epoch_acc)
@@ -104,15 +119,16 @@ def test(model,testset,batch_size,device,loss_fn):
     correct = 0
     total = 0
     with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(testset_loader):
-            inputs, targets = inputs.to(device), targets.to(device)
+        for batch_idx, batch in enumerate(testset_loader):
+            inputs = batch[0].to(device)
+            targets = batch[1].to(device)
             outputs = model(inputs)
             loss = loss_fn(outputs, targets)
             test_loss += loss.item()
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
-            utils.progress_bar(batch_idx, len(testset_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                        % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            # utils.progress_bar(batch_idx, len(testset_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+            #             % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
     acc = round(correct/total,3)
     return acc

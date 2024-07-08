@@ -496,6 +496,7 @@ class WaNet(Base):
             schedule=schedule,
             seed=seed,
             deterministic=deterministic)
+        
         self.poisoned_train_dataset = CreatePoisonedDataset(
             train_dataset,
             y_target,

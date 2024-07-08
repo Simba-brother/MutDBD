@@ -38,7 +38,7 @@ class EvalModel(object):
             worker_init_fn=_seed_worker
         )
         # 评估开始时间
-        start = time.time()
+        # start = time.time()
         self.model.to(self.device)
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         acc = torch.tensor(0., device=self.device) 
@@ -54,8 +54,8 @@ class EvalModel(object):
                 correct_num += (torch.argmax(preds, dim=1) == Y).sum()
         acc = correct_num/total_num
         acc = round(acc.item(),3)
-        end = time.time()
-        print(f"Total time consumption:{end-start}s")
+        # end = time.time()
+        # print(f"Total time consumption:{end-start}s")
         return acc
 
     def _get_TrueOrFalse(self):
@@ -148,7 +148,7 @@ class EvalModel(object):
             worker_init_fn=_seed_worker
         )
         # 评估开始时间
-        start = time.time()
+        # start = time.time()
         self.model.to(self.device)
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         pred_labels = []
@@ -162,8 +162,8 @@ class EvalModel(object):
                 preds = self.model(X)
                 pred_labels.extend(torch.argmax(preds,dim=1).tolist()) 
                 true_labels.extend(Y.tolist()) 
-        end = time.time()
-        print("cost time:", end-start)
+        # end = time.time()
+        # print("cost time:", end-start)
         return pred_labels
     
     def _get_outputs(self):
@@ -253,16 +253,5 @@ class EvalModel(object):
         print("cost time:", end-start)
         return confidence_list
 
-# from datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state
-# origin_dict_state = get_dict_state()
-# backdoor_model = origin_dict_state["backdoor_model"]
-# clean_testset = origin_dict_state["clean_testset"]
-# poisoned_testset = origin_dict_state["poisoned_testset"]
-# pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
-# purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
-# poisoned_trainset = origin_dict_state["poisoned_trainset"]
-# device = torch.device("cuda:0")
-# if __name__ == "__main__":
-#     e = EvalModel(backdoor_model, clean_testset, device)
-#     report = e._eval_classes_acc()
+
     

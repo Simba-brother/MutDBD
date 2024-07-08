@@ -21,6 +21,7 @@ from codes.asd.semi import poison_linear_record, mixmatch_train,linear_test
 from codes.asd.dataset import MixMatchDataset
 # from ASD.log import result2csv
 from codes.utils import create_dir
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 # from ASD.models.resnet_cifar import get_model
 
 def main_test():
@@ -38,7 +39,7 @@ def main_test():
     backdoor_data = backdoor_attack(trainset,testset,model)
     # ASD防御训练
     defence_train(
-        model = backdoor_data["victim_model"],
+        model = prepare_model(),
         class_num = config.class_num,
         poisoned_train_dataset = backdoor_data["poisoned_train_dataset"], # 有污染的训练集
         poisoned_ids = backdoor_data["poisoned_ids"], # 被污染的样本id list
@@ -49,7 +50,7 @@ def main_test():
         device = torch.device(f"cuda:{config.gpu_id}"),
         save_dir = os.path.join(config.exp_root_dir, "ASD", config.dataset_name, config.model_name, config.attack_name)
     )
-
+    
 def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=True):
     '''
     攻击方法：
@@ -122,8 +123,64 @@ def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=Tru
             num_workers=4,
             pin_memory=True,
             )
+        exp_root_dir = "/data/mml/backdoor_detect/experiments"
+        dataset_name = "CIFAR10"
+        model_name = "ResNet18"
+        attack_name = "BadNets"
+        schedule = {
+            'device': f'cuda:{config.gpu_id}',
+            'benign_training': False,
+            'batch_size': 128,
+            'num_workers': 4,
+
+            'lr': 0.1,
+            'momentum': 0.9,
+            'weight_decay': 5e-4,
+            'gamma': 0.1,
+            'schedule': [150, 180], # epoch区间
+
+            'epochs': 200,
+
+            'log_iteration_interval': 100,
+            'test_epoch_interval': 10,
+            'save_epoch_interval': 10,
+
+            'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
+            'experiment_name': 'attack'
+        }
+        badnets.train(schedule)
+        # 工作dir
+        work_dir = badnets.work_dir
+        # 获得backdoor model weights
+        backdoor_model = badnets.best_model
+        # clean testset
+        clean_testset = testset
+        # poisoned testset
+        poisoned_testset = badnets.poisoned_test_dataset
+        # poisoned trainset
+        poisoned_trainset = badnets.poisoned_train_dataset
+        # poisoned_ids
+        poisoned_ids = poisoned_trainset.poisoned_set
+        # pure clean trainset
+        pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
+        # pure poisoned trainset
+        purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
+        dict_state = {}
+        dict_state["backdoor_model"] = backdoor_model
+        dict_state["poisoned_trainset"]=poisoned_trainset
+        dict_state["poisoned_ids"]=poisoned_ids
+        dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
+        dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
+        dict_state["clean_testset"]=clean_testset
+        dict_state["poisoned_testset"]=poisoned_testset
+        dict_state["pattern"] = pattern
+        dict_state['weight']=weight
+        save_file_name = f"dict_state.pth"
+        save_path = os.path.join(work_dir, save_file_name)
+        torch.save(dict_state, save_path)
+        print(f"BadNets攻击完成,数据和日志被存入{save_path}")
     res = {
-        "victim_model":model,
+        "backdoor_model":badnets.best_model,
         "poisoned_train_dataset":poisoned_train_dataset,
         "poisoned_ids":poisoned_ids,
         "poisoned_train_dataset_loader":poisoned_train_dataset_loader,
@@ -337,9 +394,10 @@ def defence_train(
             "poison_test": poison_test_result,
         }
         
+        result_epochs_dir = os.path.join(save_dir, "result_epochs")
         create_dir(save_dir)
         save_file_name = f"result_epoch_{epoch}.data"
-        save_file_path = os.path.join(save_dir, save_file_name)
+        save_file_path = os.path.join(result_epochs_dir, save_file_name)
         joblib.dump(result,save_file_path)
         print(f"epoch:{epoch},result: is saved in {save_file_path}")
         # result2csv(result, save_dir)

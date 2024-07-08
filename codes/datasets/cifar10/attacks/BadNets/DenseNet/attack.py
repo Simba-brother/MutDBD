@@ -1,7 +1,4 @@
-import sys
-sys.path.append("./")
-import os.path as osp
-import joblib
+import os
 import time
 import cv2
 import numpy as np
@@ -9,19 +6,15 @@ import random
 import torch
 import torch.nn as nn
 from torchvision.datasets import DatasetFolder
-from torch.utils.data import Dataset, DataLoader
-from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
+from torch.utils.data import DataLoader
+from torchvision.transforms import Compose, ToTensor,RandomCrop, RandomHorizontalFlip, ToPILImage
 
-from core.attacks import BadNets
+from codes.core.attacks import BadNets
 
-from datasets.cifar10.models.densenet import densenet_cifar
-from codes.ourMethod.modelMutat import ModelMutat_2
-from codes.tools.eval_model import EvalModel
-from utils import create_dir
-from collections import defaultdict
-from tqdm import tqdm
+from codes.datasets.cifar10.models.densenet import densenet_cifar
+
 import setproctitle
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 global_seed = 666
 deterministic = True
@@ -36,7 +29,7 @@ def _seed_worker(worker_id):
 transform_train = Compose([
     # Convert a tensor or an ndarray to PIL Image
     ToPILImage(), 
-    # 训练数据增强
+    RandomCrop(size=32,padding=4,padding_mode="reflect"), 
     RandomHorizontalFlip(), # 随机水平翻转
     # Converts a PIL Image or numpy.ndarray (H x W x C) in the range
     # [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
@@ -83,6 +76,9 @@ badnets = BadNets(
     poisoned_rate=0.1,
     pattern=pattern,
     weight=weight,
+    poisoned_transform_train_index= -1,
+    poisoned_transform_test_index= -1,
+    poisoned_target_transform_index=0,
     seed=global_seed,
     deterministic=deterministic
 )
@@ -91,7 +87,7 @@ badnets = BadNets(
 # Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/CIFAR/train_watermarked.py)
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 dataset_name = "CIFAR10"
-model_name = "DensNet"
+model_name = "DenseNet"
 attack_name = "BadNets"
 schedule = {
     'device': 'cuda:0',
@@ -112,7 +108,7 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
+    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
     'experiment_name': 'attack'
 }
 
@@ -148,7 +144,7 @@ def attack():
     dict_state["pattern"] = pattern
     dict_state['weight']=weight
     save_file_name = "dict_state.pth"
-    save_path = osp.join(work_dir, save_file_name)
+    save_path = os.path.join(work_dir, save_file_name)
     torch.save(dict_state, save_path)
     print(f"BadNets攻击完成,数据和日志被存入{save_path}")
 
@@ -190,7 +186,7 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state_file_path = osp.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path,map_location="cpu")
 
     backdoor_model = dict_state["backdoor_model"]
@@ -216,12 +212,12 @@ def process_eval():
 
 
 def get_dict_state():
-    dict_state_file_path = osp.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path,map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = osp.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path,map_location="cpu")
     poisoned_trainset = dict_state["poisoned_trainset"]
     poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"]) 
@@ -233,15 +229,60 @@ def update_dict_state():
     torch.save(dict_state, dict_state_file_path)
     print("update_dict_state() success")
 
-def insert_dict_state():
-    pass
 
 
+def create_backdoor_data():
+    # creat
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack_2024-06-29_18:45:59", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path,map_location="cpu")
+    backdoor_model = dict_state["backdoor_model"]
+    poisoned_trainset =  badnets.poisoned_train_dataset
+    poisoned_testset =  badnets.poisoned_test_dataset
+    clean_testset = testset
+    # eval
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    clean_testset_acc = eval(backdoor_model,testset)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
+    print("poisoned_testset_acc", poisoned_testset_acc)
+    print("clean_testset_acc", clean_testset_acc)
+    # save
+    save_dir = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name)
+    save_file_name = "backdoor_data.pth"
+    backdoor_data = {
+        "backdoor_model":backdoor_model,
+        "poisoned_trainset":poisoned_trainset,
+        "poisoned_testset":poisoned_testset,
+        "clean_testset":testset,
+        "poisoned_ids":poisoned_trainset.poisoned_set
+    }
+    save_file_path = os.path.join(save_dir,save_file_name)
+    torch.save(backdoor_data,save_file_path)
+    print(f"backdoor_data is saved in {save_file_path}")
+
+
+def eval_backdoor():
+    backdoor_data_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "backdoor_data.pth")
+    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_trainset = backdoor_data["poisoned_trainset"]
+    poisoned_testset = backdoor_data["poisoned_testset"]
+    clean_testset = backdoor_data["clean_testset"]
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # eval
+    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
+    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
+    clean_testset_acc = eval(backdoor_model,clean_testset)
+    print("poisoned_trainset_acc",poisoned_trainset_acc)
+    print("poisoned_testset_acc", poisoned_testset_acc)
+    print("clean_testset_acc", clean_testset_acc)
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+attack_name+"_"+model_name+"_eval")
+
+    proc_title = "EvalBackdoor|"+dataset_name+"|"+attack_name+"|"+model_name
+    setproctitle.setproctitle(proc_title)
+    print(proc_title)
     # attack()
-    # update_dict_state()
-    process_eval()
-    # get_dict_state()
+    # create_backdoor_data()
+    eval_backdoor()
     pass

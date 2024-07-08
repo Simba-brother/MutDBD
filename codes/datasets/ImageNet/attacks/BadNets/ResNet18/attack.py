@@ -1,27 +1,21 @@
-import sys
-sys.path.append("./")
-import os.path as osp
-import joblib
+import os
 import time
 import cv2
 import numpy as np
 import random
+from collections import defaultdict
+import setproctitle
+
 import torch
 import torch.nn as nn
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
-
-from core.attacks import BadNets
 from torchvision.models import resnet18
-# from core.models.resnet import ResNet
-# from modelMutat import ModelMutat_2
-from codes.tools.eval_model import EvalModel
-from utils import create_dir
-from collections import defaultdict
-from tqdm import tqdm
-import setproctitle
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+
+from codes.core.attacks import BadNets
+from codes.utils import create_dir
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 
 
@@ -66,7 +60,7 @@ model.fc = nn.Linear(fc_features, num_classes)
 
 # 获得数据集
 trainset = DatasetFolder(
-    root=osp.join(dataset_dir, "train"),
+    root=os.path.join(dataset_dir, "train"),
     loader=cv2.imread, # ndarray (H,W,C)
     extensions=('jpeg',),
     transform=transform_train,
@@ -74,7 +68,7 @@ trainset = DatasetFolder(
     is_valid_file=None)
 
 testset = DatasetFolder(
-    root=osp.join(dataset_dir, "val"),
+    root=os.path.join(dataset_dir, "val"),
     loader=cv2.imread, # ndarray(shape:HWC)
     extensions=('jpeg',),
     transform=transform_test,
@@ -124,7 +118,7 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
+    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
     'experiment_name': 'attack' # attack
 }
 
@@ -159,7 +153,7 @@ def attack():
     dict_state["pattern"] = pattern
     dict_state['weight']=weight
     save_file_name = "dict_state.pth"
-    save_path = osp.join(work_dir, save_file_name)
+    save_path = os.path.join(work_dir, save_file_name)
     torch.save(dict_state, save_path)
     print(f"BadNets攻击完成,数据和日志被存入{save_path}")
 
@@ -201,7 +195,7 @@ def eval(model,testset):
 
 
 def process_eval():
-    dict_state_file_path = osp.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path,map_location="cpu")
 
     backdoor_model = dict_state["backdoor_model"]
@@ -227,12 +221,12 @@ def process_eval():
     print("process_eval() success")
 
 def get_dict_state():
-    dict_state_file_path = osp.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path,map_location="cpu")
     return dict_state
 
 def update_dict_state():
-    dict_state_file_path = osp.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path,map_location="cpu")
     dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"]) 
     dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"]) 

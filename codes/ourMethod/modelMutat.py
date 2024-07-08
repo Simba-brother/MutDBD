@@ -1,10 +1,13 @@
 import copy
 import math
 import random
-
 import numpy as np
 import torch
 import torch.nn as nn
+'''
+Model mutation module
+'''
+
 global_seed = 666
 torch.manual_seed(global_seed)
 np.random.seed(global_seed)
@@ -270,35 +273,35 @@ class ModelMutat_2(object):
                 linear_layers.append(layer)
             if isinstance(layer, nn.Conv2d):
                 conv2d_layers.append(layer)
-        with torch.no_grad():
-            '''
-            只有ImageNet数据集采用
-            '''
-            for conv2d_layer in conv2d_layers:
-                weight = conv2d_layer.weight # shape:out_channel,in_channel,kernel_size_0, kernel_size_1
-                if scale is None:
-                    scale = np.std(weight.tolist())
-                out_channel, in_channel, kernel_size_0, kernel_size_1 = weight.shape
-                out_neuron_num = out_channel
-                # 对输出的神经元进行变异
-                selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
-                # 获得输出神经元的id
-                out_neuron_id_list = list(range(out_neuron_num))
-                # 打乱编号
-                random.shuffle(out_neuron_id_list)
-                # 随机选择一定数量的输出神经元来进行变异
-                selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
-                normal_size = selected_neuron_num*in_channel*kernel_size_0*kernel_size_1
-                disturb_array = np.random.normal(scale=scale, size=normal_size)
-                start_idx = 0
-                for selected_out_neuron_id in selected_out_neuron_id_list:
-                    row = weight[selected_out_neuron_id,:,:,:]
-                    end_idx = start_idx + in_channel*kernel_size_0*kernel_size_1
-                    cur_disturb_array = disturb_array[start_idx:end_idx]
-                    cur_disturb_array = cur_disturb_array.reshape(row.shape)
-                    row += cur_disturb_array
-                    weight[selected_out_neuron_id,:,:,:] = row
-                    start_idx = end_idx
+        # with torch.no_grad():
+        #     '''
+        #     只有ImageNet数据集采用
+        #     '''
+        #     for conv2d_layer in conv2d_layers:
+        #         weight = conv2d_layer.weight # shape:out_channel,in_channel,kernel_size_0, kernel_size_1
+        #         if scale is None:
+        #             scale = np.std(weight.tolist())
+        #         out_channel, in_channel, kernel_size_0, kernel_size_1 = weight.shape
+        #         out_neuron_num = out_channel
+        #         # 对输出的神经元进行变异
+        #         selected_neuron_num = math.ceil(out_neuron_num*self.mutation_rate)
+        #         # 获得输出神经元的id
+        #         out_neuron_id_list = list(range(out_neuron_num))
+        #         # 打乱编号
+        #         random.shuffle(out_neuron_id_list)
+        #         # 随机选择一定数量的输出神经元来进行变异
+        #         selected_out_neuron_id_list = out_neuron_id_list[:selected_neuron_num]
+        #         normal_size = selected_neuron_num*in_channel*kernel_size_0*kernel_size_1
+        #         disturb_array = np.random.normal(scale=scale, size=normal_size)
+        #         start_idx = 0
+        #         for selected_out_neuron_id in selected_out_neuron_id_list:
+        #             row = weight[selected_out_neuron_id,:,:,:]
+        #             end_idx = start_idx + in_channel*kernel_size_0*kernel_size_1
+        #             cur_disturb_array = disturb_array[start_idx:end_idx]
+        #             cur_disturb_array = cur_disturb_array.reshape(row.shape)
+        #             row += cur_disturb_array
+        #             weight[selected_out_neuron_id,:,:,:] = row
+        #             start_idx = end_idx
         # 只变异倒数第2个全连接层,因为最后一个全连接层(output layer)直接影响最后的输出结果，不适合用于变异
         if len(linear_layers) < 2:
             return model_copy
@@ -497,30 +500,3 @@ class ModelMutat_2(object):
                 row.requires_grad_()
                 weight[neuron_id,:] = row
         return model_copy
-    
-
-# dataset_name = "cifar10"    
-# model_name = "resnet18"
-# attack_name = "badnets"
-# if dataset_name == "cifar10":
-#     if model_name == "resnet18":
-#         if attack_name == "badnets":
-#             from datasets.cifar10.attacks.badnets_resnet18_nopretrain_32_32_3 import PureCleanTrainDataset, PurePoisonedTrainDataset, get_dict_state 
-# origin_dict_state = get_dict_state()
-# backdoor_model = origin_dict_state["backdoor_model"]
-# clean_testset = origin_dict_state["clean_testset"]
-# poisoned_testset = origin_dict_state["poisoned_testset"]
-# pureCleanTrainDataset = origin_dict_state["pureCleanTrainDataset"]
-# purePoisonedTrainDataset = origin_dict_state["purePoisonedTrainDataset"]
-# poisoned_trainset = origin_dict_state["poisoned_trainset"]
-
-# def start_mutate():
-        
-#     mutation_model_num = 50
-#     mutation_ratio_list = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
-#     for mutation_ratio in mutation_ratio_list:
-#         for m_i in range(mutation_model_num):
-#             modelMutat = ModelMutat(backdoor_model, mutation_ratio, poisoned_trainset)
-#             mutated_model = modelMutat._gf_mut(scale=5)
-#             evalModel = EvalModel(mutated_model, poisoned_trainset)
-#             acc = evalModel._eval()

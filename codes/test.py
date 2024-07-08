@@ -1,2 +1,6 @@
-data_list = [True, False, True]
-print(sum(data_list))
+import time
+import queue
+print(time.strftime("%Y-%m-%d_%H:%M:%S"))
+q = queue.PriorityQueue()
+q.put((0.0,"szt"))
+q.put((0.0,"fzz"))
