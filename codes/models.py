@@ -3,6 +3,7 @@ from codes.core.models.resnet import ResNet
 from torchvision.models import resnet18,vgg19,densenet121
 from codes.asd.models import resnet_cifar # ASD开源项目中的模型
 from codes.datasets.cifar10.models.vgg import VGG
+from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
 from codes.datasets.cifar10.models.densenet import densenet_cifar
 from codes.datasets.GTSRB.models.densenet import DenseNet121
 
@@ -16,7 +17,7 @@ from codes.datasets.GTSRB.models.densenet import DenseNet121
 def get_model(dataset_name,model_name):
     if dataset_name == "CIFAR10":
         if model_name == "ResNet18":
-            return ResNet(num=18,num_classes=10) # ResNet(18,10)
+            return ResNet(num=18,num_classes=10),
         elif model_name == "VGG19":
             return VGG("VGG19")
         elif model_name == "DenseNet":
@@ -25,7 +26,7 @@ def get_model(dataset_name,model_name):
         if model_name == "ResNet18":
             return ResNet(num=18,num_classes=43)
         elif model_name == "VGG19":
-            return VGG("VGG19", 43)
+            return GTSRB_VGG("VGG19", 43)
         elif model_name == "DenseNet":
             return DenseNet121(43)
     elif dataset_name == "ImageNet":

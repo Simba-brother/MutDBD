@@ -17,11 +17,21 @@ def get_train_dataset(priority_list, cut_off, target_class_clean_set, purePoison
 
     cut_point = math.ceil(len(id_list)*cut_off)
     # 剔除掉队头
+    head_ids = id_list[:cut_point]
+    head_gts = gt_list[:cut_point]
     remain_ids = id_list[cut_point:]
     remain_gts = gt_list[cut_point:] # true表示木马
     combin_dataset = CombinDataset(target_class_clean_set,purePoisonedTrainDataset)
     new_target_class_trainset = ExtractDatasetByIds(combin_dataset,remain_ids)
     new_trainset = CombinDataset(new_target_class_trainset,no_target_class_dataset)
+    
+    tp = sum(head_gts)
+    total_gt_p = sum(gt_list)
+    recall = round(tp/total_gt_p,4)
+    predict_p = len(head_gts)
+    precision = round(tp/predict_p,4)
+    f1 = round(2 * precision * recall / (precision + recall),4)
+    print(f"recall:{recall},precision:{precision},f1:{f1}")
     print(f"保留的训练集size:{len(new_trainset)},其中还有木马样本数量:{sum(remain_gts)}")
     return new_trainset
 

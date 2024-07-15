@@ -1,8 +1,11 @@
 import time
 import torch
 import numpy as np
+
 from torchvision.models.feature_extraction import create_feature_extractor
 from codes.asd.log import Record,AverageMeter,tabulate_step_meter,tabulate_epoch_meter
+from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
+from codes.core.models.resnet import ResNet
 
 
 def linear_test(model, loader, criterion, device):
@@ -39,14 +42,27 @@ def linear_test(model, loader, criterion, device):
 
     return result
 
-def poison_linear_record(model, loader, criterion, device):
+def poison_linear_record(model, loader, criterion, device, **kwargs):
     # 数据集数量
     num_data = len(loader.dataset)
     target_record = Record("target", num_data) # 记录标签 
     poison_record = Record("poison", num_data) # 是否被污染
     origin_record = Record("origin", num_data) # 原本的target
     loss_record = Record("loss", num_data) # 记录每个样本的loss
-    feature_record = Record("feature", (num_data, model.classifier.in_features))
+    dataset_name = kwargs["dataset_name"]
+    model_name = kwargs["model_name"]
+    if dataset_name in ["CIFAR10","GTSRB"]:
+        if model_name == "ResNet18":
+            in_features = model.classifier.in_features
+            node_str = "linear"
+        elif model_name == "VGG19":
+            in_features = model.classifier_2.in_features
+            node_str = "classifier"
+        elif model_name == "DenseNet":
+            in_features = model.classifier.in_features
+            node_str = "linear"
+    feature_record = Record("feature", (num_data, in_features))
+    
     # feature_record = Record("feature", (num_data, model.backbone.feature_dim))
     record_list = [
         target_record,
@@ -64,9 +80,9 @@ def poison_linear_record(model, loader, criterion, device):
         data = batch[0].to(device)
         target = batch[1].to(device)
         with torch.no_grad():
-            feature_extractor = create_feature_extractor(model, return_nodes=["linear"])
+            feature_extractor = create_feature_extractor(model, return_nodes=[node_str])
             feature_dic = feature_extractor(data)
-            feature = feature_dic["linear"]
+            feature = feature_dic[node_str]
             output = model(data)
             # feature = model.backbone(data)
             # output = model.linear(feature)

@@ -11,15 +11,27 @@ fine_mutation_rate_list = [0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.14, 0.16, 
 # 配置攻击类别
 target_class_idx = 1 
 poisoned_rate = 0.1
-dataset_name = "CIFAR10"
+dataset_name = "GTSRB"
 class_num = 10
-model_name = "ResNet18"
-attack_name = "WaNet"
+model_name = "VGG19"
+attack_name = "BadNets"
 # GPU设备
-gpu_id = 0
+gpu_id = 1
 
 # CIFAR-10 dataset dir
 CIFAR10_dataset_dir = "/data/mml/backdoor_detect/dataset/cifar10"
+
+asd_config = {
+    "CIFAR10":{
+        "epoch":120
+    },
+    "GTSRB":{
+        "epoch":100
+    },
+    "ImageNetSub":{
+        "epoch":120
+    },
+}
 
 
 

@@ -1,17 +1,14 @@
-import sys
 import os
+import sys
 import setproctitle
 import torch
 import time
-# from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomCrop
 import torch.nn as nn 
 from codes import models
 from codes import config
 from codes.scripts.dataset_constructor import *
 from codes.tools import model_train_test,EvalModel
 from collections import defaultdict
-# from codes.get_attack_data import get_IAD_backdoor_data
-
 
 from codes.ourMethod import (
         # 模型变异class
@@ -84,32 +81,12 @@ def eval_mutation_models(mutated_weights_dir,device):
                 dict_eval_report[mutate_rate][mutator_name].append(report)
     return dict_eval_report
 
-# wandb_config = Namespace(
-#     project_name = "backdoor_detect",
-#     exp_name = "ourMethod",
-#     # 下面是一些实验元信息，或者超参数
-#     dataset = config.dataset_name,
-#     model = config.model_name,
-#     attack = config.attack_name
-# )
-# start a new wandb run to track this script
-# now_time = nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-# wandb.init(
-#     # set the wandb project where this run will be logged
-#     project="backdoor_detect",
-#     # track hyperparameters and run metadata
-#     config=wandb_config.__dict__,
-#     name= wandb_config.exp_name+"_"+now_time,
-#     save_code = False
-# )
-
 # 进程名称
 proctitle = f"Ours|{config.dataset_name}|{config.model_name}|{config.attack_name}"
 setproctitle.setproctitle(proctitle)
 print(f"proctitle:{proctitle}")
 
 # 获得backdoor_data
-# backdoor_data = get_IAD_backdoor_data()
 backdoor_data = torch.load(os.path.join(config.exp_root_dir, "attack", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth"), map_location="cpu")
 backdoor_model = backdoor_data["backdoor_model"]
 poisoned_trainset =backdoor_data["poisoned_trainset"]
@@ -150,7 +127,7 @@ print(f"评估变异模型结束,共耗时{cost_2_time}s")
 # 第一步:确定target class和adaptive mutation rate
 print("第一步开始:确定target class和adaptive mutation rate")
 dict_eval_report_path = os.path.join(
-    config.exp_root_dir, config.dataset_name, config.model_name, config.attack_name,"dict_eval_report.data"
+    config.exp_root_dir, config.dataset_name, config.model_name, config.attack_name, "dict_eval_report.data"
 )
 dict_eval_report = joblib.load(dict_eval_report_path)
 start_3_time = time.perf_counter() 
@@ -160,29 +137,25 @@ end_3_time = time.perf_counter()
 cost_3_time = end_3_time - start_3_time
 # wandb.log({'adaptive_rate':adaptive_rate, 'target_class_i':target_class_i})
 print(f"第一步结束。共耗时:{cost_3_time}s")
-
+if target_class_i != 1:
+    print(f"确定target class错误，target class:{target_class_i}")
+    sys.exit()
 # 第二步:从target class中检测木马样本
 print("第二步开始:从target class中检测木马样本")
+
 start_4_time = time.perf_counter()
 # 排序变异模型
 # 获得apative_rate下面所有变异算子的权重路径list
 mutation_weights_path_list = []
-mutation_models_dir = os.path.join(
-    config.exp_root_dir, 
-    config.dataset_name, 
-    config.model_name, 
-    config.attack_name, 
-    "mutation_models", 
-    "2024-06-25_17:54:42", 
-    str(adaptive_rate))
+mutation_models_dir = os.path.join(mutated_weights_dir,str(adaptive_rate))
 for mutation_name in config.mutation_name_list:
     for i in range(config.mutation_model_num):
         mutation_weights_path_list.append(os.path.join(mutation_models_dir, mutation_name, f"mutated_weights_{i}.pth"))
 
 # target class中的clean set
-target_class_clean_set = ExtractTargetClassDataset(pureCleanTrainDataset, target_class_idx = config.target_class_idx)
+target_class_clean_set = ExtractTargetClassDataset(pureCleanTrainDataset, target_class_idx = target_class_i)
 # target class中的poisoned set
-target_class_poisoned_set = ExtractTargetClassDataset(purePoisonedTrainDataset, target_class_idx=config.target_class_idx)
+target_class_poisoned_set = ExtractTargetClassDataset(purePoisonedTrainDataset, target_class_idx = target_class_i)
 sorted_weights_path_list = sort_mutated_models(
         model_struct = victim_model,
         mutation_weights_path_list = mutation_weights_path_list,
@@ -206,7 +179,7 @@ start_5_time = time.perf_counter()
 no_targetClass_dataset = ExtractNoTargetClassDataset(poisoned_trainset, target_class_i)
 new_train_dataset = newdataset_construct.get_train_dataset(
     priority_list = priority_list, 
-    cut_off = 0.5, 
+    cut_off = 0.5, # importent!!!
     target_class_clean_set = target_class_clean_set, 
     purePoisonedTrainDataset = purePoisonedTrainDataset, 
     no_target_class_dataset =no_targetClass_dataset
@@ -228,7 +201,7 @@ train_ans = model_train_test.train(
     init_lr = 0.1,
     loss_fn = nn.CrossEntropyLoss(),
     device = torch.device(f"cuda:{config.gpu_id}"),
-    work_dir = os.path.join("OurMethod", f"{config.dataset_name}", f"{config.model_name}", f"{config.attack_name}", "defence"),
+    work_dir = os.path.join(config.exp_root_dir, config.dataset_name, config.model_name, config.attack_name, "defence", "OurMethod"),
     scheduler = None
 )
 end_6_time = time.perf_counter()
@@ -259,5 +232,4 @@ end_7_time = time.perf_counter()
 cost_7_time  = end_7_time - start_7_time
 print(f"第五步结束。共耗时:{cost_7_time}s")
 print({'clean_test_acc':clean_test_acc, 'poisoned_test_acc':poisoned_test_acc})
-# wandb.log({'clean_test_acc':clean_test_acc, 'poisoned_test_acc':poisoned_test_acc})
-# wandb.finish()
+

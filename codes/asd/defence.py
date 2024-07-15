@@ -245,7 +245,9 @@ def prepare_data():
         "testset":testset,
     }
     return res
-    
+
+
+
 def defence_train(
         model, # victim model
         class_num, # 分类数量
@@ -256,7 +258,8 @@ def defence_train(
         clean_test_dataset_loader, # 干净的测试集加载器
         poisoned_test_dataset_loader, # 污染的测试集加载器
         device, # GPU设备对象
-        save_dir # 实验结果存储目录 save_dir = os.path.join(exp_root_dir, "ASD", dataset_name, model_name, attack_name)
+        save_dir, # 实验结果存储目录 save_dir = os.path.join(exp_root_dir, "ASD", dataset_name, model_name, attack_name)
+        **kwargs
         ):
     '''
     ASD防御训练方法
@@ -271,7 +274,7 @@ def defence_train(
     # 分割损失函数对象放到gpu上
     split_criterion.to(device)
     # semi 损失函数
-    semi_criterion = MixMatchLoss(rampup_length=120, lambda_u=15) # rampup_length = 120  same as epoches
+    semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=15) # rampup_length = 120  same as epoches
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     # 优化器
@@ -302,10 +305,11 @@ def defence_train(
     choice_num = 0
     best_acc = -1
     best_epoch = -1
-    for epoch in range(120):
-        print("===Epoch: {}/{}===".format(epoch, 120))
+    total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
+    for epoch in range(total_epoch):
+        print("===Epoch: {}/{}===".format(epoch, total_epoch))
         if epoch < 60:
-            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device)
+            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
             if epoch % 5 == 0 and epoch != 0:
                 # 每五个epoch 就选择10个
                 choice_num += 10
@@ -315,20 +319,35 @@ def defence_train(
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < 90:       
-            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device)
+            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
-        elif epoch < 120:
-            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device)
+        elif epoch < total_epoch:
+            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             meta_virtual_model = deepcopy(model)
-            param_meta = [  
-                            {'params': meta_virtual_model.layer3.parameters()},
-                            {'params': meta_virtual_model.layer4.parameters()},
-                            {'params': meta_virtual_model.linear.parameters()},
-                            {'params': meta_virtual_model.classifier.parameters()}
-                        ]
+            dataset_name = kwargs["dataset_name"]
+            model_name = kwargs["model_name"]
+            if dataset_name in ["CIFAR10","GTSRB"]:
+                if model_name == "ResNet18":
+                    param_meta = [  
+                                    {'params': meta_virtual_model.layer3.parameters()},
+                                    {'params': meta_virtual_model.layer4.parameters()},
+                                    {'params': meta_virtual_model.linear.parameters()},
+                                    {'params': meta_virtual_model.classifier.parameters()}
+                                ]
+                elif model_name == "VGG19":
+                    param_meta = [  
+                                    {'params': meta_virtual_model.classifier_1.parameters()},
+                                    {'params': meta_virtual_model.classifier_2.parameters()},
+                                ]
+                elif model_name == "DenseNet":
+                    param_meta = [  
+                                    {'params': meta_virtual_model.linear.parameters()},
+                                    {'params': meta_virtual_model.dense4.parameters()},
+                                    {'params': meta_virtual_model.classifier.parameters()}
+                                ]
             # param_meta = [
             #                 {'params': meta_virtual_model.backbone.layer3.parameters()},
             #                 {'params': meta_virtual_model.backbone.layer4.parameters()},
@@ -345,7 +364,7 @@ def defence_train(
                                         meta_criterion=meta_criterion,
                                         device = device
                                         )      
-            meta_record_list = poison_linear_record(meta_virtual_model, poisoned_eval_dataset_loader, split_criterion, device)
+            meta_record_list = poison_linear_record(meta_virtual_model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
 
             print("Mining clean data by meta-split...")
             split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids)
@@ -395,7 +414,7 @@ def defence_train(
         }
         
         result_epochs_dir = os.path.join(save_dir, "result_epochs")
-        create_dir(save_dir)
+        create_dir(result_epochs_dir)
         save_file_name = f"result_epoch_{epoch}.data"
         save_file_path = os.path.join(result_epochs_dir, save_file_name)
         joblib.dump(result,save_file_path)
@@ -424,14 +443,16 @@ def defence_train(
         ckpt_dir = os.path.join(save_dir, "ckpt")
         create_dir(ckpt_dir)
         if is_best:
-            ckpt_path = os.path.join(ckpt_dir, "best_model.pt")
-            torch.save(saved_dict, ckpt_path)
-            print("Save the best model to {}".format(ckpt_path))
+            best_ckpt_path = os.path.join(ckpt_dir, "best_model.pt")
+            torch.save(saved_dict, best_ckpt_path)
+            print("Save the best model to {}".format(best_ckpt_path))
         # 保存最新一次checkpoint
-        ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
-        torch.save(saved_dict, ckpt_path)
-        print("Save the latest model to {}".format(ckpt_path))
+        latest_ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
+        torch.save(saved_dict, latest_ckpt_path)
+        print("Save the latest model to {}".format(latest_ckpt_path))
+    
     print("asd_train() End")
+    return best_ckpt_path,latest_ckpt_path
 
 def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_indice):
     """
@@ -500,6 +521,12 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
             poisoned_count += 1
     print("{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice)))
     clean_pool_flag[total_indice] = 1
+    predict_p_idx_list = loss.argsort()[int(len(loss) * ratio):]
+    tp_num= len(set(predict_p_idx_list) & set(poisoned_indice))
+    recall = round(tp_num/len(poisoned_indice),4)
+    precision = round(tp_num / len(predict_p_idx_list),4)
+    f1 = 2*recall*precision/(precision+recall)
+    print(f"recall:{recall},precison:{precision},f1:{f1}")
     return clean_pool_flag
 
 def train_the_virtual_model(meta_virtual_model, poison_train_loader, meta_optimizer, meta_criterion, device):
