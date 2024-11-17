@@ -145,7 +145,7 @@ def attack():
 
 def eval(model,testset):
     model.eval()
-    device = torch.device("cuda:1")
+    device = torch.device("cuda:0")
     model.to(device)
     batch_size = 128
     # 加载trigger set

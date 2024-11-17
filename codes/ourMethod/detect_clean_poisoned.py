@@ -62,17 +62,17 @@ def detect_poisonedAndclean_from_targetClass(
     detect_q = queue.PriorityQueue()
     id = 0
     for row_id, row in df_clean.iterrows():
-        id+=1
         pred_label_list = list(row)
         cur_instance_entropy = entropy(pred_label_list) # 熵越小越可能为poisoned,队头
         item = (cur_instance_entropy, False, id) # False => Clean, True => Poisoned
         detect_q.put(item)
-    for row_id, row in df_poisoned.iterrows():
         id+=1
+    for row_id, row in df_poisoned.iterrows():
         pred_label_list = list(row)
         cur_instance_entropy = entropy(pred_label_list) # 熵越小越可能为poisoned,队头
         item = (cur_instance_entropy, True, id) # False => Clean, True => Poisoned
-        detect_q.put(item)                                                                                      
+        detect_q.put(item)
+        id+=1
     priority_list = priorityQueue_2_list(detect_q)
     
     cut_off_list = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]

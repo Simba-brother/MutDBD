@@ -39,7 +39,7 @@ def gen_mutaion_models():
         # 遍历变异算子：每个变异率下会有5个变异算子
         for mutation_name in config.mutation_name_list:
             # 遍历变异次数：每个变异算子会生成50个变异体
-            for i in range(50):
+            for i in range(config.mutation_model_num):
                 if mutation_name == "gf":
                     mutated_model = mm._gf_mut(scale=5)
                 if mutation_name == "neuron_activation_inverse":
@@ -99,8 +99,10 @@ pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset,poisoned_ids)
 purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset,poisoned_ids)
 poisoned_testset = ExtractDataset(poisoned_testset)
 # victim model
-victim_model = models.get_model(dataset_name = config.dataset_name,model_name = config.model_name)
-
+victim_model = backdoor_model
+# victim_model = models.get_model(dataset_name = config.dataset_name,model_name = config.model_name)
+evalModel = EvalModel(backdoor_model, poisoned_testset, device=torch.device(f"cuda:{config.gpu_id}"))
+print("No defence ASR:",evalModel._eval_acc())
 # 生成变异模型
 print("开始生成变异模型")
 start_1_time = time.perf_counter()
@@ -140,6 +142,11 @@ print(f"第一步结束。共耗时:{cost_3_time}s")
 if target_class_i != 1:
     print(f"确定target class错误，target class:{target_class_i}")
     sys.exit()
+
+# mutated_weights_dir = "/data/mml/backdoor_detect/experiments/CIFAR10/DenseNet/IAD/mutation_models/2024-07-16_13:17:14"
+# adaptive_rate = 0.01
+# target_class_i = 1
+
 # 第二步:从target class中检测木马样本
 print("第二步开始:从target class中检测木马样本")
 
