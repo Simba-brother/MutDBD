@@ -17,7 +17,7 @@ from core.attacks import BadNets
 
 from core.models.resnet import ResNet
 from codes.ourMethod.modelMutat import ModelMutat
-from codes.tools.eval_model import EvalModel
+from codes.common.eval_model import EvalModel
 from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm

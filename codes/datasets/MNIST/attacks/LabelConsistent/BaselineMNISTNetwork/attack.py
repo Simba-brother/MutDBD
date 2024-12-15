@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from core import LabelConsistent
 import setproctitle
 from core.models.baseline_MNIST_network import BaselineMNISTNetwork
-from scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 def _seed_worker(worker_id):
     worker_seed =666

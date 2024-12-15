@@ -8,7 +8,7 @@ import cv2
 
 sys.path.append("./")
 from codes.ourMethod.modelMutat import ModelMutat
-from codes.tools.eval_model import EvalModel
+from codes.common.eval_model import EvalModel
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize
 from torchvision.datasets import DatasetFolder
 from codes import config

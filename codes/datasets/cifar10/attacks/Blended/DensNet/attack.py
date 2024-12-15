@@ -18,7 +18,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip
 from datasets.cifar10.models.densenet import densenet_cifar
 from codes import core
 import setproctitle
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 
 def _seed_worker(worker_id):

@@ -14,13 +14,13 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 
 from core.attacks import Blended
 from datasets.GTSRB.models.vgg import VGG
-from codes.ourMethod.modelMutat import ModelMutat_2
-from codes.tools.eval_model import EvalModel
+from codes.ourMethod.modelMutat import ModelMutat
+from codes.common.eval_model import EvalModel
 from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
 import setproctitle
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
 global_seed = 666
 deterministic = True

@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from codes import core
 import setproctitle
 from datasets.GTSRB.models.vgg import VGG
-from scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 def _seed_worker(worker_id):
     worker_seed =666

@@ -15,13 +15,13 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 from core.attacks import IAD
 from torchvision.models import resnet18
 # from core.models.resnet import ResNet
-# from modelMutat import ModelMutat_2
-from codes.tools.eval_model import EvalModel
+# from modelMutat import ModelMutat
+from codes.common.eval_model import EvalModel
 from utils import create_dir
 from collections import defaultdict
 from tqdm import tqdm
 import setproctitle
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, IAD_Dataset
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, IAD_Dataset
 from codes import config
 
 global_seed = 666

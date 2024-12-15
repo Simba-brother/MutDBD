@@ -16,7 +16,7 @@ from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 from core import Refool
 import setproctitle
 from torchvision.models import vgg19
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 from tqdm import tqdm
 

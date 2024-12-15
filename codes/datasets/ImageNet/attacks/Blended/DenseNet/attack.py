@@ -19,7 +19,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 from torchvision.models import densenet121
 from core import Blended
 import setproctitle
-from scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 
 def _seed_worker(worker_id):

@@ -21,7 +21,7 @@ from torchvision.datasets import DatasetFolder, CIFAR10, MNIST
 
 from core import WaNet
 from core.models.baseline_MNIST_network import BaselineMNISTNetwork
-from scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
 global_seed = 555

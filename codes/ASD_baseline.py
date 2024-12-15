@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 import config
 from codes.asd import defence_train
-from scripts.dataset_constructor import *
+from codes.scripts.dataset_constructor import *
 from models import get_model
 
 from codes.tools import model_train_test

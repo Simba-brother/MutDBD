@@ -1,1 +1,1 @@
-from .eval_model import EvalModel
+from ..common.eval_model import EvalModel

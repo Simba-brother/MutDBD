@@ -11,7 +11,7 @@
 # import setproctitle
 # import joblib
 # from collections import defaultdict
-# # from codes.ourMethod.modelMutat import ModelMutat_2
+# # from codes.ourMethod.modelMutat import ModelMutat
 # from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset, ExtractDatasetByIds, CombinDataset
 
 # from codes.utils import create_dir, priorityQueue_2_list

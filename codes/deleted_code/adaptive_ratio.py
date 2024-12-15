@@ -4,7 +4,7 @@ import torch
 import os
 import joblib
 sys.path.append("./")
-from codes.tools.eval_model import EvalModel
+from codes.common.eval_model import EvalModel
 from utils import create_dir
 from codes import config
 from codes.tools import draw
