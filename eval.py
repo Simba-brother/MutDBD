@@ -1,23 +1,20 @@
 
 import os
-import sys
 import setproctitle
 import torch
-import time
-import torch.nn as nn 
-from codes import models
 from codes import config
 from codes.scripts.dataset_constructor import *
-from codes.tools import model_train_test,EvalModel
-from collections import defaultdict
-import logging
+from codes.tools import EvalModel
+
+
+
 
 
 
 
 if __name__ == "__main__":
 
-    proctitle = f"Eval|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    proctitle = f"EvalBackdoor|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     print(f"proctitle:{proctitle}")
     # 获得backdoor_data
@@ -47,7 +44,7 @@ if __name__ == "__main__":
 
     device = torch.device(f"cuda:{config.gpu_id}")
     evalModel = EvalModel(backdoor_model, poisoned_testset, device)
-    print("No defence ASR:",evalModel._eval_acc())
+    print("No defence ASR:",evalModel.eval_acc())
 
     evalModel = EvalModel(backdoor_model, clean_testset, device)
-    print("No defence CleanACC:",evalModel._eval_acc())
+    print("No defence CleanACC:",evalModel.eval_acc())

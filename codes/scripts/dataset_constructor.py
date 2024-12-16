@@ -130,6 +130,56 @@ class ExtractTargetClassDataset(Dataset):
         sample,label =self.targetClassDataset[index]
         return sample,label
 
+class ExtractCleanTargetClassDataset(Dataset):
+    '''
+    从数据集中抽取出某个类别(target_class_idx)的数据集
+    '''
+    def __init__(self, dataset, target_class_idx, poisoned_ids):
+        self.dataset = dataset
+        self.target_class_idx = target_class_idx
+        self.poisoned_ids = poisoned_ids
+        self.targetCleanClassDataset = self._getCleanTargetClassDataset()
+
+    def _getCleanTargetClassDataset(self):
+        targetCleanClassDataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id][0], self.dataset[id][1]
+            if label == self.target_class_idx and id not in self.poisoned_ids:
+                targetCleanClassDataset.append((sample,label))
+        return targetCleanClassDataset
+    
+    def __len__(self):
+        return len(self.targetCleanClassDataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.targetCleanClassDataset[index]
+        return sample,label
+    
+class ExtractPoisonedTargetClassDataset(Dataset):
+    '''
+    从数据集中抽取出某个类别(target_class_idx)的数据集
+    '''
+    def __init__(self, dataset, target_class_idx, poisoned_ids):
+        self.dataset = dataset
+        self.target_class_idx = target_class_idx
+        self.poisoned_ids = poisoned_ids
+        self.targetPoisonedClassDataset = self._getPoisonedTargetClassDataset()
+
+    def _getPoisonedTargetClassDataset(self):
+        targetPoisonedClassDataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id][0], self.dataset[id][1]
+            if label == self.target_class_idx and id in self.poisoned_ids:
+                targetPoisonedClassDataset.append((sample,label))
+        return targetPoisonedClassDataset
+    
+    def __len__(self):
+        return len(self.targetPoisonedClassDataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.targetPoisonedClassDataset[index]
+        return sample,label
+
 class CombinDataset(Dataset):
     '''
     两个数据集进行合并
@@ -333,3 +383,4 @@ class IADPoisonedDatasetFolder(DatasetFolder):
                 target = self.target_transform(target)
 
         return sample, target, isPoisoned
+

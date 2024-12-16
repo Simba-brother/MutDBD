@@ -4,16 +4,11 @@ This module only supports neuron and weight mutation.
 Ma, Lei, et al. "DeepMutation: Mutation Testing of Deep Learning Systems."
 code:https://github.com/Simba-brother/m_testing_adversatial_sample
 '''
-from __future__ import division
+
 import torch
 import copy
-
 import numpy as np
 import math
-
-
-
-    
 
 
 class MutaionOperator(object):
