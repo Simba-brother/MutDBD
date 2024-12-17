@@ -9,9 +9,16 @@ def test1():
     q.put((0.0,"fzz"))
 def test2():
     os.makedirs("/data/mml2/",exist_ok=True)
-
+def test3():
+    d = [1,2,3]
+    e = d -1 
+    print(e)
+def test4():
+    a = [4,3,2]
+    a.sort() # replace
+    print(a)
 if __name__ == "__main__":
-    test2()
+    test4()
 
 
 

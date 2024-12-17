@@ -27,7 +27,7 @@ poisoned_rate = 0.1
 # 当前实验设置的数据集名字
 dataset_name = "CIFAR10"
 # 数据集分类任务数量
-class_num = 10 # 43
+class_num = 10 # 
 # 当前实验设置的模型名字
 model_name = "DenseNet"
 # 当前实验设置的攻击

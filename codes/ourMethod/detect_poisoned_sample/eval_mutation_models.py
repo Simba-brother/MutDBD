@@ -33,7 +33,7 @@ def get_mutationModelPredLabels(dataset):
 
 if __name__ == "__main__":
     # 进程名称
-    proctitle = f"EvalMutaionModelsPredLabelsOnTargeClass|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    proctitle = f"EvalMutaionModelsPredLabelsOnSuspiciousClasses|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device("cuda:0")
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
     LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
     os.makedirs(LOG_FILE_DIR,exist_ok=True)
-    LOG_FILE_NAME = "EvalMutaionModelsPredLabelsOnTargeClass.log"
+    LOG_FILE_NAME = "EvalMutaionModelsPredLabelsOnSuspiciousClasses.log"
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
@@ -52,16 +52,28 @@ if __name__ == "__main__":
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_trainset = backdoor_data["poisoned_trainset"]
     poisoned_ids =backdoor_data["poisoned_ids"]
-    target_class = 1
-    clean_targetClassDataset = ExtractCleanTargetClassDataset(poisoned_trainset,target_class,poisoned_ids)
-    poisoned_targetClassDataset = ExtractCleanTargetClassDataset(poisoned_trainset,target_class,poisoned_ids)
+    # 加载后门模型中的可疑classes
+    suspicious_classes_dict = joblib.load(os.path.join(
+        config.exp_root_dir,
+        "TargetClass",
+        config.dataset_name, 
+        config.model_name, 
+        config.attack_name,
+        "SuspiciousClasses_ScottKnottESD_Precision.data"
+    ))
+    
+    for ratio in config.fine_mutation_rate_list:
+        suspicious_classes = suspicious_classes_dict[ratio]
 
-    condidate_dataset = CombinDataset(poisoned_targetClassDataset,clean_targetClassDataset)
+    clean_suspiciousClassesDataset = ExtractCleanOfSuspiciousClassesDataset(poisoned_trainset,suspicious_classes,poisoned_ids)
+    poioned_suspiciousClassesDataset = ExtractPoisonedOfSuspiciousClassesDataset(poisoned_trainset,suspicious_classes,poisoned_ids)
+
+    condidate_dataset = CombinDataset(poioned_suspiciousClassesDataset,clean_suspiciousClassesDataset)
     gt_isPoisoned = []
-    for _ in len(poisoned_targetClassDataset):
+    for _ in range(len(poioned_suspiciousClassesDataset)):
         gt_isPoisoned.append(True) # poisoned
-    for _ in len(clean_targetClassDataset):
-        gt_isPoisoned.append(False) # poisoned
+    for _ in range(len(clean_suspiciousClassesDataset)):
+        gt_isPoisoned.append(False) # clean
 
     pred_label_ans =  get_mutationModelPredLabels(condidate_dataset)
     # 保存结果
@@ -73,7 +85,6 @@ if __name__ == "__main__":
         config.attack_name
     )
     os.makedirs(save_dir,exist_ok=True)
-
     save_file_name = "pred_label_ans.data"
     save_file_path = os.path.join(save_dir,save_file_name)
     joblib.dump(pred_label_ans,save_file_path)

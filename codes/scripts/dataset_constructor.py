@@ -130,54 +130,50 @@ class ExtractTargetClassDataset(Dataset):
         sample,label =self.targetClassDataset[index]
         return sample,label
 
-class ExtractCleanTargetClassDataset(Dataset):
+class ExtractCleanOfSuspiciousClassesDataset(Dataset):
     '''
-    从数据集中抽取出某个类别(target_class_idx)的数据集
     '''
-    def __init__(self, dataset, target_class_idx, poisoned_ids):
+    def __init__(self, dataset, suspiciousClasses, poisoned_ids):
         self.dataset = dataset
-        self.target_class_idx = target_class_idx
+        self.suspiciousClasses = suspiciousClasses
         self.poisoned_ids = poisoned_ids
-        self.targetCleanClassDataset = self._getCleanTargetClassDataset()
+        self.clean_suspiciousClassesDataset = self._get_clean_suspiciousClassesDataset()
 
-    def _getCleanTargetClassDataset(self):
-        targetCleanClassDataset = []
+    def _get_clean_suspiciousClassesDataset(self):
+        clean_suspiciousClassesDataset = []
         for id in range(len(self.dataset)):
             sample, label = self.dataset[id][0], self.dataset[id][1]
-            if label == self.target_class_idx and id not in self.poisoned_ids:
-                targetCleanClassDataset.append((sample,label))
-        return targetCleanClassDataset
+            if label in self.suspiciousClasses and id not in self.poisoned_ids:
+                clean_suspiciousClassesDataset.append((sample,label))
+        return clean_suspiciousClassesDataset
     
     def __len__(self):
-        return len(self.targetCleanClassDataset)
+        return len(self.clean_suspiciousClassesDataset)
     
     def __getitem__(self, index):
-        sample,label =self.targetCleanClassDataset[index]
+        sample,label =self.clean_suspiciousClassesDataset[index]
         return sample,label
     
-class ExtractPoisonedTargetClassDataset(Dataset):
-    '''
-    从数据集中抽取出某个类别(target_class_idx)的数据集
-    '''
-    def __init__(self, dataset, target_class_idx, poisoned_ids):
+class ExtractPoisonedOfSuspiciousClassesDataset(Dataset):
+    def __init__(self, dataset, suspiciousClasses, poisoned_ids):
         self.dataset = dataset
-        self.target_class_idx = target_class_idx
+        self.suspiciousClasses = suspiciousClasses
         self.poisoned_ids = poisoned_ids
-        self.targetPoisonedClassDataset = self._getPoisonedTargetClassDataset()
+        self.poisoned_suspiciousClassesDataset = self._get_poisoned_suspiciousClassesDataset()
 
-    def _getPoisonedTargetClassDataset(self):
-        targetPoisonedClassDataset = []
+    def _get_poisoned_suspiciousClassesDataset(self):
+        poisoned_suspiciousClassesDataset = []
         for id in range(len(self.dataset)):
             sample, label = self.dataset[id][0], self.dataset[id][1]
-            if label == self.target_class_idx and id in self.poisoned_ids:
-                targetPoisonedClassDataset.append((sample,label))
-        return targetPoisonedClassDataset
+            if label in self.suspiciousClasses and id in self.poisoned_ids:
+                poisoned_suspiciousClassesDataset.append((sample,label))
+        return poisoned_suspiciousClassesDataset
     
     def __len__(self):
-        return len(self.targetPoisonedClassDataset)
+        return len(self.poisoned_suspiciousClassesDataset)
     
     def __getitem__(self, index):
-        sample,label =self.targetPoisonedClassDataset[index]
+        sample,label =self.poisoned_suspiciousClassesDataset[index]
         return sample,label
 
 class CombinDataset(Dataset):
