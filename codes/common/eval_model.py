@@ -46,7 +46,7 @@ class EvalModel(object):
         self.model.eval()
         acc = torch.tensor(0., device=self.device) 
         total_num = len(self.testset)
-        correct_num = 0 # 攻击成功数量
+        correct_num = 0 
         with torch.no_grad():
             for batch_id, batch in enumerate(testset_loader):
                 X = batch[0]

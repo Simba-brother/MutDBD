@@ -13,7 +13,7 @@ import setproctitle
 
 
 
-def get_mutated_models_eval_report():
+def get_mutated_models_eval_report(dataset):
     ans = {}
     # 加载变异模型权重
     mutations_dir = os.path.join(
@@ -32,7 +32,7 @@ def get_mutated_models_eval_report():
             for i in range(config.mutation_model_num):
                 mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
                 backdoor_model.load_state_dict(torch.load(mutation_model_path))
-                em = EvalModel(backdoor_model,poisoned_trainset,device)
+                em = EvalModel(backdoor_model,dataset,device)
                 report = em.eval_classification_report()
                 ans[ratio][operator].append(report)
     return ans
@@ -58,9 +58,9 @@ if __name__ == "__main__":
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_trainset =backdoor_data["poisoned_trainset"]
     # 数据预transform,为了后面训练加载的更快
-    poisoned_trainset = ExtractCleanTargetClassDataset(poisoned_trainset)
+    poisoned_trainset = ExtractDataset(poisoned_trainset)
     # 开始评估变异模型
-    eval_report = get_mutated_models_eval_report()
+    eval_report = get_mutated_models_eval_report(poisoned_trainset)
     # 保存结果
     save_dir = os.path.join(
         config.exp_root_dir,

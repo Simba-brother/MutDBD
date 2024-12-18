@@ -1,16 +1,1 @@
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_poisoned_sample/eval_mutation_models.py", line 73, in <module>
-    for _ in len(poioned_suspiciousClassesDataset):
-TypeError: 'int' object is not iterable
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_poisoned_sample/eval_mutation_models.py", line 73, in <module>
-    for _ in len(poioned_suspiciousClassesDataset):
-TypeError: 'int' object is not iterable
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_poisoned_sample/eval_mutation_models.py", line 73, in <module>
-    for _ in range(len(poioned_suspiciousClassesDataset)):
-TypeError: 'int' object is not iterable
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_poisoned_sample/eval_mutation_models.py", line 73, in <module>
-    for _ in range(len(poioned_suspiciousClassesDataset)):
-TypeError: 'int' object is not iterable
+

@@ -15,7 +15,7 @@ from codes.ourMethod import (
         # 模型变异class
         ModelMutat,
         # 检测target class方法,并获得adaptive mutation rate
-        detect_target_class,
+        detect_suspicious_classes,
         # 对变异模型进行排序
         sort_mutated_models,
         # 从target class中检测clean与poisoned
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     )
     dict_eval_report = joblib.load(dict_eval_report_path)
     start_3_time = time.perf_counter() 
-    target_class_i, adaptive_rate = detect_target_class(dict_eval_report,config.class_num)
+    target_class_i, adaptive_rate = detect_suspicious_classes(dict_eval_report,config.class_num)
     print(f"adaptive_rate:{adaptive_rate},target_class_i:{target_class_i}")
     end_3_time = time.perf_counter()
     cost_3_time = end_3_time - start_3_time
