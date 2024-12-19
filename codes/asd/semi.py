@@ -4,7 +4,7 @@ import numpy as np
 
 from torchvision.models.feature_extraction import create_feature_extractor
 from codes.asd.log import Record,AverageMeter,tabulate_step_meter,tabulate_epoch_meter
-from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
+from codes.attack.GTSRB.models.vgg import VGG as GTSRB_VGG
 from codes.core.models.resnet import ResNet
 
 

@@ -14,8 +14,8 @@ from sklearn.cluster import KMeans
 import scipy.stats as stats
 from tqdm import tqdm
 from torch.utils.data import DataLoader,Dataset
-from datasets.cifar10.models.resnet18_32_32_3 import ResNet
-from datasets.cifar10.models.vgg import VGG
+from attack.cifar10.models.resnet18_32_32_3 import ResNet
+from attack.cifar10.models.vgg import VGG
 from codes.common.eval_model import EvalModel
 from utils import entropy, create_dir
 from codes.ourMethod.baseData import BaseData
