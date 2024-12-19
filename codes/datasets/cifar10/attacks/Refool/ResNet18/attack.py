@@ -14,10 +14,9 @@ from codes import core
 import setproctitle
 from codes.core.models.resnet import ResNet
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes import config
 
-
-
-global_seed = 666
+global_seed = config.random_seed
 deterministic = True
 torch.manual_seed(global_seed)
 def _seed_worker():
@@ -90,8 +89,8 @@ refool= core.Refool(
     test_dataset=testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=1,
-    poisoned_rate=0.1,
+    y_target=config.target_class_idx,
+    poisoned_rate=config.poisoned_rate,
     poisoned_transform_train_index= 1,
     poisoned_transform_test_index= 1,
     poisoned_target_transform_index= 1,
@@ -100,7 +99,7 @@ refool= core.Refool(
     deterministic=deterministic, # True
     reflection_candidates = reflection_images, # reflection img list
 )
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"
 model_name = "ResNet18"
 attack_name = "Refool"
@@ -124,8 +123,8 @@ schedule = {
     'test_epoch_interval': 10, # epoch
     'save_epoch_interval': 10,  # epoch
 
-    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': 'ATTACK'
 }
 
 
@@ -140,7 +139,10 @@ def attack():
     poisoned_ids = poisoned_trainset.poisoned_set
     poisoned_testset = refool.poisoned_test_dataset
     
-    dict_state = {}
+    poisoned_trainset = ExtractDataset(dict_state["poisoned_trainset"])
+    poisoned_testset = ExtractDataset(dict_state["poisoned_testset"])
+
+    dict_state = {} 
     dict_state["poisoned_trainset"]=poisoned_trainset
     dict_state["poisoned_ids"]=poisoned_ids
     dict_state["poisoned_testset"]=poisoned_testset
@@ -231,7 +233,7 @@ def get_dict_state():
     return dict_state
 
 def create_backdoor_data():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack_2024-06-27_22:20:05", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "ATTACK_2024-12-18_13:28:03", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset, poisoned_testset = refool.get_poisoned_dataset()
@@ -241,7 +243,7 @@ def create_backdoor_data():
     print("poisoned_trainset_acc",poisoned_trainset_acc)
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("clean_testset_acc",clean_testset_acc)
-    save_dir = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name)
+    save_dir = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name)
     save_file_name = "backdoor_data.pth"
     backdoor_data = {
         "backdoor_model":backdoor_model,
@@ -270,11 +272,21 @@ def eval_backdoor():
     print("poisoned_testset_acc", poisoned_testset_acc)
     print("clean_testset_acc", clean_testset_acc)
 
+
+def update_dict_state():
+    dict_state_file_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "ATTACK_2024-12-18_13:28:03", "dict_state.pth")
+    dict_state = torch.load(dict_state_file_path, map_location="cpu")
+    dict_state["poisoned_trainset"] = ExtractDataset(dict_state["poisoned_trainset"])
+    dict_state["poisoned_testset"] = ExtractDataset(dict_state["poisoned_testset"])
+    torch.save(dict_state, dict_state_file_path)
+    print("update_dict_state(), success")
+
 if __name__ == "__main__":
-    protitle = "EvalBackdoor|"+dataset_name+"|"+model_name+"|"+attack_name
+    protitle = "Update|"+dataset_name+"|"+model_name+"|"+attack_name
     print(protitle)
     setproctitle.setproctitle(protitle)
     # attack()
+    # update_dict_state()
     # create_backdoor_data()
-    eval_backdoor()
+    # eval_backdoor()
     pass

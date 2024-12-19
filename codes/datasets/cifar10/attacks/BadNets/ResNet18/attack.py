@@ -15,7 +15,7 @@ from codes.core.models.resnet import ResNet
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 
-global_seed = 666
+global_seed = config.random_seed
 deterministic = True
 # cpu种子
 torch.manual_seed(global_seed)
@@ -70,17 +70,16 @@ badnets = BadNets(
     test_dataset=testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=config.target_class_idx,
-    poisoned_rate=config.poisoned_rate,
+    y_target=config.target_class_idx, # defaut:3
+    poisoned_rate=config.poisoned_rate, # default:0.05
     pattern=pattern,
     weight=weight,
     seed=global_seed,
     deterministic=deterministic
 )
 
-    
-# Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/CIFAR/train_watermarked.py)
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+
+exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"
 model_name = "ResNet18"
 attack_name = "BadNets"
@@ -95,7 +94,7 @@ schedule = {
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [150, 180], # epoch区间
+    'schedule': [100, 150], # epoch区间 (150,180)
 
     'epochs': 200,
 
@@ -103,8 +102,8 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': 'ATTACK'
 }
 
 
@@ -123,6 +122,10 @@ def attack():
     poisoned_trainset = badnets.poisoned_train_dataset
     # poisoned_ids
     poisoned_ids = poisoned_trainset.poisoned_set
+    # 中毒的训练集
+    poisoned_trainset = ExtractDataset(poisoned_trainset) 
+    # 中毒的测试集
+    poisoned_testset = ExtractDataset(poisoned_testset) 
     # pure clean trainset
     pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
     # pure poisoned trainset
@@ -202,8 +205,8 @@ def update_dict_state():
     print("update_dict_state() success")
 
 def create_backdoor_data():
-    # creat
-    dict_state_file_path = os.path.join(exp_root_dir,"attack",dataset_name,model_name, attack_name, "attack_2024-06-22_16:15:38", "dict_state.pth")
+    
+    dict_state_file_path = os.path.join(exp_root_dir,"ATTACK",dataset_name,model_name, attack_name, "ATTACK_2024-12-18_12:47:29", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path,map_location="cpu")
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset =  badnets.poisoned_train_dataset
@@ -217,7 +220,7 @@ def create_backdoor_data():
     print("poisoned_testset_acc", poisoned_testset_acc)
     print("clean_testset_acc", clean_testset_acc)
     # save
-    save_dir = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name)
+    save_dir = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name)
     save_file_name = "backdoor_data.pth"
     backdoor_data = {
         "backdoor_model":backdoor_model,
@@ -247,10 +250,10 @@ def eval_backdoor():
     print("clean_testset_acc", clean_testset_acc)
 
 if __name__ == "__main__":
-    proc_title = "EvalBackdoor|"+dataset_name+"|"+model_name+"|"+attack_name
+    proc_title = "CREATE|"+dataset_name+"|"+model_name+"|"+attack_name
     setproctitle.setproctitle(proc_title)
     print(proc_title)
     # attack()
-    # create_backdoor_data()
-    eval_backdoor()
+    create_backdoor_data()
+    # eval_backdoor()
     pass

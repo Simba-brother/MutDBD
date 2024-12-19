@@ -17,11 +17,12 @@ from codes.core.attacks import IAD
 from codes.core.attacks.IAD import Generator 
 from codes.core.models.resnet import ResNet
 from codes.scripts.dataset_constructor import *
+from codes import config
 import setproctitle
 
 
 # 设置随机种子
-global_seed = 666
+global_seed = config.random_seed
 deterministic = True
 torch.manual_seed(global_seed)
 
@@ -102,7 +103,7 @@ testset_loader = DataLoader(
     worker_init_fn=_seed_worker
     )
 
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"
 model_name = "ResNet18"
 attack_name = "IAD"
@@ -137,8 +138,8 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': 'ATTACK'
 }
 
 iad = IAD(
@@ -149,9 +150,9 @@ iad = IAD(
     test_dataset1=testset1,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=1,
-    poisoned_rate=0.1,      # follow the default configure in the original paper
-    cross_rate=0.1,         # follow the default configure in the original paper
+    y_target=config.target_class_idx,
+    poisoned_rate=config.poisoned_rate,
+    cross_rate=config.poisoned_rate,
     lambda_div=1,
     lambda_norm=100,
     mask_density=0.032,
@@ -356,11 +357,11 @@ def eval_backdoor():
 
 
 if __name__ == "__main__":
-    proc_title = "EvalBackdoor|"+dataset_name+"|"+model_name+"|"+attack_name
+    proc_title = "ATTACK|"+dataset_name+"|"+model_name+"|"+attack_name
     setproctitle.setproctitle(proc_title)
     print(proc_title)
-    # attack()
+    attack()
     # create_backdoor_data()
-    eval_backdoor()
+    # eval_backdoor()
     pass
 

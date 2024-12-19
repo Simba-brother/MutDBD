@@ -19,9 +19,9 @@ from torchvision.datasets import DatasetFolder
 from codes.core import WaNet
 from codes.datasets.cifar10.models.vgg import VGG
 from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
-
+from codes import config
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
-global_seed = 666
+global_seed = config.random_seed
 deterministic = True
 torch.manual_seed(global_seed)
 
@@ -129,8 +129,8 @@ wanet = WaNet(
     model=model,
     # model=core.models.BaselineMNISTNetwork(),
     loss=nn.CrossEntropyLoss(),
-    y_target=1,
-    poisoned_rate=0.1,
+    y_target=config.target_class_idx,
+    poisoned_rate=config.poisoned_rate,
     identity_grid=identity_grid,
     noise_grid=noise_grid,
     noise=False,
@@ -161,7 +161,7 @@ wanet = WaNet(
 #     print()
 
 
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"
 model_name = "VGG19"
 attack_name = "WaNet"
@@ -185,8 +185,8 @@ schedule = {
     'test_epoch_interval': 10, # 每经过10个epoch,去测试下model效果
     'save_epoch_interval': 10, # 每经过10个epoch,保存下训练的model ckpt
 
-    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': 'ATTACK'
 }
 
 
@@ -352,11 +352,11 @@ def eval_backdoor():
     print("clean_testset_acc", clean_testset_acc)
     
 if __name__ == "__main__":
-    proc_title ="CreateBackdoorData|"+dataset_name+"|"+attack_name+"|"+model_name
+    proc_title ="ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name
     setproctitle.setproctitle(proc_title)
     print(proc_title)
-    # attack()
+    attack()
     # create_backdoor_data()
-    eval_backdoor()
+    # eval_backdoor()
     pass
 

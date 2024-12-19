@@ -18,9 +18,9 @@ mutation_model_num = 50
 # 更为精细化的变异比例
 fine_mutation_rate_list = [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
 # 配置攻击类别
-target_class_idx = 1 
+target_class_idx = 3
 # 样本投毒比例
-poisoned_rate = 0.1
+poisoned_rate = 0.05
 
 ###########################################################
 

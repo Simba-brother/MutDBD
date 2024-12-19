@@ -13,9 +13,9 @@ from codes import core
 import setproctitle
 from codes.datasets.cifar10.models.vgg import VGG
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes import config
 
-
-global_seed = 666
+global_seed = config.random_seed
 deterministic = True
 torch.manual_seed(global_seed)
 def _seed_worker():
@@ -86,8 +86,8 @@ refool= core.Refool(
     test_dataset=testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=1,
-    poisoned_rate=0.1,
+    y_target=config.target_class_idx,
+    poisoned_rate=config.poisoned_rate,
     poisoned_transform_train_index=1,
     poisoned_transform_test_index=1,
     poisoned_target_transform_index=1,
@@ -96,7 +96,7 @@ refool= core.Refool(
     deterministic=deterministic, # True
     reflection_candidates = reflection_images, # reflection img list
 )
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"
 model_name = "VGG19"
 attack_name = "Refool"
@@ -120,8 +120,8 @@ schedule = {
     'test_epoch_interval': 10, # epoch
     'save_epoch_interval': 10,  # epoch
 
-    'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': osp.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': 'ATTACK'
 }
 
 
@@ -276,10 +276,10 @@ def eval_backdoor():
     print("clean_testset_acc", clean_testset_acc)
 
 if __name__ == "__main__":
-    proc_title = f"EvalBackdoor|{dataset_name}|{attack_name}|{model_name}"
+    proc_title = f"ATTACK|{dataset_name}|{attack_name}|{model_name}"
     setproctitle.setproctitle(proc_title)
     print(proc_title)
-    # attack()
+    attack()
     # create_backdoor_data()
-    eval_backdoor()
+    # eval_backdoor()
     pass

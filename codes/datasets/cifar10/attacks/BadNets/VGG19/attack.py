@@ -10,12 +10,12 @@ from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage,RandomCrop
 import setproctitle
-
+from codes import config
 from codes.core.attacks import BadNets
 from codes.datasets.cifar10.models.vgg import VGG
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
-global_seed = 666
+global_seed = config.random_seed
 deterministic = True
 # cpu种子
 torch.manual_seed(global_seed)
@@ -73,8 +73,8 @@ badnets = BadNets(
     test_dataset=testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=1,
-    poisoned_rate=0.1,
+    y_target=config.target_class_idx,
+    poisoned_rate=config.poisoned_rate,
     pattern=pattern,
     poisoned_transform_train_index= -1,
     poisoned_transform_test_index= -1,
@@ -84,9 +84,8 @@ badnets = BadNets(
     deterministic=deterministic
 )
 
-    
-# Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/CIFAR/train_watermarked.py)
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+
+exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"
 model_name = "VGG19"
 attack_name = "BadNets"
@@ -101,7 +100,7 @@ schedule = {
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [150, 180], # epoch区间
+    'schedule': [100, 150], # epoch区间
 
     'epochs': 200,
 
@@ -109,8 +108,8 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': 'ATTACK'
 }
 
 
@@ -129,6 +128,10 @@ def attack():
     poisoned_trainset = badnets.poisoned_train_dataset
     # poisoned_ids
     poisoned_ids = poisoned_trainset.poisoned_set
+    # 中毒的训练集
+    poisoned_trainset = ExtractDataset(poisoned_trainset) 
+    # 中毒的测试集
+    poisoned_testset = ExtractDataset(poisoned_testset) 
     # pure clean trainset
     pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
     # pure poisoned trainset
@@ -265,10 +268,10 @@ def eval_backdoor():
     print("clean_testset_acc", clean_testset_acc)
 
 if __name__ == "__main__":
-    proctitle = "EvalBackdoor|"+dataset_name+"|"+attack_name+"|"+model_name
+    proctitle = "ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name
     setproctitle.setproctitle(proctitle)
     print(f"proctitle:{proctitle}")
-    # attack()
+    attack()
     # create_backdoor_data()
-    eval_backdoor()
+    # eval_backdoor()
     pass
