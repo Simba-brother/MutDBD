@@ -16,7 +16,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 from core.attacks import Blended
 
 from attack.MNIST.models.model_1 import CNN_Model_1
-from codes.ourMethod.modelMutat import ModelMutat
+
 from codes.common.eval_model import EvalModel
 from utils import create_dir
 from collections import defaultdict

@@ -14,7 +14,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 
 from core.attacks import Blended
 from attack.GTSRB.models.densenet import DenseNet121
-from codes.ourMethod.modelMutat import ModelMutat
+
 from codes.common.eval_model import EvalModel
 from utils import create_dir
 from collections import defaultdict
