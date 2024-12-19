@@ -20,7 +20,7 @@ attack_name = config.attack_name
 # mutation_name = config.mutation_name 
 # mutation_name_list =  config.mutation_name_list
 
-from attack.cifar10.models.vgg import VGG
+from datasets.cifar10.models.vgg import VGG
 
 model = VGG("VGG19")
 clean_state_dict_path = "/data/mml/backdoor_detect/experiments/CIFAR10/vgg19/clean/best_model.pth"

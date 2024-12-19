@@ -2,10 +2,10 @@ import torch.nn as nn
 from codes.core.models.resnet import ResNet
 from torchvision.models import resnet18,vgg19,densenet121
 from codes.asd.models import resnet_cifar # ASD开源项目中的模型
-from codes.attack.cifar10.models.vgg import VGG
-from codes.attack.GTSRB.models.vgg import VGG as GTSRB_VGG
-from codes.attack.cifar10.models.densenet import densenet_cifar
-from codes.attack.GTSRB.models.densenet import DenseNet121
+from codes.datasets.cifar10.models.vgg import VGG
+from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
+from codes.datasets.cifar10.models.densenet import densenet_cifar
+from codes.datasets.GTSRB.models.densenet import DenseNet121
 
 
 # def get_resnet(num,num_classes):
