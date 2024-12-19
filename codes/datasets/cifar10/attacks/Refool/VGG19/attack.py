@@ -12,8 +12,9 @@ from torchvision.datasets import DatasetFolder
 from codes import core
 import setproctitle
 from codes.datasets.cifar10.models.vgg import VGG
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes.scripts.dataset_constructor import *
 from codes import config
+from codes.datasets.eval_backdoor import eval_backdoor
 
 global_seed = config.random_seed
 deterministic = True
@@ -124,11 +125,6 @@ schedule = {
     'experiment_name': 'ATTACK'
 }
 
-
-def get_config():
-    config = {}
-    return config
-
 def attack():
     print("开始attack train")
     refool.train(schedule)
@@ -137,19 +133,13 @@ def attack():
     poisoned_trainset = refool.poisoned_train_dataset
     poisoned_testset = refool.poisoned_test_dataset
     poisoned_ids = poisoned_trainset.poisoned_set
-    poisonedTrainset = ExtractDataset(poisoned_trainset)
-    poisonedTestset = ExtractDataset(poisoned_testset)
-    pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
-    purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
+
 
     dict_state = {}
-    dict_state["poisoned_trainset"]=poisonedTrainset
+    dict_state["poisoned_trainset"]=poisoned_trainset
     dict_state["poisoned_ids"]=poisoned_ids
-    dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
-    dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
     dict_state["clean_testset"]=testset
-    dict_state["poisoned_testset"]=poisonedTestset
-
+    dict_state["poisoned_testset"]=poisoned_testset
 
     # 获得backdoor model weights
     backdoor_weights = torch.load(osp.join(work_dir, "best_model.pth"), map_location="cpu")
@@ -161,91 +151,19 @@ def attack():
     print("开始保存攻击后数据")
     torch.save(dict_state, save_path)
     print(f"Refool攻击完成,数据和日志被存入{save_path}")
-
-def eval(model,testset):
-    '''
-    评估接口
-    '''
-    model.eval()
-    device = torch.device("cuda:1")
-    model.to(device)
-    batch_size = 128
-    # 加载trigger set
-    testset_loader = DataLoader(
-        testset,
-        batch_size = batch_size,
-        shuffle=False,
-        # num_workers=self.current_schedule['num_workers'],
-        drop_last=False,
-        pin_memory=False,
-        worker_init_fn=_seed_worker
-    )
-    # 测试集总数
-    total_num = len(testset_loader.dataset)
-    # 评估开始时间
-    start = time.time()
-    acc = torch.tensor(0., device=device)
-    correct_num = 0 # 攻击成功数量
-    with torch.no_grad():
-        for batch_id, batch in enumerate(testset_loader):
-            X = batch[0]
-            Y = batch[1]
-            X = X.to(device)
-            Y = Y.to(device)
-            pridict_digits = model(X)
-            correct_num += (torch.argmax(pridict_digits, dim=1) == Y).sum()
-        acc = correct_num / total_num
-        acc = round(acc.item(),3)
-    end = time.time()
-    print("acc:",acc)
-    print(f'Total eval() time: {end-start:.1f} seconds')
-    return acc
+    return save_path
 
 
-def process_eval():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
-    dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    # backdoor_model
-    backdoor_model = dict_state["backdoor_model"]
-
-    poisoned_trainset = dict_state["poisoned_trainset"]
-    poisoned_testset = dict_state["poisoned_testset"]
-    clean_testset = dict_state["clean_testset"]
-    purePoisonedTrainDataset = dict_state["purePoisonedTrainDataset"]
-    pureCleanTrainDataset = dict_state["pureCleanTrainDataset"]
-    assert len(pureCleanTrainDataset)+len(purePoisonedTrainDataset) == len(poisoned_trainset), "数量不对"
-
-    poisoned_trainset_acc = eval(backdoor_model,poisoned_trainset)
-    poisoned_testset_acc = eval(backdoor_model,poisoned_testset)
-    clean_testset_acc = eval(backdoor_model,clean_testset)
-    purePoisonedTrainDataset_acc = eval(backdoor_model,purePoisonedTrainDataset)
-    pureCleanTrainDataset_acc = eval(backdoor_model,pureCleanTrainDataset)
-    
-    
-    print("poisoned_trainset_acc",poisoned_trainset_acc)
-    print("poisoned_testset_acc",poisoned_testset_acc)
-    print("clean_testset_acc",clean_testset_acc)
-    print("purePoisonedTrainDataset_acc",purePoisonedTrainDataset_acc)
-    print("pureCleanTrainDataset_acc",pureCleanTrainDataset_acc)
-    
-    
-    
-def get_dict_state():
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
-    dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    return dict_state
-
-def create_backdoor_data():
-    dict_state_file_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "ATTACK_2024-12-18_13:30:33", "dict_state.pth")
+def create_backdoor_data(attack_dict_path):
+    dict_state_file_path = os.path.join(attack_dict_path)
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     backdoor_model = dict_state["backdoor_model"]
     poisoned_trainset, poisoned_testset = refool.get_poisoned_dataset()
-    poisoned_trainset_acc = eval(backdoor_model,poisoned_trainset)
-    poisoned_testset_acc = eval(backdoor_model,poisoned_testset)
-    clean_testset_acc = eval(backdoor_model,testset)
-    print("poisoned_trainset_acc",poisoned_trainset_acc)
-    print("poisoned_testset_acc",poisoned_testset_acc)
-    print("clean_testset_acc",clean_testset_acc)
+    poisoned_ids = poisoned_trainset.poisoned_set
+    # 将数据集抽取到内存，为了加速评估
+    poisoned_trainset = ExtractDataset(poisoned_trainset)
+    poisoned_testset = ExtractDataset(poisoned_testset)
+
     save_dir = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name)
     save_file_name = "backdoor_data.pth"
     backdoor_data = {
@@ -253,33 +171,45 @@ def create_backdoor_data():
         "poisoned_trainset":poisoned_trainset,
         "poisoned_testset":poisoned_testset,
         "clean_testset":testset,
-        "poisoned_ids":poisoned_trainset.poisoned_set
+        "poisoned_ids":poisoned_ids
     }
     save_file_path = os.path.join(save_dir,save_file_name)
     torch.save(backdoor_data,save_file_path)
     print(f"backdoor_data is saved in {save_file_path}")
 
-def eval_backdoor():
-    backdoor_data_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "backdoor_data.pth")
+def update_backdoor_data():
+    backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_trainset = backdoor_data["poisoned_trainset"]
     poisoned_testset = backdoor_data["poisoned_testset"]
     clean_testset = backdoor_data["clean_testset"]
     poisoned_ids = backdoor_data["poisoned_ids"]
-    # eval
-    poisoned_trainset_acc = eval(backdoor_model, poisoned_trainset)
-    poisoned_testset_acc = eval(backdoor_model, poisoned_testset)
-    clean_testset_acc = eval(backdoor_model,clean_testset)
-    print("poisoned_trainset_acc",poisoned_trainset_acc)
-    print("poisoned_testset_acc", poisoned_testset_acc)
-    print("clean_testset_acc", clean_testset_acc)
 
-if __name__ == "__main__":
-    proc_title = f"CREATE|{dataset_name}|{attack_name}|{model_name}"
+    # 将数据集抽取到内存，为了加速评估
+    poisoned_trainset = ExtractDataset(poisoned_trainset)
+    poisoned_testset = ExtractDataset(poisoned_testset)
+    backdoor_data["poisoned_trainset"] = poisoned_trainset
+    backdoor_data["poisoned_testset"] = poisoned_testset
+
+    # 保存数据
+    torch.save(backdoor_data, backdoor_data_path)
+    print("update_backdoor_data(),successful.")
+
+def main():
+    proc_title = "ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name
     setproctitle.setproctitle(proc_title)
     print(proc_title)
-    # attack()
-    create_backdoor_data()
-    # eval_backdoor()
+    # 开始攻击并保存攻击模型和数据
+    attack_dict_path = attack()
+    # 抽取攻击模型和数据并转储
+    backdoor_data_path = create_backdoor_data(attack_dict_path)
+    # 开始评估
+    eval_backdoor(dataset_name,attack_name,model_name)
+
+
+if __name__ == "__main__":
+    # main()
+    update_backdoor_data()
+    # eval_backdoor(dataset_name,attack_name,model_name)
     pass
