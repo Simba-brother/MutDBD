@@ -6,7 +6,23 @@ import torch
 
 from codes import config
 from codes.common.eval_model import EvalModel
-from codes.scripts.dataset_constructor import *
+from codes.scripts.dataset_constructor import ExtractDataset
+
+
+def update_backdoor_data(backdoor_data_path):
+    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+    poisoned_trainset = backdoor_data["poisoned_trainset"]
+    poisoned_testset = backdoor_data["poisoned_testset"]
+
+    # 将数据集抽取到内存，为了加速评估
+    poisoned_trainset = ExtractDataset(poisoned_trainset)
+    poisoned_testset = ExtractDataset(poisoned_testset)
+    backdoor_data["poisoned_trainset"] = poisoned_trainset
+    backdoor_data["poisoned_testset"] = poisoned_testset
+
+    # 保存数据
+    torch.save(backdoor_data, backdoor_data_path)
+    print("update_backdoor_data(),successful.")
 
 def eval_backdoor(dataset_name,attack_name,model_name):
     

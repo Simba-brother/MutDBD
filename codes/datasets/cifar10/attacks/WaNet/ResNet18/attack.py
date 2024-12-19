@@ -22,7 +22,8 @@ from codes.core import WaNet
 from codes.core.models.resnet import ResNet
 from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
 from codes import config
-from codes.datasets.eval_backdoor import eval_backdoor
+from codes.datasets.utils import eval_backdoor,update_backdoor_data
+from codes.datasets.cifar10.attacks.WaNet.utils import create_backdoor_data
 
 # if global_seed = 666, the network will crash during training on MNIST. Here, we set global_seed = 555.
 global_seed = config.random_seed
@@ -234,64 +235,24 @@ def attack():
     print(f"数据被保存在:{save_path}")
     return save_path
 
-def create_backdoor_data(attack_dict_path):
-    dict_state_file_path = os.path.join(attack_dict_path)
-    dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    backdoor_model = dict_state["backdoor_model"]
-    poisoned_trainset = wanet.poisoned_train_dataset
-    poisoned_ids = poisoned_trainset.poisoned_set
-    poisoned_testset = wanet.poisoned_test_dataset
-    
-    # 将数据集抽取到内存，为了加速评估
-    poisoned_trainset = ExtractDataset(poisoned_trainset)
-    poisoned_testset = ExtractDataset(poisoned_testset)
-
-    save_dir = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name)
-    save_file_name = "backdoor_data.pth"
-    backdoor_data = {
-        "backdoor_model":backdoor_model,
-        "poisoned_trainset":poisoned_trainset,
-        "poisoned_testset":poisoned_testset,
-        "clean_testset":testset,
-        "poisoned_ids":poisoned_ids
-    }
-    save_file_path = os.path.join(save_dir,save_file_name)
-    torch.save(backdoor_data,save_file_path)
-    print(f"backdoor_data is saved in {save_file_path}")
-
-def update_backdoor_data():
-    backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "backdoor_data.pth")
-    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
-    backdoor_model = backdoor_data["backdoor_model"]
-    poisoned_trainset = backdoor_data["poisoned_trainset"]
-    poisoned_testset = backdoor_data["poisoned_testset"]
-    clean_testset = backdoor_data["clean_testset"]
-    poisoned_ids = backdoor_data["poisoned_ids"]
-
-    # 将数据集抽取到内存，为了加速评估
-    poisoned_trainset = ExtractDataset(poisoned_trainset)
-    poisoned_testset = ExtractDataset(poisoned_testset)
-    backdoor_data["poisoned_trainset"] = poisoned_trainset
-    backdoor_data["poisoned_testset"] = poisoned_testset
-
-    # 保存数据
-    torch.save(backdoor_data, backdoor_data_path)
-    print("update_backdoor_data(),successful.")
-
 def main():
     proc_title = "ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name
     setproctitle.setproctitle(proc_title)
     print(proc_title)
     # 开始攻击并保存攻击模型和数据
     attack_dict_path = attack()
-    # 抽取攻击模型和数据并转储
-    backdoor_data_path = create_backdoor_data(attack_dict_path)
+      # 抽取攻击模型和数据并转储
+    backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+    create_backdoor_data(attack_dict_path,model,trainset,testset,backdoor_data_save_path)
     # 开始评估
     eval_backdoor(dataset_name,attack_name,model_name)
 
 if __name__ == "__main__":
     # main()
-    update_backdoor_data()
-    # eval_backdoor(dataset_name,attack_name,model_name)
+
+    # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+    # update_backdoor_data(backdoor_data_path)
+    
+    eval_backdoor(dataset_name,attack_name,model_name)
     pass
 
