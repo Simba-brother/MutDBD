@@ -235,7 +235,7 @@ def process_eval():
 
 def update_dict_state():
     
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "ATTACK_2024-12-18_13:17:49", "dict_state.pth")
     # 加载
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
     backdoor_weight = dict_state["model"]
@@ -287,9 +287,10 @@ def get_dict_state():
 
 def create_backdoor_data():
     # create
-    dict_state_file_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "attack", "dict_state.pth")
+    dict_state_file_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "ATTACK_2024-12-18_13:17:49", "dict_state.pth")
     dict_state = torch.load(dict_state_file_path, map_location="cpu")
-    backdoor_model = backdoor_model = dict_state["backdoor_model"]
+    model.load_state_dict(dict_state["model"])
+    backdoor_model = model
 
     modelG = Generator("cifar10")
     modelM = Generator("cifar10", out_channels=1)
@@ -303,15 +304,15 @@ def create_backdoor_data():
 
     poisoned_trainset =  IADPoisonedDatasetFolder(
         benign_dataset = trainset,
-        y_target = 1,
-        poisoned_rate = 0.1,
+        y_target = config.target_class_idx,
+        poisoned_rate = config.poisoned_rate,
         modelG = modelG,
         modelM =modelM
     )
 
     poisoned_testset =  IADPoisonedDatasetFolder(
         benign_dataset = testset,
-        y_target = 1,
+        y_target = config.target_class_idx,
         poisoned_rate = 1,
         modelG = modelG,
         modelM = modelM
@@ -325,7 +326,7 @@ def create_backdoor_data():
     print("poisoned_testset_acc",poisoned_testset_acc)
     print("clean_testset_acc",clean_testset_acc)
     # save
-    save_dir = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name)
+    save_dir = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name)
     save_file_name = "backdoor_data.pth"
     backdoor_data = {
         "backdoor_model":backdoor_model,
@@ -357,11 +358,12 @@ def eval_backdoor():
 
 
 if __name__ == "__main__":
-    proc_title = "ATTACK|"+dataset_name+"|"+model_name+"|"+attack_name
+    proc_title = "CREATE|"+dataset_name+"|"+model_name+"|"+attack_name
     setproctitle.setproctitle(proc_title)
     print(proc_title)
-    attack()
-    # create_backdoor_data()
+    # attack()
+    # update_dict_state()
+    create_backdoor_data()
     # eval_backdoor()
     pass
 

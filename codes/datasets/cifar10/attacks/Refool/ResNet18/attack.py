@@ -282,11 +282,11 @@ def update_dict_state():
     print("update_dict_state(), success")
 
 if __name__ == "__main__":
-    protitle = "Update|"+dataset_name+"|"+model_name+"|"+attack_name
+    protitle = "CREATE|"+dataset_name+"|"+model_name+"|"+attack_name
     print(protitle)
     setproctitle.setproctitle(protitle)
     # attack()
     # update_dict_state()
-    # create_backdoor_data()
+    create_backdoor_data()
     # eval_backdoor()
     pass
