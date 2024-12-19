@@ -13,8 +13,8 @@ model_name_list = ["ResNet18", "VGG19", "DenseNet", "BaselineMNISTNetwork", "CNN
 mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
 # 变异比例list
 mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8] # 0.001
-# 每个变异率下的每个变异算子生成50个变异模型
-mutation_model_num = 50 
+# 每个变异率下的每个变异算子生成100个变异模型
+mutation_model_num = 100 
 # 更为精细化的变异比例
 fine_mutation_rate_list = [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
 # 配置攻击类别

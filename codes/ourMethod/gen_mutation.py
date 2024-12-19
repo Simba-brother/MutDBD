@@ -51,11 +51,11 @@ if __name__ == "__main__":
     # 进程名称
     proctitle = f"Mutations|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
-    device = torch.device("cuda:1")
+    device = torch.device(f"cuda:{config.gpu_id}")
     # 变异模型保存目录
     save_dir = os.path.join(
         config.exp_root_dir,
-        "mutation_models",
+        "MutationModels",
         config.dataset_name,
         config.model_name,
         config.attack_name,
@@ -70,19 +70,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
     # 获得backdoor_data
-    backdoor_data_path = os.path.join(config.exp_root_dir, "attack", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
+    backdoor_data_path = os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
-    # poisoned_trainset =backdoor_data["poisoned_trainset"]
-    # poisoned_testset =backdoor_data["poisoned_testset"]
-    # poisoned_ids =backdoor_data["poisoned_ids"]
-    # clean_testset =backdoor_data["clean_testset"]
-    # # 数据预transform,为了后面训练加载的更快
-    # poisoned_trainset = ExtractDataset(poisoned_trainset)
-    # pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset,poisoned_ids)
-    # purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset,poisoned_ids)
-    # poisoned_testset = ExtractDataset(poisoned_testset)
-    # victim model
     for op in tqdm([OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]):
         gen_mutation_models(backdoor_model,save_dir,op)
     

@@ -167,7 +167,7 @@ class MutaionOperator(object):
         or filters( for convolution layer) of a layer should be at least greater than a given threshold since at least two
         neurons or filters are involved in a switch. We set 10 as the default value.
         The switch process is limited within a layer.
-        :param skip: the threshold of amount of neurons in layer,根据mo x分类层数量决定
+        :param skip: the threshold of amount of neurons in layer,根据分类层数量决定
         :return:
         '''
         # 拷贝出一个变异模型
@@ -182,7 +182,7 @@ class MutaionOperator(object):
             dim = len(shape)
             unique_neurons_layer = shape[0]
             # skip the bias
-            if dim > 1 and unique_neurons_layer >= skip: # 神经元个数小于10的也不切换
+            if dim > 1 and unique_neurons_layer >= skip: # 神经元个数小于10的不切换
                 temp = unique_neurons_layer * self.ration
                 num_mutated = math.floor(temp) if temp > 2. else math.ceil(temp)
                 mutated_neurons = np.random.choice(unique_neurons_layer,
