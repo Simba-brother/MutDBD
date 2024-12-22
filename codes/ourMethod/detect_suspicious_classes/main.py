@@ -27,7 +27,7 @@ def calu_p_and_dela_value(list_1, list_2):
     return p_value,delta
 
 
-def get_suspicious_classes(data_dict):
+def get_suspicious_classes_by_Rule(data_dict):
     '''
     data_dict:{Int(class_idx):list(precision|recall|F1)}
     '''
@@ -101,7 +101,7 @@ def get_suspicious_classes_by_ScottKnottESD(data_dict):
         group_map[rank].append(class_idx)
     group_key_list = list(group_map.keys())
     group_key_list.sort() # replace
-    top_key = group_key_list[0]
+    top_key = group_key_list[-1]
     suspicious_classes = group_map[top_key]
     return suspicious_classes
     
@@ -144,22 +144,33 @@ def detect(report_dataset):
                 }
             }
     return:
-        {
+        {x
             ratio:target class
         }
     '''
     ans = {}
     data = reconstruct_data(report_dataset,measure_name="precision") 
+    
+    box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
     for ratio in config.fine_mutation_rate_list:
-        suspicious_classes = get_suspicious_classes_by_ScottKnottESD(data[ratio])
+        save_dir = os.path.join(box_data_save_dir,str(ratio))
+        os.makedirs(save_dir,exist_ok=True)
+        save_file_name = "box.csv"
+        save_path = os.path.join(save_dir,save_file_name)
+        df = pd.DataFrame(data[ratio])
+        # 直接设置新的列名列表
+        df.columns = ["C0","C1","C2","C3","C4","C5","C6","C7","C8","C9"]
+        df.to_csv(save_path,index=False)
+
+    for ratio in config.fine_mutation_rate_list:
+        suspicious_classes= get_suspicious_classes_by_ScottKnottESD(data[ratio])
         ans[ratio] = suspicious_classes
     return ans
 
 
-
 if __name__ == "__main__":
     # 进程名称
-    proctitle = f"SuspiciousClasses_ScottKnottESD_Precision|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    proctitle = f"SuspiciousClasses_SK_Precision|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device("cuda:0")
 
@@ -167,7 +178,7 @@ if __name__ == "__main__":
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
     LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
     os.makedirs(LOG_FILE_DIR,exist_ok=True)
-    LOG_FILE_NAME = "SuspiciousClasses_ScottKnottESD_Precision.log"
+    LOG_FILE_NAME = "SuspiciousClasses_SK_Precision.log"
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
@@ -175,25 +186,26 @@ if __name__ == "__main__":
     # 加载变异模型评估结果
     evalMutationResult = joblib.load(os.path.join(
         config.exp_root_dir,
-        "EvalMutationResult",
+        "EvalMutationResult_for_SuspiciousClasses",
         config.dataset_name, 
         config.model_name, 
         config.attack_name,
-        "EvalMutationResult.data"
+        "res.data"
     ))
+
     # 得到各个变异率下的target class
     target_class_ans = detect(evalMutationResult)
     logging.debug(target_class_ans)
     # 保存实验结果
     save_dir = os.path.join(
         config.exp_root_dir,
-        "TargetClass",
+        "SuspiciousClasses",
         config.dataset_name, 
         config.model_name, 
         config.attack_name
     )
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "SuspiciousClasses_ScottKnottESD_Precision.data"
+    save_file_name = "SuspiciousClasses_SK_Precision.data"
     save_file_path = os.path.join(save_dir,save_file_name)
     joblib.dump(target_class_ans,save_file_path)
     logging.debug(f"target class结果保存在:{save_file_path}")
