@@ -31,7 +31,7 @@ class_num = 10 #
 # 当前实验设置的模型名字
 model_name = "DenseNet"
 # 当前实验设置的攻击
-attack_name = "IAD"
+attack_name = "WaNet"
 # GPU设备
 gpu_id = 1
 

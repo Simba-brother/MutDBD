@@ -11,10 +11,8 @@ import joblib
 import logging
 import setproctitle
 # https://github.com/klainfo/ScottKnottESD
-import rpy2.robjects.packages as rpackages
-from rpy2.robjects.vectors import StrVector
 from rpy2.robjects.packages import importr
-from rpy2.robjects import r, pandas2ri
+from rpy2.robjects import pandas2ri
 from collections import defaultdict
 import pandas as pd
 
@@ -172,7 +170,7 @@ if __name__ == "__main__":
     # 进程名称
     proctitle = f"SuspiciousClasses_SK_Precision|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
-    device = torch.device("cuda:0")
+    device = torch.device(f"cuda:{config.gpu_id}")
 
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"

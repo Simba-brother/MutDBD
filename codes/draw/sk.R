@@ -4,16 +4,16 @@ library(readr)
 library(ggplot2)
 
 # load data
-box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/DenseNet/IAD/0.01/box.csv"
+box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/DenseNet/Refool/0.03/box.csv"
 model_performance <- read_csv(box_csv_path)
 
 # apply ScottKnottESD and prepare a ScottKnottESD dataframe
 sk_results <- sk_esd(model_performance)
 
 sk_ranks <- data.frame(
-      class = names(sk_results$groups),
-      rank = paste0('Rank-', sk_results$groups)
-      )
+  class = names(sk_results$groups),
+  rank = paste0("Rank-", sk_results$groups)
+)
 
 # prepare a dataframe for generating a visualisation
 

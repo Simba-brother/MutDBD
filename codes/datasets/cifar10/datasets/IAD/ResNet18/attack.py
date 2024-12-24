@@ -187,6 +187,6 @@ if __name__ == "__main__":
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)
 
-    # eval_backdoor(dataset_name,attack_name,model_name)
+    eval_backdoor(dataset_name,attack_name,model_name)
     pass
 

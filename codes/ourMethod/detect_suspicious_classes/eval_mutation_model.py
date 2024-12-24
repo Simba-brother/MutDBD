@@ -22,10 +22,10 @@ def get_mutated_models_eval_report(dataset):
         )
     ans = {}
     for ratio in config.fine_mutation_rate_list:
-        logging.debug("变异率:",str(ratio))
+        logging.debug(f"变异率:{str(ratio)}")
         ans[ratio] = {}
         for operator in config.mutation_name_list:
-            logging.debug("    变异算子:",operator)
+            logging.debug(f"\t变异算子:{operator}")
             ans[ratio][operator] = []
             for i in range(config.mutation_model_num):
                 mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
@@ -53,7 +53,13 @@ if __name__ == "__main__":
     logging.debug(proctitle)
 
     # 加载后门模型数据
-    backdoor_data_path = os.path.join(config.exp_root_dir, "attack", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
+    backdoor_data_path = os.path.join(
+        config.exp_root_dir, 
+        "ATTACK", 
+        config.dataset_name, 
+        config.model_name, 
+        config.attack_name, 
+        "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_trainset =backdoor_data["poisoned_trainset"]
