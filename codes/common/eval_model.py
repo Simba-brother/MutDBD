@@ -131,16 +131,16 @@ class EvalModel(object):
         self.model.to(self.device)
         self.model.eval()
         pred_labels = []
-        true_labels = []
+        # true_labels = []
         with torch.no_grad():
             for batch_id, batch in enumerate(testset_loader):
                 X = batch[0]
-                Y = batch[1]
+                # Y = batch[1]
                 X = X.to(self.device)
-                Y = Y.to(self.device)
+                # Y = Y.to(self.device)
                 preds = self.model(X)
                 pred_labels.extend(torch.argmax(preds,dim=1).tolist()) 
-                true_labels.extend(Y.tolist()) 
+                # true_labels.extend(Y.tolist()) 
         return pred_labels
     
     def get_outputs(self,batch_size =128):

@@ -29,11 +29,11 @@ dataset_name = "CIFAR10"
 # 数据集分类任务数量
 class_num = 10 # 
 # 当前实验设置的模型名字
-model_name = "DenseNet"
+model_name = "ResNet18"
 # 当前实验设置的攻击
-attack_name = "WaNet"
+attack_name = "BadNets"
 # GPU设备
-gpu_id = 1
+gpu_id = 0
 
 
 # CIFAR-10 dataset dir

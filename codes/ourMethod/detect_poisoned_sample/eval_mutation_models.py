@@ -8,26 +8,24 @@ from codes.scripts.dataset_constructor import *
 from codes.common.eval_model import EvalModel
 import joblib
 
-def get_mutationModelPredLabels(dataset):
+def get_mutationModelPredLabels(dataset,ratio):
     mutations_dir = os.path.join(
         config.exp_root_dir,
-        "mutation_models",
+        "MutationModels",
         config.dataset_name,
         config.model_name,
         config.attack_name
         )
-    device = torch.device("cuda:0")
-    ans = {}
-    for ratio in config.fine_mutation_rate_list:
-        ans[ratio] = {}
-        for operator in config.mutation_name_list:
-            ans[ratio][operator] = []
-            for i in range(config.mutation_model_num):
-                mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
-                backdoor_model.load_state_dict(torch.load(mutation_model_path))
-                em = EvalModel(backdoor_model,dataset,device)
-                pred_labels = em.get_pred_labels() 
-                ans[ratio][operator].append(pred_labels)
+    device = torch.device(f"cuda:{config.gpu_id}")
+    ans={}
+    for operator in config.mutation_name_list:
+        ans[operator] = []
+        for i in range(config.mutation_model_num):
+            mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
+            backdoor_model.load_state_dict(torch.load(mutation_model_path))
+            em = EvalModel(backdoor_model,dataset,device)
+            pred_labels = em.get_pred_labels() 
+            ans[operator].append(pred_labels)
     return ans
 
 
@@ -35,7 +33,7 @@ if __name__ == "__main__":
     # 进程名称
     proctitle = f"EvalMutaionModelsPredLabelsOnSuspiciousClasses|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
-    device = torch.device("cuda:0")
+    device = torch.device(f"cuda:{config.gpu_id}")
 
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
@@ -47,7 +45,7 @@ if __name__ == "__main__":
     logging.debug(proctitle)
 
     # 加载后门模型数据
-    backdoor_data_path = os.path.join(config.exp_root_dir, "attack", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
+    backdoor_data_path = os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_trainset = backdoor_data["poisoned_trainset"]
@@ -55,45 +53,33 @@ if __name__ == "__main__":
     # 加载后门模型中的可疑classes
     suspicious_classes_dict = joblib.load(os.path.join(
         config.exp_root_dir,
-        "TargetClass",
+        "SuspiciousClasses",
         config.dataset_name, 
         config.model_name, 
         config.attack_name,
-        "SuspiciousClasses_ScottKnottESD_Precision.data"
+        "SuspiciousClasses_SK_Precision.data"
     ))
     
     for ratio in config.fine_mutation_rate_list:
+        # 获得该变异率下suspicious_classes
         suspicious_classes = suspicious_classes_dict[ratio]
-
-    clean_suspiciousClassesDataset = ExtractCleanOfSuspiciousClassesDataset(poisoned_trainset,suspicious_classes,poisoned_ids)
-    poioned_suspiciousClassesDataset = ExtractPoisonedOfSuspiciousClassesDataset(poisoned_trainset,suspicious_classes,poisoned_ids)
-
-    condidate_dataset = CombinDataset(poioned_suspiciousClassesDataset,clean_suspiciousClassesDataset)
-    gt_isPoisoned = []
-    for _ in range(len(poioned_suspiciousClassesDataset)):
-        gt_isPoisoned.append(True) # poisoned
-    for _ in range(len(clean_suspiciousClassesDataset)):
-        gt_isPoisoned.append(False) # clean
-
-    pred_label_ans =  get_mutationModelPredLabels(condidate_dataset)
-    # 保存结果
-    save_dir = os.path.join(
-        config.exp_root_dir,
-        "EvalMutationResult",
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name
-    )
-    os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "pred_label_ans.data"
-    save_file_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(pred_label_ans,save_file_path)
-    logging.debug(f"评估变异模型在候选数据的预测标签结果保存在:{save_file_path}")
-
-    save_file_name = "gt_isPoisoned.data"
-    save_file_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(gt_isPoisoned,save_file_path)
-    logging.debug(f"评估变异模型在候选数据是否是中毒样本groundTruth结果保存在:{save_file_path}")
+        # 从poisoned_trainset抽取出suspicious_classes dataset
+        suspiciousClassesDataset = ExtractSuspiciousClassesDataset(poisoned_trainset,suspicious_classes,poisoned_ids)
+        pred_label_dict =  get_mutationModelPredLabels(suspiciousClassesDataset,ratio)
+        # 保存结果
+        save_dir = os.path.join(
+            config.exp_root_dir,
+            "SuspiciousClassesPredLabel",
+            config.dataset_name, 
+            config.model_name, 
+            config.attack_name,
+            str(ratio)
+        )
+        os.makedirs(save_dir,exist_ok=True)
+        save_file_name = "res.data"
+        save_file_path = os.path.join(save_dir,save_file_name)
+        joblib.dump(pred_label_dict,save_file_path)
+        logging.debug(f"变异率:{str (ratio)},变异模型在suspiciousClasses dataset的预测标签结果保存在:{save_file_path}")
 
 
 
