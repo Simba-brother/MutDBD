@@ -1,27 +1,43 @@
 import os
-import time
 import cv2
-import numpy as np
 import random
+import numpy as np
 import setproctitle
 import torch
 import torch.nn as nn
 from torchvision.datasets import DatasetFolder
-from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, RandomCrop
+from torchvision.transforms import Compose, ToTensor, RandomCrop, ToPILImage, Resize
 
+# 导入攻击
 from codes.core.attacks import BadNets
+# 导入模型
 from codes.core.models.resnet import ResNet
-from codes.scripts.dataset_constructor import *
+from codes.datasets.GTSRB.models.vgg import VGG
+from codes.datasets.GTSRB.models.densenet import DenseNet121
 
 from codes import config
+from codes.datasets.GTSRB.attacks.BadNets.utils import create_backdoor_data
 from codes.datasets.utils import eval_backdoor,update_backdoor_data
-from codes.datasets.cifar10.attacks.BadNets.utils import create_backdoor_data
 
 global_seed = config.random_seed
 deterministic = True
 # cpu种子
 torch.manual_seed(global_seed)
+
+exp_root_dir = config.exp_root_dir
+dataset_name = "GTSRB"
+model_name = "DenseNet"
+attack_name = "BadNets"
+
+# victim model
+num_classes = 43
+if model_name == "ResNet18":
+    model = ResNet(num = 18, num_classes=num_classes)
+elif model_name == "VGG19":
+    model = VGG("VGG19", num_classes)
+elif model_name == "DenseNet":
+    model = DenseNet121(43)
+
 
 def _seed_worker(worker_id):
     np.random.seed(global_seed)
@@ -29,24 +45,20 @@ def _seed_worker(worker_id):
 
 # 训练集transform    
 transform_train = Compose([
-    # Convert a tensor or an ndarray to PIL Image
-    ToPILImage(), 
-    # img (PIL Image or Tensor): Image to be cropped.
+    ToPILImage(),
     RandomCrop(size=32,padding=4,padding_mode="reflect"), 
-    RandomHorizontalFlip(), 
-    # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
     ToTensor()
 ])
 # 测试集transform
 transform_test = Compose([
     ToPILImage(),
+    Resize((32, 32)),
     ToTensor()
 ])
-# victim model
-model = ResNet(num=18,num_classes=10)
+
 # 获得数据集
 trainset = DatasetFolder(
-    root= os.path.join(config.CIFAR10_dataset_dir, "train"),
+    root= os.path.join(config.GTSRB_dataset_dir,"train"),
     loader=cv2.imread, # ndarray (H,W,C)
     extensions=('png',),
     transform=transform_train,
@@ -54,12 +66,14 @@ trainset = DatasetFolder(
     is_valid_file=None)
 
 testset = DatasetFolder(
-    root= os.path.join(config.CIFAR10_dataset_dir, "test"),
+    root=os.path.join(config.GTSRB_dataset_dir,"test"),
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
     target_transform=None,
     is_valid_file=None)
+
+
 
 # backdoor pattern
 pattern = torch.zeros((32, 32), dtype=torch.uint8)
@@ -73,19 +87,19 @@ badnets = BadNets(
     test_dataset=testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=config.target_class_idx, # defaut:3
-    poisoned_rate=config.poisoned_rate, # default:0.05
+    y_target=config.target_class_idx,
+    poisoned_rate=config.poisoned_rate,
     pattern=pattern,
     weight=weight,
+    poisoned_transform_train_index= -1,
+    poisoned_transform_test_index= -1,
+    poisoned_target_transform_index=0,
     seed=global_seed,
     deterministic=deterministic
 )
 
 
-exp_root_dir = config.exp_root_dir
-dataset_name = "CIFAR10"
-model_name = "ResNet18"
-attack_name = "BadNets"
+
 schedule = {
     'device': f'cuda:{config.gpu_id}',
     
@@ -126,29 +140,19 @@ def attack():
     # poisoned_ids
     poisoned_ids = poisoned_trainset.poisoned_set
 
-    # pure clean trainset
-    pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
-    # pure poisoned trainset
-    purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
 
     dict_state = {}
     dict_state["backdoor_model"] = backdoor_model
     dict_state["poisoned_trainset"]=poisoned_trainset
     dict_state["poisoned_ids"]=poisoned_ids
-    dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
-    dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
     dict_state["clean_testset"]=clean_testset
     dict_state["poisoned_testset"]=poisoned_testset
     dict_state["pattern"] = pattern
     dict_state['weight']=weight
-    save_file_name = f"dict_state.pth"
+    save_file_name = "dict_state.pth"
     save_path = os.path.join(work_dir, save_file_name)
     torch.save(dict_state, save_path)
     print(f"BadNets攻击完成,数据和日志被存入{save_path}")
-    return save_path
-
-
-
 
 def main():
     proc_title = "ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name
@@ -162,13 +166,11 @@ def main():
     # 开始评估
     eval_backdoor(dataset_name,attack_name,model_name)
 
-
 if __name__ == "__main__":
-    # main()
+    main()
     
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)
 
     # eval_backdoor(dataset_name,attack_name,model_name)
     pass
-    

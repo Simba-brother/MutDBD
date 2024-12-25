@@ -11,13 +11,11 @@ from torchvision.transforms import Compose, ToTensor, ToPILImage, RandomCrop, Re
 
 from codes.core.attacks import BadNets
 from codes.datasets.GTSRB.models.vgg import VGG
-
-from codes.utils import create_dir
-
 import setproctitle
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
+from codes import config
 
-global_seed = 666
+global_seed = config.random_seed
 deterministic = True
 # cpu种子
 torch.manual_seed(global_seed)
@@ -41,7 +39,7 @@ transform_test = Compose([
 
 # 获得数据集
 trainset = DatasetFolder(
-    root='/data/mml/backdoor_detect/dataset/GTSRB/Train',
+    root=os.path.join(config.GTSRB_dataset_dir,"train"),
     loader=cv2.imread, # ndarray (H,W,C)
     extensions=('png',),
     transform=transform_train,
@@ -49,7 +47,7 @@ trainset = DatasetFolder(
     is_valid_file=None)
 
 testset = DatasetFolder(
-    root='/data/mml/backdoor_detect/dataset/GTSRB/testset',
+    root=os.path.join(config.GTSRB_dataset_dir,"test"),
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -71,8 +69,8 @@ badnets = BadNets(
     test_dataset=testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=1,
-    poisoned_rate=0.1,
+    y_target=config.target_class_idx,
+    poisoned_rate=config.poisoned_rate,
     pattern=pattern,
     weight=weight,
     poisoned_transform_train_index= -1,
@@ -82,33 +80,32 @@ badnets = BadNets(
     deterministic=deterministic
 )
 
-    
-# Train Attacked Model (schedule is the same as https://github.com/THUYimingLi/Open-sourced_Dataset_Protection/blob/main/CIFAR/train_watermarked.py)
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+
+exp_root_dir = config.exp_root_dir
 dataset_name = "GTSRB"
 model_name = "VGG19"
 attack_name = "BadNets"
 schedule = {
-    'device': 'cuda:0',
-
+    'device': f'cuda:{config.gpu_id}',
+    
     'benign_training': False,
-    'batch_size': 1024,
+    'batch_size': 128,
     'num_workers': 4,
 
-    'lr': 0.01,
+    'lr': 0.1,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [20],
+    'schedule': [100, 150], # epoch区间 (150,180)
 
-    'epochs': 30,
+    'epochs': 200,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': 'ATTACK'
 }
 
 

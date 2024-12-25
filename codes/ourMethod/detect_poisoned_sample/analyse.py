@@ -54,8 +54,8 @@ def look_entropy(pred_label_dict,isPoisoned_groundTruth):
     data_struct_converted = data_struct_convertor(pred_label_dict)
     df = pd.DataFrame(data_struct_converted)
     df["isPoisoned_groundTruth"] = isPoisoned_groundTruth
-    df_clean = df.loc[df['isPoisoned_groundTruth'] == True]
-    df_poisoned = df.loc[df['isPoisoned_groundTruth'] == False]
+    df_clean = df.loc[df['isPoisoned_groundTruth'] == False]
+    df_poisoned = df.loc[df['isPoisoned_groundTruth'] == True]
 
     clean_entropy = cal_entropy(df_clean)
     poisoned_entropy = cal_entropy(df_poisoned)
@@ -63,7 +63,7 @@ def look_entropy(pred_label_dict,isPoisoned_groundTruth):
     return clean_entropy,poisoned_entropy
 
 
-def look_LCR(pred_label_dict,isPoisoned_groundTruth:list):
+def look_LCR(suspiciousClassesDataset,pred_label_dict,isPoisoned_groundTruth:list):
     "label change ratio"
     data_struct_converted = data_struct_convertor(pred_label_dict)
     df = pd.DataFrame(data_struct_converted)
@@ -74,8 +74,8 @@ def look_LCR(pred_label_dict,isPoisoned_groundTruth:list):
     origin_model_pred_label_list = e.get_pred_labels()
     df["origin_model"] = origin_model_pred_label_list
 
-    df_clean = df.loc[df['isPoisoned_groundTruth'] == True]
-    df_poisoned = df.loc[df['isPoisoned_groundTruth'] == False]
+    df_clean = df.loc[df['isPoisoned_groundTruth'] == False]
+    df_poisoned = df.loc[df['isPoisoned_groundTruth'] == True]
 
     clean_LCR = cal_LCR(df_clean)
     poisoned_LCR = cal_LCR(df_poisoned)
@@ -111,7 +111,7 @@ def main(analyse_metric_name:str):
         if analyse_metric_name == "Entropy":
             clean_metric,poisoned_metric = look_entropy(pred_label_dict,isPoisoned_groundTruth)
         elif analyse_metric_name == "LCR":
-            clean_metric,poisoned_metric = look_LCR(pred_label_dict,isPoisoned_groundTruth)
+            clean_metric,poisoned_metric = look_LCR(suspiciousClassesDataset,pred_label_dict,isPoisoned_groundTruth)
         data[ratio] = {"clean":clean_metric,"poisoned":poisoned_metric}
     return data
 
