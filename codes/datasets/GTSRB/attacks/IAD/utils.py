@@ -9,8 +9,8 @@ def create_backdoor_data(attack_dict_path,model,clean_trainset,clean_testset, sa
     model.load_state_dict(dict_state["model"])
     backdoor_model = model
 
-    modelG = Generator("cifar10")
-    modelM = Generator("cifar10", out_channels=1)
+    modelG = Generator("gtsrb")
+    modelM = Generator("gtsrb", out_channels=1)
     
     modelG.load_state_dict(dict_state["modelG"])
     modelM.load_state_dict(dict_state["modelM"])

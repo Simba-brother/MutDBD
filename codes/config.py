@@ -29,15 +29,16 @@ dataset_name = "CIFAR10"
 # 数据集分类任务数量
 class_num = 10 # 
 # 当前实验设置的模型名字
-model_name = "VGG19"
+model_name = "DenseNet"
 # 当前实验设置的攻击
-attack_name = "Refool"
+attack_name = "WaNet"
 # GPU设备
 gpu_id = 1
 
 
 # CIFAR-10 dataset dir
 CIFAR10_dataset_dir = "/data/mml/backdoor_detect/dataset/cifar10"
+# GTSRB dataset dir
 GTSRB_dataset_dir = "/data/mml/backdoor_detect/dataset/GTSRB"
 
 # baseline ASD配置

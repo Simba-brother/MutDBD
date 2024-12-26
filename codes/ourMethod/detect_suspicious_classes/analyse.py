@@ -51,38 +51,41 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
 
-    # 加载后门数据
-    backdoor_data_path = os.path.join(
-        config.exp_root_dir, 
-        "ATTACK", 
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name, 
-        "backdoor_data.pth")
-    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
-    backdoor_model = backdoor_data["backdoor_model"]
-    poisoned_trainset =backdoor_data["poisoned_trainset"]
-    poisoned_ids = backdoor_data["poisoned_ids"]
-    cleanDatasetOfTargetClass = ExtractCleanDatasetOfTargetClass(poisoned_trainset, config.target_class_idx, poisoned_ids)
-    poisonedDataset = ExtractDatasetByIds(poisoned_trainset,poisoned_ids)
+    try:
+        # 加载后门数据
+        backdoor_data_path = os.path.join(
+            config.exp_root_dir, 
+            "ATTACK", 
+            config.dataset_name, 
+            config.model_name, 
+            config.attack_name, 
+            "backdoor_data.pth")
+        backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+        backdoor_model = backdoor_data["backdoor_model"]
+        poisoned_trainset =backdoor_data["poisoned_trainset"]
+        poisoned_ids = backdoor_data["poisoned_ids"]
+        cleanDatasetOfTargetClass = ExtractCleanDatasetOfTargetClass(poisoned_trainset, config.target_class_idx, poisoned_ids)
+        poisonedDataset = ExtractDatasetByIds(poisoned_trainset,poisoned_ids)
 
-    clean_report = get_mutated_models_eval_report(cleanDatasetOfTargetClass)
-    poisoned_report = get_mutated_models_eval_report(poisonedDataset)
+        clean_report = get_mutated_models_eval_report(cleanDatasetOfTargetClass)
+        poisoned_report = get_mutated_models_eval_report(poisonedDataset)
 
-    save_dir = os.path.join(
-        config.exp_root_dir, 
-        "TargetClassAnalyse",
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name,
-    )
-    os.makedirs(save_dir)
-    save_file_name = "clean_report.data"
-    save_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(clean_report,save_path)
-    logging.debug(f"clean_report save_path:{save_path}")
+        save_dir = os.path.join(
+            config.exp_root_dir, 
+            "TargetClassAnalyse",
+            config.dataset_name, 
+            config.model_name, 
+            config.attack_name,
+        )
+        os.makedirs(save_dir)
+        save_file_name = "clean_report.data"
+        save_path = os.path.join(save_dir,save_file_name)
+        joblib.dump(clean_report,save_path)
+        logging.debug(f"clean_report save_path:{save_path}")
 
-    save_file_name = "poisoned_report.data"
-    save_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(poisoned_report,save_path)
-    logging.debug(f"poisoned_report save_path:{save_path}")
+        save_file_name = "poisoned_report.data"
+        save_path = os.path.join(save_dir,save_file_name)
+        joblib.dump(poisoned_report,save_path)
+        logging.debug(f"poisoned_report save_path:{save_path}")
+    except Exception as e:
+        logging.error("发生异常: %s", e)

@@ -14,9 +14,13 @@ backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
 
 poisoned_trainset = backdoor_data["poisoned_trainset"]
 poisoned_ids = backdoor_data["poisoned_ids"]
+poisoned_testset = backdoor_data["poisoned_testset"]
 
 targetClass_trainset = ExtractTargetClassDataset(poisoned_trainset, target_class_idx)
 purePoisoned_trainset = ExtractDatasetByIds(poisoned_trainset,poisoned_ids)
+
+print(f"训练集数量:{len(poisoned_trainset)}")
+print(f"测试集数量:{len(poisoned_testset)}")
 
 print(f"target class样本数量:{len(targetClass_trainset)}")
 rate = round(len(purePoisoned_trainset)/len(targetClass_trainset),3)

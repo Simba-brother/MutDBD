@@ -32,7 +32,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "GTSRB"
-model_name = "DenseNet"
+model_name = "ResNet18"
 attack_name = "WaNet"
 # victim model
 num_classes = 43
@@ -102,7 +102,7 @@ testset = DatasetFolder(
 # 获得加载器
 batch_size = 128
 
-identity_grid,noise_grid=gen_grid(32,4)
+identity_grid,noise_grid=gen_grid(32,16)
 
 wanet = WaNet(
     train_dataset=trainset,
@@ -129,11 +129,11 @@ schedule = {
     'num_workers': 4,
 
     # 优化器需要的
-    'lr': 0.1,
+    'lr': 0.01,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [150, 180], # 在 150和180epoch时调整lr
+    'schedule': [100, 150], # 在 150和180epoch时调整lr
 
     'epochs': 200,
 
@@ -195,13 +195,13 @@ def main():
     eval_backdoor(dataset_name,attack_name,model_name)
 
 if __name__ == "__main__":
-    # main()
+    main()
 
-    attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/GTSRB/DenseNet/WaNet/ATTACK_2024-12-25_20:12:11/dict_state.pth"
-    backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
-    create_backdoor_data(attack_dict_path,backdoor_data_save_path)
-    # 开始评估
-    eval_backdoor(dataset_name,attack_name,model_name)
+    # attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/GTSRB/DenseNet/WaNet/ATTACK_2024-12-25_20:12:11/dict_state.pth"
+    # backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+    # create_backdoor_data(attack_dict_path,backdoor_data_save_path)
+    # # 开始评估
+    # eval_backdoor(dataset_name,attack_name,model_name)
 
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)

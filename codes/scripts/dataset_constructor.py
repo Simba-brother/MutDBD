@@ -170,14 +170,15 @@ class ExtractDatasetByIds(Dataset):
     def _get_dataset_by_ids(self):
         new_dataset = []
         for id in self.ids:
-            new_dataset.append(self.dataset[id])
+            sample, label = self.dataset[id][0], self.dataset[id][1]
+            new_dataset.append((sample, label))
         return new_dataset
     
     def __len__(self):
         return len(self.new_dataset)
     
     def __getitem__(self, index):
-        sample,label =self.new_dataset[index]
+        sample,label = self.new_dataset[index]
         return sample,label
 
 class ExtractDatasetAndModifyLabel(Dataset):
@@ -337,6 +338,26 @@ class IADPoisonedDatasetFolder(DatasetFolder):
 
         return sample, target, isPoisoned
 
+class ExtractTargetClassDataset(Dataset):
+    def __init__(self, dataset, target_class_idx):
+        self.dataset = dataset
+        self.target_class_idx = target_class_idx
+        self.targetClassDataset = self._getTargetClassDataset()
+
+    def _getTargetClassDataset(self):
+        targetClassDataset = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id][0], self.dataset[id][1]
+            if label == self.target_class_idx:
+                targetClassDataset.append((sample,label))
+        return targetClassDataset
+    
+    def __len__(self):
+        return len(self.targetClassDataset)
+    
+    def __getitem__(self, index):
+        sample,label =self.targetClassDataset[index]
+        return sample,label
 
 class ExtractCleanDatasetOfTargetClass(Dataset):
     def __init__(self, dataset, target_class_idx, poisoned_ids):
