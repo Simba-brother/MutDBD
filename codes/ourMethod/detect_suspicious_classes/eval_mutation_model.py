@@ -51,30 +51,32 @@ if __name__ == "__main__":
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
-
-    # 加载后门模型数据
-    backdoor_data_path = os.path.join(
-        config.exp_root_dir, 
-        "ATTACK", 
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name, 
-        "backdoor_data.pth")
-    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
-    backdoor_model = backdoor_data["backdoor_model"]
-    poisoned_trainset =backdoor_data["poisoned_trainset"]
-    # 开始评估变异模型
-    eval_report = get_mutated_models_eval_report(poisoned_trainset)
-    # 保存结果
-    save_dir = os.path.join(
-        config.exp_root_dir,
-        exp_name,
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name
-    )
-    os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res.data"
-    save_file_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(eval_report,save_file_path)
-    logging.debug(f"评估变异模型结果保存在:{save_file_path}")
+    try:
+        # 加载后门模型数据
+        backdoor_data_path = os.path.join(
+            config.exp_root_dir, 
+            "ATTACK", 
+            config.dataset_name, 
+            config.model_name, 
+            config.attack_name, 
+            "backdoor_data.pth")
+        backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+        backdoor_model = backdoor_data["backdoor_model"]
+        poisoned_trainset =backdoor_data["poisoned_trainset"]
+        # 开始评估变异模型
+        eval_report = get_mutated_models_eval_report(poisoned_trainset)
+        # 保存结果
+        save_dir = os.path.join(
+            config.exp_root_dir,
+            exp_name,
+            config.dataset_name, 
+            config.model_name, 
+            config.attack_name
+        )
+        os.makedirs(save_dir,exist_ok=True)
+        save_file_name = "res.data"
+        save_file_path = os.path.join(save_dir,save_file_name)
+        joblib.dump(eval_report,save_file_path)
+        logging.debug(f"评估变异模型结果保存在:{save_file_path}")
+    except Exception as e:
+        logging.error("发生异常:%s",e)

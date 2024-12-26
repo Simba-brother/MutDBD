@@ -65,16 +65,20 @@ if __name__ == "__main__":
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
     LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
     os.makedirs(LOG_FILE_DIR,exist_ok=True)
-    LOG_FILE_NAME = "mutation.log"
+    LOG_FILE_NAME = "Mutations.log"
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
-    # 获得backdoor_data
-    backdoor_data_path = os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
-    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
-    backdoor_model = backdoor_data["backdoor_model"]
-    for op in tqdm([OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]):
-        gen_mutation_models(backdoor_model,save_dir,op)
+    try:
+        # 获得backdoor_data
+        backdoor_data_path = os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
+        backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+        backdoor_model = backdoor_data["backdoor_model"]
+        for op in tqdm([OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]):
+            logging.debug(op)
+            gen_mutation_models(backdoor_model,save_dir,op)
+    except Exception as e:
+        logging.error("发生异常:%s",e)
     
     
 
