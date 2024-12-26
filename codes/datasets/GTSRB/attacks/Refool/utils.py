@@ -25,4 +25,4 @@ def create_backdoor_data(attack_dict_path,save_path):
     }
 
     torch.save(backdoor_data,save_path)
-    print(f"backdoor_data is saved in {clean_testset}")
+    print(f"backdoor_data is saved in {save_path}")

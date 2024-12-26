@@ -168,6 +168,7 @@ def attack():
     print("开始保存攻击后数据")
     torch.save(dict_state, save_path)
     print(f"Refool攻击完成,数据和日志被存入{save_path}")
+    return save_path
 
 
 def main():

@@ -153,6 +153,7 @@ def attack():
     save_path = os.path.join(work_dir, save_file_name)
     torch.save(dict_state, save_path)
     print(f"BadNets攻击完成,数据和日志被存入{save_path}")
+    return save_path
 
 def main():
     proc_title = "ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name

@@ -13,12 +13,11 @@ def create_backdoor_data(attack_dict_path,save_path):
     poisoned_testset = dict_state["poisoned_testset"]
     clean_testset = dict_state["clean_testset"]
     
-    
     # 将数据集抽取到内存，为了加速评估
     poisoned_trainset = ExtractDataset(poisoned_trainset)
     poisoned_testset = ExtractDataset(poisoned_testset)
-    # save
     
+    # save
     backdoor_data = {
         "backdoor_model":backdoor_model,
         "poisoned_trainset":poisoned_trainset,

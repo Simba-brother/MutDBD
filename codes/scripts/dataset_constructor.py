@@ -337,3 +337,26 @@ class IADPoisonedDatasetFolder(DatasetFolder):
 
         return sample, target, isPoisoned
 
+
+class ExtractCleanDatasetOfTargetClass(Dataset):
+    def __init__(self, dataset, target_class_idx, poisoned_ids):
+        self.dataset = dataset
+        self.target_class_idx = target_class_idx
+        self.poisoned_ids = poisoned_ids
+        self.cleanDatasetOftargetClass = self._getCleanDatasetOfTargetClass()
+
+    def _getCleanDatasetOfTargetClass(self):
+        cleanDatasetOftargetClass = []
+        for id in range(len(self.dataset)):
+            sample, label = self.dataset[id][0], self.dataset[id][1]
+            if label == self.target_class_idx and id not in self.poisoned_ids:
+                cleanDatasetOftargetClass.append((sample,label))
+        return cleanDatasetOftargetClass
+    
+    def __len__(self):
+        return len(self.cleanDatasetOftargetClass)
+    
+    def __getitem__(self, index):
+        sample,label =self.cleanDatasetOftargetClass[index]
+        return sample,label
+

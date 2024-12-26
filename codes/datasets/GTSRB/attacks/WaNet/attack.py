@@ -179,6 +179,7 @@ def attack():
     save_path = os.path.join(work_dir,"dict_state.pth")
     torch.save(dict_state, save_path)
     print(f"数据被保存在:{save_path}")
+    return save_path
 
 
 def main():
@@ -189,12 +190,18 @@ def main():
     attack_dict_path = attack()
       # 抽取攻击模型和数据并转储
     backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
-    create_backdoor_data(attack_dict_path,model,trainset,testset,backdoor_data_save_path)
+    create_backdoor_data(attack_dict_path,backdoor_data_save_path)
     # 开始评估
     eval_backdoor(dataset_name,attack_name,model_name)
 
 if __name__ == "__main__":
-    main()
+    # main()
+
+    attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/GTSRB/DenseNet/WaNet/ATTACK_2024-12-25_20:12:11/dict_state.pth"
+    backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+    create_backdoor_data(attack_dict_path,backdoor_data_save_path)
+    # 开始评估
+    eval_backdoor(dataset_name,attack_name,model_name)
 
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)
