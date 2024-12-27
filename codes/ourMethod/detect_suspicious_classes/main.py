@@ -132,7 +132,7 @@ def reconstruct_data(report_dataset,measure_name):
                     data[ratio][class_i].append(report[str(class_i)][measure_name])
     return data
 
-def detect(report_dataset):
+def detect(report_dataset,measure_name):
     '''
     args:
         report_dataset:
@@ -147,13 +147,13 @@ def detect(report_dataset):
         }
     '''
     ans = {}
-    data = reconstruct_data(report_dataset,measure_name="precision") 
+    data = reconstruct_data(report_dataset,measure_name)
     
     box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
     for ratio in config.fine_mutation_rate_list:
         save_dir = os.path.join(box_data_save_dir,str(ratio))
         os.makedirs(save_dir,exist_ok=True)
-        save_file_name = "box.csv"
+        save_file_name = f"box_{measure_name}.csv"
         save_path = os.path.join(save_dir,save_file_name)
         df = pd.DataFrame(data[ratio])
         # 直接设置新的列名列表
@@ -168,7 +168,8 @@ def detect(report_dataset):
 
 if __name__ == "__main__":
     # 进程名称
-    proctitle = f"SuspiciousClasses_SK_Precision|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    measure_name = "f1-score" # precision|recall|f1-score
+    proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
 
@@ -176,7 +177,7 @@ if __name__ == "__main__":
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
     LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
     os.makedirs(LOG_FILE_DIR,exist_ok=True)
-    LOG_FILE_NAME = "SuspiciousClasses_SK_Precision.log"
+    LOG_FILE_NAME = f"SuspiciousClasses_SK_{measure_name}.log"
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
@@ -192,8 +193,8 @@ if __name__ == "__main__":
     ))
 
     # 得到各个变异率下的target class
-    target_class_ans = detect(evalMutationResult)
-    logging.debug(target_class_ans)
+    suspicious_class_ans = detect(evalMutationResult,measure_name)
+    logging.debug(suspicious_class_ans)
     # 保存实验结果
     save_dir = os.path.join(
         config.exp_root_dir,
@@ -203,9 +204,9 @@ if __name__ == "__main__":
         config.attack_name
     )
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "SuspiciousClasses_SK_Precision.data"
+    save_file_name = f"SuspiciousClasses_SK_{measure_name}.data"
     save_file_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(target_class_ans,save_file_path)
+    joblib.dump(suspicious_class_ans,save_file_path)
     logging.debug(f"target class结果保存在:{save_file_path}")
 
 

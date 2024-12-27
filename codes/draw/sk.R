@@ -4,7 +4,7 @@ library(readr)
 library(ggplot2)
 
 # load data
-box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/DenseNet/Refool/0.03/box.csv"
+box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/DenseNet/Refool/0.03/box_f1-score.csv"
 model_performance <- read_csv(box_csv_path)
 
 # apply ScottKnottESD and prepare a ScottKnottESD dataframe
@@ -28,7 +28,7 @@ g <- ggplot(data = plot_data, aes(x = variable, y = value, fill = rank)) +
   ylim(c(0, 1)) +
   facet_grid(~rank, scales = "free_x") +
   scale_fill_brewer(direction = -1) +
-  ylab("Precision") + xlab("Class") + ggtitle("") + theme_bw() +
+  ylab("f1-score") + xlab("Class") + ggtitle("") + theme_bw() +
   theme(text = element_text(size = 12),
   legend.position = "none")
 ggsave("myplot.png",g)

@@ -129,7 +129,7 @@ schedule = {
     'num_workers': 4,
 
     # 优化器需要的
-    'lr': 0.01,
+    'lr': 0.1,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
@@ -190,22 +190,17 @@ def main():
     attack_dict_path = attack()
       # 抽取攻击模型和数据并转储
     backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
-    create_backdoor_data(attack_dict_path,backdoor_data_save_path)
+    create_backdoor_data(attack_dict_path, backdoor_data_save_path)
     # 开始评估
-    eval_backdoor(dataset_name,attack_name,model_name)
+    eval_backdoor(dataset_name, attack_name, model_name)
 
 if __name__ == "__main__":
-    main()
+    # main()
 
-    # attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/GTSRB/DenseNet/WaNet/ATTACK_2024-12-25_20:12:11/dict_state.pth"
-    # backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
-    # create_backdoor_data(attack_dict_path,backdoor_data_save_path)
-    # # 开始评估
-    # eval_backdoor(dataset_name,attack_name,model_name)
 
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)
     
-    # eval_backdoor(dataset_name,attack_name,model_name)
+    eval_backdoor(dataset_name,attack_name,model_name)
     pass
 
