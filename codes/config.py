@@ -31,7 +31,7 @@ class_num = 10 #  CIFAR-10:10,GTSRB:43
 # 当前实验设置的模型名字
 model_name = "DenseNet"
 # 当前实验设置的攻击
-attack_name = "WaNet"
+attack_name = "IAD"
 # GPU设备
 gpu_id = 0
 

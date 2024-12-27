@@ -37,20 +37,18 @@ def get_mutation_models_pred_labels(dataset):
     return eval_ans
 
 def ansToCSV(data_dict,save_path):
-    
-    total_dict = {}
 
     # 所有的变异模型列
     # global_model_id：[0-99]是GF变异模型，[100-199]是WS变异模型，
     # [200-299]是NAI变异模型，[300-399]是NB变异模型，[400-499]是NS变异模型
+    total_dict = {}
     global_model_id = 0
-    for ratio in config.fine_mutation_rate_list:
-        for operator in config.mutation_name_list:
-            for i in range(config.mutation_model_num):
-                pred_label_list = data_dict[ratio][operator][i]
-                global_model_id += 1
-                model_name = f"model_{global_model_id}"
-                total_dict[model_name] = pred_label_list
+    for operator in config.mutation_name_list:
+        for i in range(config.mutation_model_num):
+            pred_label_list = data_dict[operator][i]
+            model_name = f"model_{global_model_id}"
+            total_dict[model_name] = pred_label_list # 变异模型列
+            global_model_id += 1
 
     # sampled_id列,GT_label列和isPoisoned列
     total_dict["sampled_id"] = []
@@ -68,14 +66,6 @@ def ansToCSV(data_dict,save_path):
     df = pd.DataFrame(total_dict)
     # 保存为csv
     df.to_csv(save_path,index=False)
-    
-
-
-    
-
-    
-
-
 
 
 
@@ -98,7 +88,7 @@ if __name__ == "__main__":
     logging.debug(proctitle)
 
     try:
-        # 加载后门模型数据
+        logging.debug(f"开始:加载后门模型数据")
         backdoor_data_path = os.path.join(
             config.exp_root_dir, 
             "ATTACK", 
@@ -110,21 +100,24 @@ if __name__ == "__main__":
         backdoor_model = backdoor_data["backdoor_model"]
         poisoned_trainset = backdoor_data["poisoned_trainset"]
         poisoned_ids = backdoor_data["poisoned_ids"]
-
+        logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测标签结果")
         mutation_models_pred_labels_dict = get_mutation_models_pred_labels(poisoned_trainset)
-
-        save_dir = os.path.join(
-            config.exp_root_dir,
-            exp_name,
-            config.dataset_name,
-            config.model_name,
-            config.attack_name
-        )
-        os.makedirs(save_dir,exist_ok=True)
-        save_file_name = f"{exp_name}.csv"
-        save_file_path = os.path.join(save_dir,save_file_name)
-        ansToCSV(mutation_models_pred_labels_dict)
-        logging.debug(f"数据保存在:{save_file_path}")
+        logging.debug(f"开始:将结果整理为csv文件")
+        for rate in config.fine_mutation_rate_list:
+            data_dict = mutation_models_pred_labels_dict[rate]
+            save_dir = os.path.join(
+                config.exp_root_dir,
+                exp_name,
+                config.dataset_name,
+                config.model_name,
+                config.attack_name,
+                str(rate)
+            )
+            os.makedirs(save_dir,exist_ok=True)
+            save_file_name = "data.csv"
+            save_file_path = os.path.join(save_dir,save_file_name)
+            ansToCSV(data_dict,save_file_path)
+            logging.debug(f"csv保存在:{save_file_path}")
     except Exception as e:
         logging.error("发生异常:%s",e)
 

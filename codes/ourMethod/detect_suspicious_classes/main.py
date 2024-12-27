@@ -15,6 +15,9 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import pandas2ri
 from collections import defaultdict
 import pandas as pd
+from collections import defaultdict
+from sklearn.metrics import accuracy_score, precision_score, f1_score, recall_score, classification_report,confusion_matrix
+
 
 
 def calu_p_and_dela_value(list_1, list_2):
@@ -166,22 +169,10 @@ def detect(report_dataset,measure_name):
     return ans
 
 
-if __name__ == "__main__":
-    # 进程名称
-    measure_name = "f1-score" # precision|recall|f1-score
-    proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
-    setproctitle.setproctitle(proctitle)
-    device = torch.device(f"cuda:{config.gpu_id}")
-
-    # 日志保存目录
-    LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
-    LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
-    os.makedirs(LOG_FILE_DIR,exist_ok=True)
-    LOG_FILE_NAME = f"SuspiciousClasses_SK_{measure_name}.log"
-    LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
-    logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
-    logging.debug(proctitle)
-
+def main_v1(measure_name):
+    '''
+    measure_name: precison | recall | f1-score
+    '''
     # 加载变异模型评估结果
     evalMutationResult = joblib.load(os.path.join(
         config.exp_root_dir,
@@ -208,6 +199,77 @@ if __name__ == "__main__":
     save_file_path = os.path.join(save_dir,save_file_name)
     joblib.dump(suspicious_class_ans,save_file_path)
     logging.debug(f"target class结果保存在:{save_file_path}")
+
+def main_v2(measure_name):
+    '''
+    measure_name: precison | recall | f1-score
+    '''
+    res = {}
+    logging.debug("开始:获得每个变异率下的Suspicious Classes")
+    for rate in config.fine_mutation_rate_list:
+        logging.debug(f"变异率:{rate}")
+        df = pd.read_csv(os.path.join(
+            config.exp_root_dir,
+            "EvalMutationToCSV",
+            config.dataset_name,
+            config.model_name,
+            config.attack_name,
+            str(rate),
+            "data.csv"))
+        # ground truth label
+        GT_label_list = df["GT_label"]
+        class_measure_dict = defaultdict(list)
+        for mutated_model_global_id in range(500):
+            model_col_name = f"model_{mutated_model_global_id}"
+            pred_label_list = list(df[model_col_name])
+            report = classification_report(GT_label_list,pred_label_list,output_dict=True)
+            for class_i in range(config.class_num):
+                measure = report[str(class_i)][measure_name]
+                class_measure_dict[class_i].extend(measure)
+        suspicious_classes = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
+        res[rate] = suspicious_classes
+    logging.debug(res)
+    # 保存实验结果
+    save_dir = os.path.join(
+        config.exp_root_dir,
+        "SuspiciousClasses",
+        config.dataset_name, 
+        config.model_name, 
+        config.attack_name
+    )
+    os.makedirs(save_dir,exist_ok=True)
+    save_file_name = f"SuspiciousClasses_SK_{measure_name}.data"
+    save_file_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(res,save_file_path)
+    logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
+    
+
+
+    
+
+if __name__ == "__main__":
+    # 进程名称
+    measure_name = "f1-score" # precision|recall|f1-score
+    proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    setproctitle.setproctitle(proctitle)
+    device = torch.device(f"cuda:{config.gpu_id}")
+
+    # 日志保存目录
+    LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
+    LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
+    os.makedirs(LOG_FILE_DIR,exist_ok=True)
+    LOG_FILE_NAME = f"SuspiciousClasses_SK_{measure_name}.log"
+    LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
+    logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
+    logging.debug(proctitle)
+
+    
+    try:
+        # main_v1(measure_name)
+        # main_v2(measure_name)
+        pass
+    except Exception as e:
+        logging.error("发生异常:%s",e)
 
 
     
