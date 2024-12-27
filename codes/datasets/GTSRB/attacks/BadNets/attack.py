@@ -170,8 +170,9 @@ def main():
 if __name__ == "__main__":
     # main()
     
-    # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
-    # update_backdoor_data(backdoor_data_path)
-
+    
+    proc_title = "Eval|"+dataset_name+"|"+attack_name+"|"+model_name
+    setproctitle.setproctitle(proc_title)
+    print(proc_title)
     eval_backdoor(dataset_name,attack_name,model_name)
     pass
