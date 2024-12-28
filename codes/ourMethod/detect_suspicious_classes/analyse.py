@@ -87,17 +87,18 @@ def main_v2():
             config.model_name,
             config.attack_name,
             str(rate),
-            "data.csv"))
+            "preLabel.csv"))
         target_class_clean_df = df.loc[(df["GT_label"] == config.target_class_idx) & df["isPoisoned"] == False]
         target_class_poisoned_df = df.loc[(df["GT_label"] == config.target_class_idx) & df["isPoisoned"] == True]
 
-        GT_label_list = df["GT_label"]
+        GT_clean_label_list = target_class_clean_df["GT_label"]
+        GT_poisoned_label_list = target_class_poisoned_df["GT_label"]
         for mutated_model_global_id in range(500):
             model_col_name = f"model_{mutated_model_global_id}"
             pred_label_clean_list = list(target_class_clean_df[model_col_name])
             pred_label_poisoned_list = list(target_class_poisoned_df[model_col_name])
-            clean_report = classification_report(GT_label_list,pred_label_clean_list,output_dict=True)
-            poisoned_report = classification_report(GT_label_list,pred_label_poisoned_list,output_dict=True)
+            clean_report = classification_report(GT_clean_label_list,pred_label_clean_list,output_dict=True,zero_division=0)
+            poisoned_report = classification_report(GT_poisoned_label_list,pred_label_poisoned_list,output_dict=True,zero_division=0)
             clean_recall = clean_report[str(config.target_class_idx)]["recall"]
             poisoned_recall = poisoned_report[str(config.target_class_idx)]["recall"]
             res[rate]["clean"].append(clean_recall)
@@ -110,7 +111,7 @@ def main_v2():
         config.model_name, 
         config.attack_name,
     )
-    os.makedirs(save_dir)
+    os.makedirs(save_dir,exist_ok=True)
     save_file_name = "res.data"
     save_path = os.path.join(save_dir,save_file_name)
     joblib.dump(res,save_path)
@@ -135,7 +136,7 @@ if __name__ == "__main__":
 
     try:
         # main_v1()
-        # main_v2()
+        main_v2()
         pass
     except Exception as e:
-        logging.error("发生异常: %s", e)
+        logging.debug("发生异常: %s", e)

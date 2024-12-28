@@ -4,7 +4,7 @@ library(readr)
 library(ggplot2)
 
 # load data
-box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/DenseNet/Refool/0.03/box_f1-score.csv"
+box_csv_path = "/data/mml/backdoor_detect/experiments/SK/GTSRB/VGG19/Refool/0.03/box_precision.csv"
 model_performance <- read_csv(box_csv_path)
 
 # apply ScottKnottESD and prepare a ScottKnottESD dataframe
@@ -25,10 +25,11 @@ plot_data <- merge(plot_data, sk_ranks, by.x = "variable", by.y = "class")
 # generate a visualisation
 g <- ggplot(data = plot_data, aes(x = variable, y = value, fill = rank)) +
   geom_boxplot() +
+  stat_summary(fun="mean", geom="point", shape=20, size=2.5, color="red", fill="red",alpha=0.7) +
   ylim(c(0, 1)) +
   facet_grid(~rank, scales = "free_x") +
   scale_fill_brewer(direction = -1) +
-  ylab("f1-score") + xlab("Class") + ggtitle("") + theme_bw() +
-  theme(text = element_text(size = 12),
+  ylab("precision") + xlab("Class") + ggtitle("") + theme_bw() +
+  theme(text = element_text(size = 12),axis.text.x = element_text(size=8,angle = 90),
   legend.position = "none")
 ggsave("myplot.png",g)

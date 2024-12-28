@@ -14,6 +14,14 @@ def data_convertor(report_dict):
                 res[mutation_rate].append(recall)
     return res
 
+def data_convertor_v2(data):
+    res = {"clean":{},"poisoned":{}}
+    for mutation_rate in data.keys():
+        res["clean"][mutation_rate] = data[mutation_rate]["clean"]
+        res["poisoned"][mutation_rate] = data[mutation_rate]["poisoned"]
+    return res
+
+
 
 def draw_box(clean_dict,poisoned_dict,save_path):
     
@@ -56,10 +64,7 @@ def draw_box(clean_dict,poisoned_dict,save_path):
     plt.grid(alpha=0.5)
     plt.savefig(save_path,transparent=False,dpi=600)
 
-    
-
-if __name__ == "__main__":
-
+def main_v1():
     # 加载数据
     clean_report_dict = joblib.load(os.path.join(
         config.exp_root_dir, 
@@ -94,6 +99,39 @@ if __name__ == "__main__":
     save_file_name = "TargetClass_clean_poisoned_recall_box.png"
     save_path = os.path.join(save_dir,save_file_name)
     draw_box(clean_dict,poisoned_dict,save_path)
+
+
+
+def main_v2():
+    # 加载数据
+    data = joblib.load(os.path.join(
+        config.exp_root_dir, 
+        "TargetClassAnalyse",
+        config.dataset_name, 
+        config.model_name, 
+        config.attack_name,
+        "res.data"
+    ))
+    data_converted = data_convertor_v2(data)
+    clean_dict = data_converted["clean"]
+    poisoned_dict = data_converted["poisoned"]
+    # 绘制并保存
+    save_dir = os.path.join(
+        config.exp_root_dir,
+        "Figures",
+        config.dataset_name,
+        config.model_name,
+        config.attack_name,
+    )
+    os.makedirs(save_dir,exist_ok=True)
+    save_file_name = "TargetClass_clean_poisoned_recall_box.png"
+    save_path = os.path.join(save_dir,save_file_name)
+    draw_box(clean_dict,poisoned_dict,save_path)
+    print(f"save_path:{save_path}")
+
+if __name__ == "__main__":
+    main_v2()
+    
 
 
     

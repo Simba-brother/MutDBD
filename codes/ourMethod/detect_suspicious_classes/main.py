@@ -87,6 +87,7 @@ def get_suspicious_classes_by_ScottKnottESD(data_dict):
     pandas2ri.activate()
     sk = importr("ScottKnottESD")
     df = pd.DataFrame(data_dict)
+
     r_sk = sk.sk_esd(df)
     column_order = [x-1 for x in list(r_sk[3])]
 
@@ -153,6 +154,7 @@ def detect(report_dataset,measure_name):
     data = reconstruct_data(report_dataset,measure_name)
     
     box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
+    
     for ratio in config.fine_mutation_rate_list:
         save_dir = os.path.join(box_data_save_dir,str(ratio))
         os.makedirs(save_dir,exist_ok=True)
@@ -160,7 +162,10 @@ def detect(report_dataset,measure_name):
         save_path = os.path.join(save_dir,save_file_name)
         df = pd.DataFrame(data[ratio])
         # 直接设置新的列名列表
-        df.columns = ["C0","C1","C2","C3","C4","C5","C6","C7","C8","C9"]
+        new_col_name_list = []
+        for old_col_name in list(df.columns):
+            new_col_name_list.append("C"+str(old_col_name))
+        df.columns = new_col_name_list
         df.to_csv(save_path,index=False)
 
     for ratio in config.fine_mutation_rate_list:
@@ -215,17 +220,27 @@ def main_v2(measure_name):
             config.model_name,
             config.attack_name,
             str(rate),
-            "data.csv"))
+            "preLabel.csv"))
         # ground truth label
         GT_label_list = df["GT_label"]
         class_measure_dict = defaultdict(list)
         for mutated_model_global_id in range(500):
             model_col_name = f"model_{mutated_model_global_id}"
             pred_label_list = list(df[model_col_name])
-            report = classification_report(GT_label_list,pred_label_list,output_dict=True)
+            report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
             for class_i in range(config.class_num):
                 measure = report[str(class_i)][measure_name]
-                class_measure_dict[class_i].extend(measure)
+                class_measure_dict[class_i].append(measure)
+        # 把绘制箱线图的数据保存一下
+        box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
+        save_dir = os.path.join(box_data_save_dir,str(rate))
+        os.makedirs(save_dir,exist_ok=True)
+        save_file_name = f"box_{measure_name}.csv"
+        save_path = os.path.join(save_dir,save_file_name)
+        df = pd.DataFrame(class_measure_dict)
+        # 直接设置新的列名列表
+        df.columns = ["C0","C1","C2","C3","C4","C5","C6","C7","C8","C9"]
+        df.to_csv(save_path,index=False)
         suspicious_classes = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
         res[rate] = suspicious_classes
     logging.debug(res)
@@ -249,7 +264,7 @@ def main_v2(measure_name):
 
 if __name__ == "__main__":
     # 进程名称
-    measure_name = "f1-score" # precision|recall|f1-score
+    measure_name = "recall" # precision|recall|f1-score
     proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -265,7 +280,7 @@ if __name__ == "__main__":
 
     
     try:
-        # main_v1(measure_name)
+        main_v1(measure_name)
         # main_v2(measure_name)
         pass
     except Exception as e:

@@ -41,7 +41,6 @@ if __name__ == "__main__":
     proctitle = f"{exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
-    
 
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
@@ -51,6 +50,8 @@ if __name__ == "__main__":
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
+
+    # 实验主体代码
     try:
         # 加载后门模型数据
         backdoor_data_path = os.path.join(
