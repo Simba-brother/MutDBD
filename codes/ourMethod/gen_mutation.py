@@ -74,7 +74,8 @@ if __name__ == "__main__":
         backdoor_data_path = os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth")
         backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
         backdoor_model = backdoor_data["backdoor_model"]
-        for op in tqdm([OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]):
+        # [OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]
+        for op in tqdm([OpType.NAI,OpType.NB,OpType.NS]):
             logging.debug(op)
             gen_mutation_models(backdoor_model,save_dir,op)
     except Exception as e:

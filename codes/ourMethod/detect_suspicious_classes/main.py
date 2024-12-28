@@ -146,7 +146,7 @@ def detect(report_dataset,measure_name):
                 }
             }
     return:
-        {x
+        {
             ratio:target class
         }
     '''
@@ -239,7 +239,10 @@ def main_v2(measure_name):
         save_path = os.path.join(save_dir,save_file_name)
         df = pd.DataFrame(class_measure_dict)
         # 直接设置新的列名列表
-        df.columns = ["C0","C1","C2","C3","C4","C5","C6","C7","C8","C9"]
+        new_col_name_list = []
+        for old_col_name in list(df.columns):
+            new_col_name_list.append("C"+str(old_col_name))
+        df.columns = new_col_name_list
         df.to_csv(save_path,index=False)
         suspicious_classes = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
         res[rate] = suspicious_classes
