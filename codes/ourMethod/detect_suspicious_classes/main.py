@@ -267,7 +267,7 @@ def main_v2(measure_name):
 
 if __name__ == "__main__":
     # 进程名称
-    measure_name = "recall" # precision|recall|f1-score
+    measure_name = "precision" # precision|recall|f1-score
     proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -283,8 +283,8 @@ if __name__ == "__main__":
 
     
     try:
-        main_v1(measure_name)
-        # main_v2(measure_name)
+        # main_v1(measure_name)
+        main_v2(measure_name)
         pass
     except Exception as e:
         logging.error("发生异常:%s",e)

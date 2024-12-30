@@ -166,4 +166,4 @@ def main_v2():
     print(f"save_path:{save_path}")
     
 if __name__ == "__main__":
-    main_v1()
+    main_v2()

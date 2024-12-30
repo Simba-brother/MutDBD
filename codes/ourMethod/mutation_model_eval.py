@@ -114,7 +114,7 @@ if __name__ == "__main__":
                 str(rate)
             )
             os.makedirs(save_dir,exist_ok=True)
-            save_file_name = "data.csv"
+            save_file_name = "preLabel.csv"
             save_file_path = os.path.join(save_dir,save_file_name)
             ansToCSV(data_dict,save_file_path)
             logging.debug(f"csv保存在:{save_file_path}")
