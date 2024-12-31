@@ -36,6 +36,30 @@ def get_mutation_models_pred_labels(dataset):
                 eval_ans[ratio][operator].append(pred_label_list)
     return eval_ans
 
+def get_mutation_models_prob_outputs(dataset):
+    mutations_dir = os.path.join(
+        config.exp_root_dir,
+        "MutationModels",
+        config.dataset_name,
+        config.model_name,
+        config.attack_name
+    )
+    eval_ans = {}
+    for ratio in config.fine_mutation_rate_list:
+        logging.debug(f"变异率:{str(ratio)}")
+        eval_ans[ratio] = {}
+        for operator in config.mutation_name_list:
+            logging.debug(f"\t变异算子:{operator}")
+            eval_ans[ratio][operator] = []
+            for i in range(config.mutation_model_num):
+                mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
+                backdoor_model.load_state_dict(torch.load(mutation_model_path))
+                em = EvalModel(backdoor_model,dataset,device)
+                # 该变异模型对dataset的概率输出list
+                prob_output_list = em.get_prob_outputs()
+                eval_ans[ratio][operator].append(prob_output_list)
+    return eval_ans
+
 def ansToCSV(data_dict,save_path):
 
     # 所有的变异模型列
@@ -72,7 +96,7 @@ def ansToCSV(data_dict,save_path):
 
 if __name__ == "__main__":
     # 进程名称
-    exp_name = "EvalMutationToCSV"
+    exp_name = "EvalMutationToCSV_probs" 
     proctitle = f"{exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -101,7 +125,8 @@ if __name__ == "__main__":
         poisoned_trainset = backdoor_data["poisoned_trainset"]
         poisoned_ids = backdoor_data["poisoned_ids"]
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测标签结果")
-        mutation_models_pred_labels_dict = get_mutation_models_pred_labels(poisoned_trainset)
+        # mutation_models_pred_labels_dict = get_mutation_models_pred_labels(poisoned_trainset)
+        mutation_models_pred_labels_dict = get_mutation_models_prob_outputs(poisoned_trainset)
         logging.debug(f"开始:将结果整理为csv文件")
         for rate in config.fine_mutation_rate_list:
             data_dict = mutation_models_pred_labels_dict[rate]
@@ -114,7 +139,7 @@ if __name__ == "__main__":
                 str(rate)
             )
             os.makedirs(save_dir,exist_ok=True)
-            save_file_name = "preLabel.csv"
+            save_file_name = "prob.csv" # preLabel.csv or prob.csv
             save_file_path = os.path.join(save_dir,save_file_name)
             ansToCSV(data_dict,save_file_path)
             logging.debug(f"csv保存在:{save_file_path}")

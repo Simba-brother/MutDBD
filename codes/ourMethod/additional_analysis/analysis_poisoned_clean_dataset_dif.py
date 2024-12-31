@@ -94,17 +94,17 @@ def draw_box(data_dict,save_path):
     width = 0.2
 
     # 绘制箱线图
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(8, 6))
 
-    xticks = [1,3,5]
-    xticks_label = config.fine_mutation_rate_list
+    xticks = [1,3,5,7]
+    xticks_label = ["LCR","Entropy","ACC","ACC_dif"]
     # 绘制每个横坐标上的箱线图
     for i, (clean, poisoned) in enumerate(zip(clean_data, poisoned_data)):
         # 绘制 Clean 组
-        plt.boxplot(clean, positions=[xticks[i] - width], widths=width, patch_artist=True, boxprops=dict(facecolor="skyblue", color="blue"), medianprops=dict(color="black"))
+        plt.boxplot(clean, positions=[xticks[i] - width], widths=width, patch_artist=True, boxprops=dict(facecolor="skyblue", color="blue"), medianprops=dict(color="black"),showmeans=True)
         
         # 绘制 Poisoned 组
-        plt.boxplot(poisoned, positions=[xticks[i] + width], widths=width, patch_artist=True, boxprops=dict(facecolor="salmon", color="red"), medianprops=dict(color="black"))
+        plt.boxplot(poisoned, positions=[xticks[i] + width], widths=width, patch_artist=True, boxprops=dict(facecolor="salmon", color="red"), medianprops=dict(color="black"),showmeans=True)
 
     # 设置横轴标签
     # 设置横坐标刻度（控制刻度的范围和步长）
@@ -112,8 +112,8 @@ def draw_box(data_dict,save_path):
     # 旋转横坐标标签，避免重叠
     plt.xticks(rotation=45)
     # 设置轴标签
-    plt.xlabel('Mutation rate')
-    plt.ylabel('Reccall')
+    plt.xlabel('indicator')
+    plt.ylabel('')
 
     # 设置图例
     plt.legend(["Clean","Poisoned"])
@@ -184,6 +184,7 @@ def main(mutation_rate):
         config.model_name,
         config.attack_name,
         str(mutation_rate))
+    os.makedirs(save_dir,exist_ok=True)
     file_name = "Analysis_of_Differential_Indicators.png"
     save_path = os.path.join(save_dir,file_name)
     draw_box(ans,save_path)
@@ -221,7 +222,7 @@ if __name__ == "__main__":
         device = torch.device(f"cuda:{config.gpu_id}")
         e = EvalModel(backdoor_model,poisoned_trainset,device)
         prob_outputs = e.get_prob_outputs()
-        for mutation_rate in config.mutation_rate_list:
+        for mutation_rate in config.fine_mutation_rate_list:
             main(mutation_rate)
     except Exception as e:
         logging.debug("发生异常:%s",e)
