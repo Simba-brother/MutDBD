@@ -53,13 +53,15 @@ trainset = DatasetFolder(
     target_transform=None,
     is_valid_file=None)
 
+# 数据集文件夹
 testset = DatasetFolder(
-    root= os.path.join(config.CIFAR10_dataset_dir, "test"),
-    loader=cv2.imread,
-    extensions=('png',),
-    transform=transform_test,
-    target_transform=None,
-    is_valid_file=None)
+    root= os.path.join(config.CIFAR10_dataset_dir, "test"), # 文件夹目录
+    loader=cv2.imread, # 图像加载器
+    extensions=('png',), # 图像后缀
+    transform=transform_test, # 图像变换器
+    target_transform=None, # 图像标签变换器
+    is_valid_file=None # 图像验证器
+    )
 
 # backdoor pattern
 pattern = torch.zeros((32, 32), dtype=torch.uint8)
@@ -164,7 +166,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)

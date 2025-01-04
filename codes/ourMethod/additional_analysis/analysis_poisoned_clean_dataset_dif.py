@@ -97,7 +97,7 @@ def draw_box(data_dict,save_path):
     plt.figure(figsize=(8, 6))
 
     xticks = [1,3,5,7]
-    xticks_label = ["LCR","Entropy","ACC","ACC_dif"]
+    xticks_label = ["LCR","Entropy","Acc","AccDif"]
     # 绘制每个横坐标上的箱线图
     for i, (clean, poisoned) in enumerate(zip(clean_data, poisoned_data)):
         # 绘制 Clean 组
@@ -113,7 +113,7 @@ def draw_box(data_dict,save_path):
     plt.xticks(rotation=45)
     # 设置轴标签
     plt.xlabel('indicator')
-    plt.ylabel('')
+    plt.ylabel('performance')
 
     # 设置图例
     plt.legend(["Clean","Poisoned"])
