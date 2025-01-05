@@ -37,7 +37,7 @@ config = {
                         Resize((32, 32)),
                         RandomHorizontalFlip(p=1),
                         ToTensor(),
-                        Normalize((0.485, 0.456, 0.406),(0.229, 0.224, 0.225))]),
+                        Normalize((0.485, 0.456, 0.406),(0.229, 0.224, 0.225))]), # ImageNet
             "testset":Compose([
                         ToPILImage(),
                         Resize((32, 32)),
@@ -52,7 +52,7 @@ config = {
             "testset":Compose([ToTensor()])
         }
     },
-    "GTSRN":{
+    "GTSRB":{
         "BadNets":{
             "trainset":Compose([
                         ToPILImage(),
@@ -78,7 +78,7 @@ config = {
                     ToTensor()])
         },
         "Refool":{
-            "trainet":Compose([
+            "trainset":Compose([
                     ToPILImage(),
                     Resize((32, 32)),
                     RandomHorizontalFlip(p=0.5),

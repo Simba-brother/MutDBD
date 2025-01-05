@@ -1,6 +1,20 @@
 
 import matplotlib.pyplot as plt
 def draw_line(x_ticks, title:str, xlabel:str, ylabel:str, save_path:str, draw_data_dict:dict):
+    '''
+    x_ticks:list
+        x轴的刻度
+    title:str
+        图像标题
+    xlabel:str
+        x轴的含义
+    ylabel:str
+        y轴的含义
+    save_path:str
+        图像保存路径
+    draw_data_dict:dict
+        {str:[]},一个key一条折线
+    '''
     # 设置图片大小，清晰度
     # plt.figure(figsize=(20, 8), dpi=800)
     x_list = [x for x in list(range(len(x_ticks)))]

@@ -68,14 +68,14 @@ def cal_accuracy(df):
         original_label_list.append(label_index)
 
     GT_labels = df["GT_label"]
-    report = classification_report(GT_labels,original_label_list,output_dict=True)
+    report = classification_report(GT_labels,original_label_list,output_dict=True,zero_division=0)
     acc_o = report["accuracy"]
     acc_m_list = []
 
     for model_global_id in range(500):
         col_name = f"model_{model_global_id}"
         pred_labels = list(df[col_name])
-        report = classification_report(GT_labels,pred_labels,output_dict=True)
+        report = classification_report(GT_labels,pred_labels,output_dict=True,zero_division=0)
         acc_m_list.append(report["accuracy"])
     
     acc_o_acc_m_absDif_list = []

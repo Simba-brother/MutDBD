@@ -49,7 +49,7 @@ transform_test = Compose([
     ToPILImage(),
     Resize((32, 32)),
     ToTensor(),
-    Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261)) # imageNet
+    Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
 ])
 # 获得数据集
 trainset = DatasetFolder(

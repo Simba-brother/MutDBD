@@ -16,6 +16,7 @@ from rpy2.robjects import pandas2ri
 from collections import defaultdict
 import pandas as pd
 from collections import defaultdict
+from codes.utils import entropy
 from sklearn.metrics import accuracy_score, precision_score, f1_score, recall_score, classification_report,confusion_matrix
 
 
@@ -103,9 +104,11 @@ def get_suspicious_classes_by_ScottKnottESD(data_dict):
         group_map[rank].append(class_idx)
     group_key_list = list(group_map.keys())
     group_key_list.sort() # replace
-    top_key = group_key_list[-1]
-    suspicious_classes = group_map[top_key]
-    return suspicious_classes
+    top_key = group_key_list[0]
+    low_key = group_key_list[-1]
+    suspicious_classes_top = group_map[top_key]
+    suspicious_classes_low = group_map[low_key]
+    return suspicious_classes_top,suspicious_classes_low
     
 
 
@@ -221,16 +224,10 @@ def main_v2(measure_name):
             config.attack_name,
             str(rate),
             "preLabel.csv"))
-        # ground truth label
-        GT_label_list = df["GT_label"]
-        class_measure_dict = defaultdict(list)
-        for mutated_model_global_id in range(500):
-            model_col_name = f"model_{mutated_model_global_id}"
-            pred_label_list = list(df[model_col_name])
-            report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
-            for class_i in range(config.class_num):
-                measure = report[str(class_i)][measure_name]
-                class_measure_dict[class_i].append(measure)
+        if measure_name in ["precison,recall,f1-score"]:
+            class_measure_dict = measure_by_model_measure(df,measure_name)
+        elif measure_name == "entropy":
+            class_measure_dict = measure_by_sample_measure(df,measure_name)
         # 把绘制箱线图的数据保存一下
         box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
         save_dir = os.path.join(box_data_save_dir,str(rate))
@@ -244,8 +241,8 @@ def main_v2(measure_name):
             new_col_name_list.append("C"+str(old_col_name))
         df.columns = new_col_name_list
         df.to_csv(save_path,index=False)
-        suspicious_classes = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
-        res[rate] = suspicious_classes
+        suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
+        res[rate] = {"top":suspicious_classes_top,"low":suspicious_classes_low}
     logging.debug(res)
     # 保存实验结果
     save_dir = os.path.join(
@@ -262,12 +259,37 @@ def main_v2(measure_name):
     logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
     
 
+def measure_by_model_measure(df:pd.DataFrame,measure_name="precision"):
+    data_dict = defaultdict(list)
+    # ground truth label
+    GT_label_list = df["GT_label"]
+    for mutated_model_global_id in range(500):
+        model_col_name = f"model_{mutated_model_global_id}"
+        pred_label_list = list(df[model_col_name])
+        report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
+        for class_i in range(config.class_num):
+            measure = report[str(class_i)][measure_name]
+            data_dict[class_i].append(measure)
+    return data_dict
 
-    
+def measure_by_sample_measure(df:pd.DataFrame,measure_name="entropy"):
+    data_dict = defaultdict(list)
+    for class_id in range(config.class_num):
+        class_df = df.loc[df["GT_label"]==class_id]
+        for row_id, row in class_df.iterrows():
+            # 当前row(样本)在所有变异模型集上的预测标签
+            cur_row_labels = []
+            for mutated_model_global_id in range(500):
+                model_col_name = f"model_{mutated_model_global_id}"
+                cur_row_labels.append(row[model_col_name])
+            # 计算该row(样本)的标签熵
+            cur_entropy = entropy(cur_row_labels)
+            data_dict[class_id].append(cur_entropy)
+    return data_dict
 
 if __name__ == "__main__":
     # 进程名称
-    measure_name = "precision" # precision|recall|f1-score
+    measure_name = "precision" # precision|recall|f1-score|entropy
     proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -281,7 +303,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
 
-    
     try:
         # main_v1(measure_name)
         main_v2(measure_name)
