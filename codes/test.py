@@ -23,6 +23,7 @@ def test5():
     pred_label = [1,2,1,2,3,2,3,4,3,4,3,4,5,4,5]
     ans = classification_report(gt_label,pred_label,output_dict=True)
     print(ans)
+
 if __name__ == "__main__":
     test5()
 

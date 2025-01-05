@@ -161,3 +161,15 @@ ranking_within_the_group:2
 rate:0.1
 Low_group
 ranking_within_the_group:2
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/mutation_model_eval.py", line 122, in <module>
+    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1014, in load
+    return _load(opened_zipfile,
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1422, in _load
+    result = unpickler.load()
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1392, in persistent_load
+    typed_storage = load_tensor(dtype, nbytes, key, _maybe_decode_ascii(location))
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1357, in load_tensor
+    storage = zip_file.get_storage_from_record(name, numel, torch.UntypedStorage)._typed_storage()._untyped_storage
+KeyboardInterrupt
