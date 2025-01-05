@@ -33,3 +33,131 @@ Traceback (most recent call last):
   File "/home/mml/workspace/backdoor_detect/codes/ourMethod/mutation_model_eval.py", line 8, in <module>
     import setproctitle
 ModuleNotFoundError: No module named 'setproctitle'
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
+    original_backdoorModel_preLabel_list = e.get_pred_labels()
+  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 141, in get_pred_labels
+    preds = self.model(X)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/workspace/backdoor_detect/codes/core/models/resnet.py", line 96, in forward
+    out = F.relu(self.bn1(self.conv1(x)))
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 32.00 MiB. GPU 1 has a total capacty of 79.15 GiB of which 27.88 MiB is free. Process 1173909 has 43.38 GiB memory in use. Process 3906575 has 33.77 GiB memory in use. Process 224819 has 744.00 MiB memory in use. Process 226132 has 744.00 MiB memory in use. Including non-PyTorch memory, this process has 480.00 MiB memory in use. Of the allocated memory 45.74 MiB is allocated by PyTorch, and 20.26 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
+    original_backdoorModel_preLabel_list = e.get_pred_labels()
+  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 141, in get_pred_labels
+    preds = self.model(X)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 78, in forward
+    out = self.trans1(self.dense1(out))
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/container.py", line 215, in forward
+    input = module(input)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 18, in forward
+    out = self.conv1(F.relu(self.bn1(x)))
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/functional.py", line 1471, in relu
+    result = torch.relu(input)
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
+    original_backdoorModel_preLabel_list = e.get_pred_labels()
+  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 141, in get_pred_labels
+    preds = self.model(X)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 77, in forward
+    out = self.conv1(x)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+RuntimeError: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
+    original_backdoorModel_preLabel_list = e.get_pred_labels()
+  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 131, in get_pred_labels
+    self.model.to(self.device)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 MiB. GPU 1 has a total capacty of 79.15 GiB of which 1.88 MiB is free. Process 1173909 has 43.38 GiB memory in use. Process 3906575 has 33.77 GiB memory in use. Process 251044 has 1.02 GiB memory in use. Process 252164 has 492.00 MiB memory in use. Including non-PyTorch memory, this process has 458.00 MiB memory in use. Of the allocated memory 25.65 MiB is allocated by PyTorch, and 18.35 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+rate:0.01
+Top_group
+ranking_within_the_group:9
+Low_group
+ranking_within_the_group:9
+rate:0.03
+Low_group
+ranking_within_the_group:3
+rate:0.05
+Low_group
+ranking_within_the_group:1
+rate:0.07
+Low_group
+ranking_within_the_group:1
+rate:0.09
+Low_group
+ranking_within_the_group:2
+rate:0.1
+Low_group
+ranking_within_the_group:2
+rate:0.01
+Top_group
+ranking_within_the_group:9
+Low_group
+ranking_within_the_group:9
+rate:0.03
+Low_group
+ranking_within_the_group:3
+rate:0.05
+Low_group
+ranking_within_the_group:1
+rate:0.07
+Low_group
+ranking_within_the_group:1
+rate:0.09
+Low_group
+ranking_within_the_group:2
+rate:0.1
+Low_group
+ranking_within_the_group:2

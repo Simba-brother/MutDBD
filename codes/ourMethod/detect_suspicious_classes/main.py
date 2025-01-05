@@ -216,18 +216,37 @@ def main_v2(measure_name):
     logging.debug("开始:获得每个变异率下的Suspicious Classes")
     for rate in config.fine_mutation_rate_list:
         logging.debug(f"变异率:{rate}")
-        df = pd.read_csv(os.path.join(
-            config.exp_root_dir,
-            "EvalMutationToCSV",
-            config.dataset_name,
-            config.model_name,
-            config.attack_name,
-            str(rate),
-            "preLabel.csv"))
-        if measure_name in ["precison,recall,f1-score"]:
-            class_measure_dict = measure_by_model_measure(df,measure_name)
-        elif measure_name == "entropy":
-            class_measure_dict = measure_by_sample_measure(df,measure_name)
+        label_df = pd.read_csv(os.path.join(
+                config.exp_root_dir,
+                "EvalMutationToCSV",
+                config.dataset_name,
+                config.model_name,
+                config.attack_name,
+                str(rate),
+                "preLabel.csv"))
+        prob_df = pd.read_csv(os.path.join(
+                config.exp_root_dir,
+                "EvalMutationToCSV_probs",
+                config.dataset_name,
+                config.model_name,
+                config.attack_name,
+                str(rate),
+                "prob.csv"))
+        
+        if measure_name  == "precision":
+            class_measure_dict = measure_by_model_precision(label_df)
+        elif measure_name == "recall":
+            class_measure_dict = measure_by_model_recall(label_df)
+        elif measure_name == "f1-score":
+            class_measure_dict = measure_by_model_f1_score(label_df)
+        elif measure_name == "LCR":
+            class_measure_dict = measure_by_model_LCR(label_df)
+        elif measure_name == "AccDif":
+            class_measure_dict = measure_by_model_AccDif(label_df)
+        elif measure_name == "confidence":
+            class_measure_dict = measure_by_model_confidence(prob_df)
+            
+        
         # 把绘制箱线图的数据保存一下
         box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
         save_dir = os.path.join(box_data_save_dir,str(rate))
@@ -259,7 +278,7 @@ def main_v2(measure_name):
     logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
     
 
-def measure_by_model_measure(df:pd.DataFrame,measure_name="precision"):
+def measure_by_model_precision(df:pd.DataFrame):
     data_dict = defaultdict(list)
     # ground truth label
     GT_label_list = df["GT_label"]
@@ -268,11 +287,89 @@ def measure_by_model_measure(df:pd.DataFrame,measure_name="precision"):
         pred_label_list = list(df[model_col_name])
         report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
         for class_i in range(config.class_num):
-            measure = report[str(class_i)][measure_name]
+            measure = report[str(class_i)]["precision"]
             data_dict[class_i].append(measure)
     return data_dict
 
-def measure_by_sample_measure(df:pd.DataFrame,measure_name="entropy"):
+def measure_by_model_recall(df:pd.DataFrame):
+    data_dict = defaultdict(list)
+    # ground truth label
+    GT_label_list = df["GT_label"]
+    for mutated_model_global_id in range(500):
+        model_col_name = f"model_{mutated_model_global_id}"
+        pred_label_list = list(df[model_col_name])
+        report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
+        for class_i in range(config.class_num):
+            measure = report[str(class_i)]["recall"]
+            data_dict[class_i].append(measure)
+    return data_dict
+
+def measure_by_model_f1_score(df:pd.DataFrame):
+    data_dict = defaultdict(list)
+    # ground truth label
+    GT_label_list = df["GT_label"]
+    for mutated_model_global_id in range(500):
+        model_col_name = f"model_{mutated_model_global_id}"
+        pred_label_list = list(df[model_col_name])
+        report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
+        for class_i in range(config.class_num):
+            measure = report[str(class_i)]["f1-score"]
+            data_dict[class_i].append(measure)
+    return data_dict
+
+def measure_by_model_LCR(df:pd.DataFrame):
+    data_dict = defaultdict(list)
+    for class_id in range(config.class_num):
+        class_df = df.loc[df["GT_label"]==class_id]
+        original_model_pred_label_list = list(class_df["original_backdoorModel_preLabel"])
+        for mutated_model_global_id in range(500):
+            count = 0
+            model_col_name = f"model_{mutated_model_global_id}"
+            pred_label_list = list(class_df[model_col_name])
+            for o_l,m_l in zip(original_model_pred_label_list,pred_label_list):
+                if o_l != m_l:
+                    count += 1
+            lcr = round(count/len(original_model_pred_label_list),4)
+            data_dict[class_id].append(lcr)
+    return data_dict
+
+def measure_by_model_AccDif(df:pd.DataFrame):
+    '''
+    注意：在单类别上acc === recall且precision === 1
+    '''
+    data_dict = defaultdict(list)
+    # ground truth label
+    GT_label_list = df["GT_label"]
+    original_backdoorModel_preLabel_list = df["original_backdoorModel_preLabel"]
+    report_o = classification_report(GT_label_list,original_backdoorModel_preLabel_list,output_dict=True, zero_division=0)
+    for mutated_model_global_id in range(500):
+        model_col_name = f"model_{mutated_model_global_id}"
+        pred_label_list = list(df[model_col_name])
+        report_m = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
+        for class_i in range(config.class_num):
+            measure = abs(report_m[str(class_i)]["recall"]-report_o[str(class_i)]["recall"])
+            data_dict[class_i].append(measure)
+    return data_dict
+
+def measure_by_model_confidence(df:pd.DataFrame):
+    data_dict = defaultdict(list)
+    for class_id in range(config.class_num):
+        class_df = df.loc[df["GT_label"]==class_id]
+        for mutated_model_global_id in range(500):
+            confidence_list = []
+            model_col_name = f"model_{mutated_model_global_id}"
+            prob_list_list = list(class_df[model_col_name])
+            for prob_str in prob_list_list:
+                prob_list = eval(prob_str)
+                confidence = max(prob_list)
+                confidence_list.append(confidence)
+            avg_confidence = round(sum(confidence_list)/len(confidence_list),4)
+            data_dict[class_id].append(avg_confidence)
+    return data_dict
+
+    
+
+def measure_by_sample_entropy(df:pd.DataFrame):
     data_dict = defaultdict(list)
     for class_id in range(config.class_num):
         class_df = df.loc[df["GT_label"]==class_id]
@@ -287,9 +384,39 @@ def measure_by_sample_measure(df:pd.DataFrame,measure_name="entropy"):
             data_dict[class_id].append(cur_entropy)
     return data_dict
 
+
+
+def see_res(measure_name):
+    data_dir = os.path.join(
+        config.exp_root_dir,
+        "SuspiciousClasses",
+        config.dataset_name, 
+        config.model_name, 
+        config.attack_name
+    )
+    file_name = f"SuspiciousClasses_SK_{measure_name}.data"
+    data_path = os.path.join(data_dir,file_name)
+    data_dict = joblib.load(data_path)
+    target_class_idx = config.target_class_idx
+    for rate in config.fine_mutation_rate_list:
+        print(f"rate:{rate}")
+        top_class_list = data_dict[rate]["top"]
+        low_class_list = data_dict[rate]["low"]
+        if target_class_idx in top_class_list:
+            print("Top_group")
+            ranking_within_the_group = top_class_list.index(target_class_idx)
+            print(f"ranking_within_the_group:{ranking_within_the_group}")
+        if target_class_idx in low_class_list:
+            print("Low_group")
+            ranking_within_the_group = low_class_list.index(target_class_idx)
+            print(f"ranking_within_the_group:{ranking_within_the_group}")
+        if (target_class_idx not in top_class_list) and (target_class_idx not in low_class_list):
+            print("Mid_group")
+        
+            
 if __name__ == "__main__":
     # 进程名称
-    measure_name = "precision" # precision|recall|f1-score|entropy
+    measure_name = "confidence" # precision|recall|f1-score|LCR|AccDif|confidence
     proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -306,6 +433,7 @@ if __name__ == "__main__":
     try:
         # main_v1(measure_name)
         main_v2(measure_name)
+        # see_res(measure_name)
         pass
     except Exception as e:
         logging.error("发生异常:%s",e)

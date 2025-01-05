@@ -4,7 +4,7 @@ library(readr)
 library(ggplot2)
 
 # load data
-box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/ResNet18/WaNet/0.03/box_precision.csv"
+box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/ResNet18/BadNets/0.01/box_precision.csv"
 model_performance <- read_csv(box_csv_path)
 
 # apply ScottKnottESD and prepare a ScottKnottESD dataframe
