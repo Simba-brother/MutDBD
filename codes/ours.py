@@ -6,6 +6,7 @@ import time
 import torch.nn as nn 
 from codes import models
 from codes import config
+from codes.ourMethod.detect_suspicious_classes import main_2
 from codes.scripts.dataset_constructor import *
 from codes.tools import model_train_test,EvalModel
 from collections import defaultdict
@@ -16,9 +17,6 @@ from codes.ourMethod import (
         ModelMutat,
         # 检测target class方法,并获得adaptive mutation rate
         detect_suspicious_classes,
-        # 对变异模型进行排序
-        sort_mutated_models,
-        # 从target class中检测clean与poisoned
         detect_poisonedAndclean_from_targetClass,
         # 构建新数据集方法
         newdataset_construct,
@@ -165,7 +163,7 @@ if __name__ == "__main__":
     target_class_clean_set = ExtractTargetClassDataset(pureCleanTrainDataset, target_class_idx = target_class_i)
     # target class中的poisoned set
     target_class_poisoned_set = ExtractTargetClassDataset(purePoisonedTrainDataset, target_class_idx = target_class_i)
-    sorted_weights_path_list = sort_mutated_models(
+    sorted_weights_path_list = main_2(
             model_struct = victim_model,
             mutation_weights_path_list = mutation_weights_path_list,
             target_class_clean_set = target_class_clean_set,

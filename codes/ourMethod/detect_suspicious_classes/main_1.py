@@ -10,9 +10,7 @@ from cliffs_delta import cliffs_delta
 import joblib
 import logging
 import setproctitle
-# https://github.com/klainfo/ScottKnottESD
-from rpy2.robjects.packages import importr
-from rpy2.robjects import pandas2ri
+from codes.ourMethod.detect_suspicious_classes.get_suspicious import get_suspicious_classes_by_ScottKnottESD
 from collections import defaultdict
 import pandas as pd
 from collections import defaultdict
@@ -81,34 +79,7 @@ def get_suspicious_classes_by_Rule(data_dict):
     suspicious_classes = rule_1_classes | rule_2_classes | rule_3_classes
     return suspicious_classes
 
-def get_suspicious_classes_by_ScottKnottESD(data_dict):
-    '''
-    data_dict:{Int(class_idx):list(precision|recall|F1)}
-    '''
-    pandas2ri.activate()
-    sk = importr("ScottKnottESD")
-    df = pd.DataFrame(data_dict)
 
-    r_sk = sk.sk_esd(df)
-    column_order = [x-1 for x in list(r_sk[3])]
-
-    ranking = pd.DataFrame(
-        {
-            "Class": [df.columns[i] for i in column_order],
-            "rank": r_sk[1].astype("int"),
-        })
-    Class_list = list(ranking["Class"])
-    rank_list = list(ranking["rank"])
-    group_map = defaultdict(list)
-    for class_idx, rank in zip(Class_list,rank_list):
-        group_map[rank].append(class_idx)
-    group_key_list = list(group_map.keys())
-    group_key_list.sort() # replace
-    top_key = group_key_list[0]
-    low_key = group_key_list[-1]
-    suspicious_classes_top = group_map[top_key]
-    suspicious_classes_low = group_map[low_key]
-    return suspicious_classes_top,suspicious_classes_low
     
 
 
@@ -170,7 +141,6 @@ def detect(report_dataset,measure_name):
             new_col_name_list.append("C"+str(old_col_name))
         df.columns = new_col_name_list
         df.to_csv(save_path,index=False)
-
     for ratio in config.fine_mutation_rate_list:
         suspicious_classes= get_suspicious_classes_by_ScottKnottESD(data[ratio])
         ans[ratio] = suspicious_classes
@@ -224,14 +194,14 @@ def main_v2(measure_name):
                 config.attack_name,
                 str(rate),
                 "preLabel.csv"))
-        # confidence_df = pd.read_csv(os.path.join(
-        #         config.exp_root_dir,
-        #         "EvalMutationToCSV",
-        #         config.dataset_name,
-        #         config.model_name,
-        #         config.attack_name,
-        #         str(rate),
-        #         "confidence.csv"))
+        confidence_df = pd.read_csv(os.path.join(
+                config.exp_root_dir,
+                "EvalMutationToCSV",
+                config.dataset_name,
+                config.model_name,
+                config.attack_name,
+                str(rate),
+                "confidence.csv"))
         
         if measure_name  == "precision":
             class_measure_dict = measure_by_model_precision(label_df)
@@ -413,7 +383,7 @@ def see_res(measure_name):
             
 if __name__ == "__main__":
     # 进程名称
-    measure_name = "AccDif" # precision|recall|f1-score|LCR|AccDif|confidence
+    measure_name = "confidence" # precision|recall|f1-score|LCR|AccDif|confidence
     proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -429,8 +399,8 @@ if __name__ == "__main__":
 
     try:
         # main_v1(measure_name)
-        # main_v2(measure_name)
-        see_res(measure_name)
+        main_v2(measure_name)
+        # see_res(measure_name)
         pass
     except Exception as e:
         logging.error("发生异常:%s",e)

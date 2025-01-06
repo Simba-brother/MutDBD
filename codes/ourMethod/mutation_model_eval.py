@@ -92,10 +92,30 @@ def ansToCSV(data_dict,save_path):
 
 
 
-
+def main_1(exp_sub):
+    if exp_sub == "preLabel":
+        mutation_models_pred_dict = get_mutation_models_pred_labels(poisoned_trainset)
+    elif exp_sub == "confidence":
+        mutation_models_pred_dict = get_mutation_models_confidence(poisoned_trainset)
+    logging.debug(f"开始:将结果整理为csv文件")
+    for rate in [0.05]:
+        data_dict = mutation_models_pred_dict[rate]
+        save_dir = os.path.join(
+            config.exp_root_dir,
+            exp_name,
+            config.dataset_name,
+            config.model_name,
+            config.attack_name,
+            str(rate)
+        )
+        os.makedirs(save_dir,exist_ok=True)
+        save_file_name = f"{exp_sub}.csv" # preLabel.csv or prob.csv
+        save_file_path = os.path.join(save_dir,save_file_name)
+        ansToCSV(data_dict,save_file_path)
+        logging.debug(f"csv保存在:{save_file_path}")
 if __name__ == "__main__":
     # 进程名称
-    exp_name = "EvalMutationToCSV_confidence" 
+    exp_name = "EvalMutationToCSV" 
     proctitle = f"{exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -124,24 +144,7 @@ if __name__ == "__main__":
         poisoned_trainset = backdoor_data["poisoned_trainset"]
         poisoned_ids = backdoor_data["poisoned_ids"]
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测标签结果")
-        # mutation_models_pred_labels_dict = get_mutation_models_pred_labels(poisoned_trainset)
-        mutation_models_confidence_dict = get_mutation_models_confidence(poisoned_trainset)
-        logging.debug(f"开始:将结果整理为csv文件")
-        for rate in [0.05]:
-            data_dict = mutation_models_confidence_dict[rate]
-            save_dir = os.path.join(
-                config.exp_root_dir,
-                exp_name,
-                config.dataset_name,
-                config.model_name,
-                config.attack_name,
-                str(rate)
-            )
-            os.makedirs(save_dir,exist_ok=True)
-            save_file_name = "confidence.csv" # preLabel.csv or prob.csv
-            save_file_path = os.path.join(save_dir,save_file_name)
-            ansToCSV(data_dict,save_file_path)
-            logging.debug(f"csv保存在:{save_file_path}")
+        main_1("confidence")
     except Exception as e:
         logging.error("发生异常:%s",e)
 
