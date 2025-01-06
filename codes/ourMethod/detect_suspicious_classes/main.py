@@ -224,14 +224,14 @@ def main_v2(measure_name):
                 config.attack_name,
                 str(rate),
                 "preLabel.csv"))
-        prob_df = pd.read_csv(os.path.join(
-                config.exp_root_dir,
-                "EvalMutationToCSV_probs",
-                config.dataset_name,
-                config.model_name,
-                config.attack_name,
-                str(rate),
-                "prob.csv"))
+        # confidence_df = pd.read_csv(os.path.join(
+        #         config.exp_root_dir,
+        #         "EvalMutationToCSV",
+        #         config.dataset_name,
+        #         config.model_name,
+        #         config.attack_name,
+        #         str(rate),
+        #         "confidence.csv"))
         
         if measure_name  == "precision":
             class_measure_dict = measure_by_model_precision(label_df)
@@ -244,7 +244,8 @@ def main_v2(measure_name):
         elif measure_name == "AccDif":
             class_measure_dict = measure_by_model_AccDif(label_df)
         elif measure_name == "confidence":
-            class_measure_dict = measure_by_model_confidence(prob_df)
+            # class_measure_dict = measure_by_model_confidence(confidence_df)
+            pass
             
         
         # 把绘制箱线图的数据保存一下
@@ -358,12 +359,8 @@ def measure_by_model_confidence(df:pd.DataFrame):
         for mutated_model_global_id in range(500):
             confidence_list = []
             model_col_name = f"model_{mutated_model_global_id}"
-            prob_list_list = list(class_df[model_col_name])
-            for prob_str in prob_list_list:
-                prob_list = eval(prob_str)
-                confidence = max(prob_list)
-                confidence_list.append(confidence)
-            avg_confidence = round(sum(confidence_list)/len(confidence_list),4)
+            confidence_list = list(class_df[model_col_name])
+            avg_confidence = round(sum(confidence_list) / len(confidence_list),4)
             data_dict[class_id].append(avg_confidence)
     return data_dict
 
@@ -416,7 +413,7 @@ def see_res(measure_name):
             
 if __name__ == "__main__":
     # 进程名称
-    measure_name = "confidence" # precision|recall|f1-score|LCR|AccDif|confidence
+    measure_name = "AccDif" # precision|recall|f1-score|LCR|AccDif|confidence
     proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -432,8 +429,8 @@ if __name__ == "__main__":
 
     try:
         # main_v1(measure_name)
-        main_v2(measure_name)
-        # see_res(measure_name)
+        # main_v2(measure_name)
+        see_res(measure_name)
         pass
     except Exception as e:
         logging.error("发生异常:%s",e)

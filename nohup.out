@@ -1,175 +1,0 @@
-  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [1:53:12<7:32:48, 6792.15s/it] 20%|██        | 1/5 [1:50:06<7:20:26, 6606.73s/it] 20%|██        | 1/5 [1:51:01<7:24:07, 6661.92s/it] 40%|████      | 2/5 [2:27:16<3:19:57, 3999.05s/it] 40%|████      | 2/5 [2:24:33<3:16:48, 3936.25s/it] 60%|██████    | 3/5 [2:32:40<1:17:22, 2321.15s/it] 40%|████      | 2/5 [2:25:19<3:17:40, 3953.37s/it] 60%|██████    | 3/5 [2:29:57<1:16:13, 2286.65s/it] 80%|████████  | 4/5 [2:38:42<25:47, 1547.77s/it]   60%|██████    | 3/5 [2:30:16<1:16:07, 2283.84s/it]100%|██████████| 5/5 [2:41:35<00:00, 1051.83s/it]100%|██████████| 5/5 [2:41:35<00:00, 1939.03s/it]
- 80%|████████  | 4/5 [2:35:34<25:16, 1516.86s/it]   80%|████████  | 4/5 [2:35:22<25:03, 1503.16s/it]  100%|██████████| 5/5 [2:37:55<00:00, 1021.02s/it]100%|██████████| 5/5 [2:37:55<00:00, 1895.18s/it]
-100%|██████████| 5/5 [2:37:39<00:00, 1010.52s/it]100%|██████████| 5/5 [2:37:39<00:00, 1891.96s/it]
- 20%|██        | 1/5 [3:34:26<14:17:45, 12866.32s/it] 20%|██        | 1/5 [3:30:23<14:01:35, 12623.90s/it] 20%|██        | 1/5 [3:34:28<14:17:54, 12868.69s/it] 40%|████      | 2/5 [4:01:22<5:12:25, 6248.46s/it]   40%|████      | 2/5 [3:57:32<5:07:47, 6155.96s/it]   60%|██████    | 3/5 [4:05:11<1:56:40, 3500.00s/it] 60%|██████    | 3/5 [4:01:00<1:54:40, 3440.14s/it] 40%|████      | 2/5 [4:01:05<5:11:53, 6237.97s/it]   80%|████████  | 4/5 [4:09:54<37:10, 2230.08s/it]   60%|██████    | 3/5 [4:04:53<1:56:28, 3494.03s/it] 80%|████████  | 4/5 [4:06:07<36:43, 2203.04s/it]  100%|██████████| 5/5 [4:12:22<00:00, 1479.00s/it]100%|██████████| 5/5 [4:12:22<00:00, 3028.43s/it]
-100%|██████████| 5/5 [4:08:31<00:00, 1460.49s/it]100%|██████████| 5/5 [4:08:31<00:00, 2982.21s/it]
- 80%|████████  | 4/5 [4:09:40<37:07, 2227.66s/it]  100%|██████████| 5/5 [4:11:56<00:00, 1473.63s/it]100%|██████████| 5/5 [4:11:56<00:00, 3023.38s/it]
- 20%|██        | 1/5 [5:36:54<22:27:39, 20214.76s/it] 20%|██        | 1/5 [5:49:17<23:17:09, 20957.38s/it] 40%|████      | 2/5 [6:26:42<8:24:03, 10081.25s/it]  40%|████      | 2/5 [6:39:26<8:39:58, 10399.58s/it]  60%|██████    | 3/5 [6:43:42<3:18:07, 5943.77s/it]  60%|██████    | 3/5 [6:56:53<3:24:18, 6129.21s/it]  80%|████████  | 4/5 [7:06:19<1:08:52, 4132.85s/it] 80%|████████  | 4/5 [7:19:01<1:10:33, 4233.61s/it]100%|██████████| 5/5 [7:12:21<00:00, 2773.18s/it]  100%|██████████| 5/5 [7:12:21<00:00, 5188.35s/it]
-100%|██████████| 5/5 [7:25:05<00:00, 2838.23s/it]  100%|██████████| 5/5 [7:25:05<00:00, 5341.14s/it]
-  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [39:10<2:36:43, 2350.77s/it] 40%|████      | 2/5 [1:15:43<1:52:53, 2257.97s/it] 60%|██████    | 3/5 [1:41:33<1:04:29, 1934.77s/it]Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/mutation_model_eval.py", line 8, in <module>
-    import setproctitle
-ModuleNotFoundError: No module named 'setproctitle'
- 80%|████████  | 4/5 [1:54:30<24:37, 1477.43s/it]  100%|██████████| 5/5 [2:01:31<00:00, 1096.66s/it]100%|██████████| 5/5 [2:01:31<00:00, 1458.36s/it]
-  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s]Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/gen_mutation.py", line 9, in <module>
-    import setproctitle
-ModuleNotFoundError: No module named 'setproctitle'
-  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [1:43:56<6:55:46, 6236.60s/it] 40%|████      | 2/5 [1:55:39<2:29:04, 2981.37s/it] 60%|██████    | 3/5 [1:58:13<56:20, 1690.38s/it]   80%|████████  | 4/5 [2:01:22<18:17, 1097.54s/it]100%|██████████| 5/5 [2:03:05<00:00, 739.20s/it] 100%|██████████| 5/5 [2:03:05<00:00, 1477.19s/it]
- 20%|██        | 1/5 [5:11:16<20:45:06, 18676.56s/it] 20%|██        | 1/5 [5:20:22<21:21:31, 19222.92s/it] 20%|██        | 1/5 [5:23:11<21:32:46, 19391.66s/it] 20%|██        | 1/5 [5:29:35<21:58:22, 19775.57s/it] 40%|████      | 2/5 [5:45:00<7:24:03, 8881.20s/it]   20%|██        | 1/5 [3:28:29<13:53:57, 12509.31s/it] 60%|██████    | 3/5 [5:58:42<2:53:22, 5201.03s/it] 40%|████      | 2/5 [5:59:35<7:44:58, 9299.48s/it]   40%|████      | 2/5 [6:03:01<7:49:31, 9390.37s/it]   20%|██        | 1/5 [3:45:14<15:00:56, 13514.10s/it]
- 40%|████      | 2/5 [6:07:43<9:11:35, 11031.74s/it]
- 60%|██████    | 3/5 [6:06:38<4:04:25, 7332.79s/it]
- 40%|████      | 2/5 [6:09:33<7:57:39, 9553.18s/it]   60%|██████    | 3/5 [6:14:30<3:02:03, 5461.80s/it] 60%|██████    | 3/5 [6:22:58<3:05:17, 5558.68s/it] 80%|████████  | 4/5 [6:31:48<1:01:55, 3715.16s/it] 80%|████████  | 4/5 [6:36:13<1:39:03, 5943.38s/it]
-  0%|          | 0/4 [00:00<?, ?it/s] 80%|████████  | 4/5 [6:39:59<1:02:47, 3767.19s/it]  0%|          | 0/2 [00:00<?, ?it/s]  0%|          | 0/1 [00:00<?, ?it/s]  0%|          | 0/3 [00:00<?, ?it/s]100%|██████████| 5/5 [6:46:03<00:00, 2540.06s/it]  100%|██████████| 5/5 [6:46:03<00:00, 4872.67s/it]
-100%|██████████| 1/1 [06:18<00:00, 378.99s/it]100%|██████████| 1/1 [06:18<00:00, 378.99s/it]
- 50%|█████     | 1/2 [16:54<16:54, 1014.66s/it] 33%|███▎      | 1/3 [15:21<30:43, 921.96s/it] 25%|██▌       | 1/4 [21:05<1:03:16, 1265.54s/it]100%|██████████| 2/2 [21:17<00:00, 572.55s/it] 100%|██████████| 2/2 [21:17<00:00, 638.86s/it]
- 50%|█████     | 2/4 [23:53<20:39, 619.79s/it]    75%|███████▌  | 3/4 [27:25<07:13, 433.72s/it]100%|██████████| 4/4 [29:16<00:00, 306.34s/it]100%|██████████| 4/4 [29:16<00:00, 439.17s/it]
- 67%|██████▋   | 2/3 [31:30<15:49, 949.26s/it]100%|██████████| 3/3 [44:02<00:00, 859.22s/it]100%|██████████| 3/3 [44:02<00:00, 880.80s/it]
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/mutation_model_eval.py", line 8, in <module>
-    import setproctitle
-ModuleNotFoundError: No module named 'setproctitle'
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/mutation_model_eval.py", line 8, in <module>
-    import setproctitle
-ModuleNotFoundError: No module named 'setproctitle'
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
-    original_backdoorModel_preLabel_list = e.get_pred_labels()
-  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 141, in get_pred_labels
-    preds = self.model(X)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/mml/workspace/backdoor_detect/codes/core/models/resnet.py", line 96, in forward
-    out = F.relu(self.bn1(self.conv1(x)))
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 460, in forward
-    return self._conv_forward(input, self.weight, self.bias)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
-    return F.conv2d(input, weight, bias, self.stride,
-torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 32.00 MiB. GPU 1 has a total capacty of 79.15 GiB of which 27.88 MiB is free. Process 1173909 has 43.38 GiB memory in use. Process 3906575 has 33.77 GiB memory in use. Process 224819 has 744.00 MiB memory in use. Process 226132 has 744.00 MiB memory in use. Including non-PyTorch memory, this process has 480.00 MiB memory in use. Of the allocated memory 45.74 MiB is allocated by PyTorch, and 20.26 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
-    original_backdoorModel_preLabel_list = e.get_pred_labels()
-  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 141, in get_pred_labels
-    preds = self.model(X)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 78, in forward
-    out = self.trans1(self.dense1(out))
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/container.py", line 215, in forward
-    input = module(input)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 18, in forward
-    out = self.conv1(F.relu(self.bn1(x)))
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/functional.py", line 1471, in relu
-    result = torch.relu(input)
-RuntimeError: CUDA error: out of memory
-CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
-For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
-Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
-
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
-    original_backdoorModel_preLabel_list = e.get_pred_labels()
-  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 141, in get_pred_labels
-    preds = self.model(X)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 77, in forward
-    out = self.conv1(x)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 460, in forward
-    return self._conv_forward(input, self.weight, self.bias)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
-    return F.conv2d(input, weight, bias, self.stride,
-RuntimeError: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
-    original_backdoorModel_preLabel_list = e.get_pred_labels()
-  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 131, in get_pred_labels
-    self.model.to(self.device)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1160, in to
-    return self._apply(convert)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
-    module._apply(fn)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
-    module._apply(fn)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
-    module._apply(fn)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 833, in _apply
-    param_applied = fn(param)
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1158, in convert
-    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
-torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 MiB. GPU 1 has a total capacty of 79.15 GiB of which 1.88 MiB is free. Process 1173909 has 43.38 GiB memory in use. Process 3906575 has 33.77 GiB memory in use. Process 251044 has 1.02 GiB memory in use. Process 252164 has 492.00 MiB memory in use. Including non-PyTorch memory, this process has 458.00 MiB memory in use. Of the allocated memory 25.65 MiB is allocated by PyTorch, and 18.35 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
-rate:0.01
-Top_group
-ranking_within_the_group:9
-Low_group
-ranking_within_the_group:9
-rate:0.03
-Low_group
-ranking_within_the_group:3
-rate:0.05
-Low_group
-ranking_within_the_group:1
-rate:0.07
-Low_group
-ranking_within_the_group:1
-rate:0.09
-Low_group
-ranking_within_the_group:2
-rate:0.1
-Low_group
-ranking_within_the_group:2
-rate:0.01
-Top_group
-ranking_within_the_group:9
-Low_group
-ranking_within_the_group:9
-rate:0.03
-Low_group
-ranking_within_the_group:3
-rate:0.05
-Low_group
-ranking_within_the_group:1
-rate:0.07
-Low_group
-ranking_within_the_group:1
-rate:0.09
-Low_group
-ranking_within_the_group:2
-rate:0.1
-Low_group
-ranking_within_the_group:2
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/mutation_model_eval.py", line 122, in <module>
-    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1014, in load
-    return _load(opened_zipfile,
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1422, in _load
-    result = unpickler.load()
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1392, in persistent_load
-    typed_storage = load_tensor(dtype, nbytes, key, _maybe_decode_ascii(location))
-  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/serialization.py", line 1357, in load_tensor
-    storage = zip_file.get_storage_from_record(name, numel, torch.UntypedStorage)._typed_storage()._untyped_storage
-KeyboardInterrupt
