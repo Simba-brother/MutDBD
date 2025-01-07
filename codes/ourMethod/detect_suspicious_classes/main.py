@@ -163,14 +163,15 @@ def main(measure_name,rate_list,isTopK=False,K=50):
                 config.attack_name,
                 str(rate),
                 "preLabel.csv"))
-        confidence_df = pd.read_csv(os.path.join(
-                config.exp_root_dir,
-                "EvalMutationToCSV",
-                config.dataset_name,
-                config.model_name,
-                config.attack_name,
-                str(rate),
-                "confidence.csv"))
+        if measure_name == "confidence":
+            confidence_df = pd.read_csv(os.path.join(
+                    config.exp_root_dir,
+                    "EvalMutationToCSV",
+                    config.dataset_name,
+                    config.model_name,
+                    config.attack_name,
+                    str(rate),
+                    "confidence.csv"))
         if isTopK is False:
             mutated_model_global_id_list = list(range(500))
         else:
@@ -220,6 +221,25 @@ def main(measure_name,rate_list,isTopK=False,K=50):
     save_file_path = os.path.join(save_dir,save_file_name)
     joblib.dump(res,save_file_path)
     logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
+
+    # 规范化展示结果
+    target_class_idx = config.target_class_idx
+    for rate in rate_list:
+        logging.debug("="*10)
+        logging.debug(f"rate:{rate}")
+        top_class_list = res[rate]["top"]
+        low_class_list = res[rate]["low"]
+        if target_class_idx in top_class_list:
+            logging.debug("Top_group")
+            ranking_within_the_group = top_class_list.index(target_class_idx)
+            logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(top_class_list)}")
+        if target_class_idx in low_class_list:
+            logging.debug("Low_group")
+            ranking_within_the_group = low_class_list.index(target_class_idx)
+            logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(low_class_list)}")
+        if (target_class_idx not in top_class_list) and (target_class_idx not in low_class_list):
+            logging.debug("Mid_group")
+        logging.debug("="*30)
 
 def measure_by_model_precision(df:pd.DataFrame,mutated_model_global_id_list:list):
     data_dict = defaultdict(list)
@@ -321,34 +341,7 @@ def measure_by_sample_entropy(df:pd.DataFrame,mutated_model_global_id_list:list)
             data_dict[class_id].append(cur_entropy)
     return data_dict
 
-def see_res(measure_name,rate_list):
-    data_dir = os.path.join(
-        config.exp_root_dir,
-        "SuspiciousClasses",
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name
-    )
-    file_name = f"SuspiciousClasses_SK_{measure_name}.data"
-    data_path = os.path.join(data_dir,file_name)
-    data_dict = joblib.load(data_path)
-    target_class_idx = config.target_class_idx
-    for rate in rate_list:
-        print("="*10)
-        print(f"rate:{rate}")
-        top_class_list = data_dict[rate]["top"]
-        low_class_list = data_dict[rate]["low"]
-        if target_class_idx in top_class_list:
-            print("Top_group")
-            ranking_within_the_group = top_class_list.index(target_class_idx)
-            print(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(top_class_list)}")
-        if target_class_idx in low_class_list:
-            print("Low_group")
-            ranking_within_the_group = low_class_list.index(target_class_idx)
-            print(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(low_class_list)}")
-        if (target_class_idx not in top_class_list) and (target_class_idx not in low_class_list):
-            print("Mid_group")
-        print("="*10)
+
 
 if __name__ == "__main__":
     # 进程名称
@@ -366,9 +359,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
 
+    # 主程序
     try:
-        rate_list = [0.05]
-        main(measure_name,rate_list,isTopK=True,K=50)
-        see_res(measure_name,rate_list)
+        rate_list = config.fine_mutation_rate_list
+        main(measure_name,rate_list,isTopK=False,K=None)
     except Exception as e:
         logging.error("发生异常:%s",e)
