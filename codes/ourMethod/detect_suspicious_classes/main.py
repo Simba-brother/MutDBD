@@ -14,7 +14,7 @@ from collections import defaultdict
 from codes.utils import entropy
 from sklearn.metrics import classification_report,confusion_matrix
 from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
-from codes.common.logging_handler import get_logging
+from codes.common.logging_handler import get_Logger
 from codes.common.time_handler import get_formattedDateTime
 
 
@@ -151,9 +151,9 @@ def main(measure_name,rate_list,isTopK,K):
     res = {rate:{"top":[],"low":[]}}
     '''
     res = {}
-    exp_logging.debug("开始:获得每个变异率下的Suspicious Classes")
+    exp_logger.debug("开始:获得每个变异率下的Suspicious Classes")
     for rate in rate_list: # config.fine_mutation_rate_list:
-        exp_logging.debug(f"变异率:{rate}")
+        exp_logger.debug(f"变异率:{rate}")
         label_df = pd.read_csv(os.path.join(
                 config.exp_root_dir,
                 "EvalMutationToCSV",
@@ -187,7 +187,7 @@ def main(measure_name,rate_list,isTopK,K):
             class_measure_dict = measure_by_model_AccDif(label_df,mutated_model_global_id_list)
         elif measure_name == "confidence":
             class_measure_dict = measure_by_model_confidence(confidence_df,mutated_model_global_id_list)
-
+        '''
         # 把绘制箱线图的数据保存一下
         box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
         save_dir = os.path.join(box_data_save_dir,str(rate))
@@ -201,11 +201,12 @@ def main(measure_name,rate_list,isTopK,K):
             new_col_name_list.append("C"+str(old_col_name))
         df.columns = new_col_name_list
         df.to_csv(save_path,index=False)
+        '''
         # SK计算
         suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
         res[rate] = {"top":suspicious_classes_top,"low":suspicious_classes_low}
     # 日志记录实验数据
-    exp_logging.debug(res)
+    exp_logger.debug(res)
 
     # 保存实验结果
     save_dir = os.path.join(
@@ -219,26 +220,26 @@ def main(measure_name,rate_list,isTopK,K):
     save_file_name = f"SuspiciousClasses_SK_{measure_name}.data"
     save_file_path = os.path.join(save_dir,save_file_name)
     joblib.dump(res,save_file_path)
-    exp_logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
+    exp_logger.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
 
     # 规范化展示结果
     target_class_idx = config.target_class_idx
     for rate in rate_list:
-        exp_logging.debug("="*10)
-        exp_logging.debug(f"rate:{rate}")
+        exp_logger.debug("="*10)
+        exp_logger.debug(f"rate:{rate}")
         top_class_list = res[rate]["top"]
         low_class_list = res[rate]["low"]
         if target_class_idx in top_class_list:
-            exp_logging.debug("Top_group")
+            exp_logger.debug("Top_group")
             ranking_within_the_group = top_class_list.index(target_class_idx)
-            exp_logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(top_class_list)}")
+            exp_logger.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(top_class_list)}")
         if target_class_idx in low_class_list:
-            exp_logging.debug("Low_group")
+            exp_logger.debug("Low_group")
             ranking_within_the_group = low_class_list.index(target_class_idx)
-            exp_logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(low_class_list)}")
+            exp_logger.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(low_class_list)}")
         if (target_class_idx not in top_class_list) and (target_class_idx not in low_class_list):
-            exp_logging.debug("Mid_group")
-        exp_logging.debug("="*30)
+            exp_logger.debug("Mid_group")
+        exp_logger.debug("="*30)
 
 def measure_by_model_precision(df:pd.DataFrame,mutated_model_global_id_list:list):
     data_dict = defaultdict(list)
@@ -359,25 +360,27 @@ if __name__ == "__main__":
     }
 
 
-    # 获得实验流程的日志记录者
-    log_file_dir = "log"
-    log_file_name = "exp_process_record.log"
-    record_logging = get_logging(log_file_dir,log_file_name,filemode="a")
-    record_logging.debug(exp_info)
-
     # 获得当前实验的日志记录者
-    log_file_dir = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
-    log_file_name = "_".join([exp_info["exp_name"],exp_time,".log"])
-    exp_logging = get_logging(log_file_dir,log_file_name,filemode="w")
-    exp_logging.debug(exp_info)
+    exp_log_file_dir = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
+    exp_log_file_name = "_".join([exp_info["exp_name"],exp_time,".log"])
+    exp_logger = get_Logger("BottomLevel",exp_log_file_dir,exp_log_file_name,filemode="w")
+    exp_logger.debug(exp_info)
+
+    # 获得实验流程的日志记录者
+    record_logger = get_Logger("HighLevel",log_file_dir="log",log_file_name="exp_process_record.log",filemode="a")
+    record_logger.debug(exp_info)
+    record_logger.debug(f"exp_log in:{os.path.join(exp_log_file_dir,exp_log_file_name)}")
 
     # 主程序
     try:
+        # 主程序参数
         rate_list = config.fine_mutation_rate_list
         measure_name = exp_info["args"]["measure_name"]
         isTopK = exp_info["args"]["isTop"]
         K = exp_info["args"]["K"]
+        # 主程序开始
         main(measure_name,rate_list,isTopK,K)
+        exp_logger.debug("Successfully finish")
     except Exception as e:
-        exp_logging.error("发生异常:%s",e)
-        record_logging.error("发生异常:%s",e)
+        exp_logger.error("发生异常:%s",e)
+        record_logger.error("发生异常:%s",e)

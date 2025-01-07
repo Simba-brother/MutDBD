@@ -49,4 +49,3 @@ if __name__ == "__main__":
         df["original_backdoorModel_preLabel"] = original_backdoorModel_preLabel_list
         df.to_csv(csv_path,index=False)
         logging.debug(csv_path)
-        
