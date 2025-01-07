@@ -8,6 +8,7 @@ box_csv_path = "/data/mml/backdoor_detect/experiments/SK/CIFAR10/ResNet18/BadNet
 model_performance <- read_csv(box_csv_path)
 
 # apply ScottKnottESD and prepare a ScottKnottESD dataframe
+
 sk_results <- sk_esd(model_performance)
 
 sk_ranks <- data.frame(

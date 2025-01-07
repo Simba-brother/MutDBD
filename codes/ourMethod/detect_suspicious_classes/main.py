@@ -141,7 +141,7 @@ def detect(report_dataset,measure_name):
         ans[ratio] = suspicious_classes
     return ans
 
-def main(measure_name,rate_list,isTopK,K):
+def main(measure_name,rate_list,isTopK,K,diff_trend):
     '''
     measure_name: precison|recall|f1-score|LCR|AccDif|confidence
     isTopK:是否取TopK的变异模型
@@ -355,8 +355,8 @@ if __name__ == "__main__":
         "args":{
             "measure_name":"precision", # default:"precision"
             "isTop":True,
-            "K":50,  # default:50
-            "diff_trend":"smaller" # default:smaller, condidate val:dsmaller|bigger
+            "K":50,  # type:int,default:50
+            "diff_trend":"bigger" # type:str,default:smaller,condidate val:dsmaller|bigger|None
         }
     }
 
@@ -381,7 +381,7 @@ if __name__ == "__main__":
         K = exp_info["args"]["K"]
         diff_trend = exp_info["args"]["diff_trend"]
         # 主程序开始
-        main(measure_name,rate_list,isTopK,K)
+        main(measure_name,rate_list,isTopK,K,diff_trend)
         exp_logger.debug("Successfully finish")
     except Exception as e:
         exp_logger.error("发生异常:%s",e)
