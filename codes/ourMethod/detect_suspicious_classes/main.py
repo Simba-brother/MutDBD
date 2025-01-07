@@ -3,13 +3,10 @@
 '''
 import os
 from codes import config
-import torch
 import numpy as np
 from scipy import stats
 from cliffs_delta import cliffs_delta
 import joblib
-import logging
-import setproctitle
 from codes.ourMethod.detect_suspicious_classes.get_suspicious import get_suspicious_classes_by_ScottKnottESD
 from collections import defaultdict
 import pandas as pd
@@ -17,6 +14,8 @@ from collections import defaultdict
 from codes.utils import entropy
 from sklearn.metrics import classification_report,confusion_matrix
 from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
+from codes.common.logging_handler import get_logging
+from codes.common.time_handler import get_formattedDateTime
 
 
 def calu_p_and_dela_value(list_1, list_2):
@@ -142,7 +141,7 @@ def detect(report_dataset,measure_name):
         ans[ratio] = suspicious_classes
     return ans
 
-def main(measure_name,rate_list,isTopK=False,K=50):
+def main(measure_name,rate_list,isTopK,K):
     '''
     measure_name: precison|recall|f1-score|LCR|AccDif|confidence
     isTopK:是否取TopK的变异模型
@@ -152,9 +151,9 @@ def main(measure_name,rate_list,isTopK=False,K=50):
     res = {rate:{"top":[],"low":[]}}
     '''
     res = {}
-    logging.debug("开始:获得每个变异率下的Suspicious Classes")
+    exp_logging.debug("开始:获得每个变异率下的Suspicious Classes")
     for rate in rate_list: # config.fine_mutation_rate_list:
-        logging.debug(f"变异率:{rate}")
+        exp_logging.debug(f"变异率:{rate}")
         label_df = pd.read_csv(os.path.join(
                 config.exp_root_dir,
                 "EvalMutationToCSV",
@@ -206,7 +205,7 @@ def main(measure_name,rate_list,isTopK=False,K=50):
         suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
         res[rate] = {"top":suspicious_classes_top,"low":suspicious_classes_low}
     # 日志记录实验数据
-    logging.debug(res)
+    exp_logging.debug(res)
 
     # 保存实验结果
     save_dir = os.path.join(
@@ -220,26 +219,26 @@ def main(measure_name,rate_list,isTopK=False,K=50):
     save_file_name = f"SuspiciousClasses_SK_{measure_name}.data"
     save_file_path = os.path.join(save_dir,save_file_name)
     joblib.dump(res,save_file_path)
-    logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
+    exp_logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
 
     # 规范化展示结果
     target_class_idx = config.target_class_idx
     for rate in rate_list:
-        logging.debug("="*10)
-        logging.debug(f"rate:{rate}")
+        exp_logging.debug("="*10)
+        exp_logging.debug(f"rate:{rate}")
         top_class_list = res[rate]["top"]
         low_class_list = res[rate]["low"]
         if target_class_idx in top_class_list:
-            logging.debug("Top_group")
+            exp_logging.debug("Top_group")
             ranking_within_the_group = top_class_list.index(target_class_idx)
-            logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(top_class_list)}")
+            exp_logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(top_class_list)}")
         if target_class_idx in low_class_list:
-            logging.debug("Low_group")
+            exp_logging.debug("Low_group")
             ranking_within_the_group = low_class_list.index(target_class_idx)
-            logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(low_class_list)}")
+            exp_logging.debug(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(low_class_list)}")
         if (target_class_idx not in top_class_list) and (target_class_idx not in low_class_list):
-            logging.debug("Mid_group")
-        logging.debug("="*30)
+            exp_logging.debug("Mid_group")
+        exp_logging.debug("="*30)
 
 def measure_by_model_precision(df:pd.DataFrame,mutated_model_global_id_list:list):
     data_dict = defaultdict(list)
@@ -344,24 +343,41 @@ def measure_by_sample_entropy(df:pd.DataFrame,mutated_model_global_id_list:list)
 
 
 if __name__ == "__main__":
-    # 进程名称
-    measure_name = "precision" # precision|recall|f1-score|LCR|AccDif|confidence
-    proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
-    setproctitle.setproctitle(proctitle)
-    device = torch.device(f"cuda:{config.gpu_id}")
+    
+    exp_time = get_formattedDateTime()
+    # 实验元信息
+    exp_info = {
+        "exp_obj":"|".join([config.dataset_name,config.model_name,config.attack_name]),
+        "exp_name":"Detect_Suspected_Classes",
+        "exp_time":exp_time,
+        "exp_method":"ScottKnottESD",
+        "args":{
+            "measure_name":"precision", # default:"precision"
+            "isTop":False,
+            "K":None  # default:50
+        }
+    }
 
-    # 日志保存目录
-    LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
-    LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
-    os.makedirs(LOG_FILE_DIR,exist_ok=True)
-    LOG_FILE_NAME = f"SuspiciousClasses_SK_{measure_name}.log"
-    LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
-    logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
-    logging.debug(proctitle)
+
+    # 获得实验流程的日志记录者
+    log_file_dir = "log"
+    log_file_name = "exp_process_record.log"
+    record_logging = get_logging(log_file_dir,log_file_name,filemode="a")
+    record_logging.debug(exp_info)
+
+    # 获得当前实验的日志记录者
+    log_file_dir = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
+    log_file_name = "_".join([exp_info["exp_name"],exp_time,".log"])
+    exp_logging = get_logging(log_file_dir,log_file_name,filemode="w")
+    exp_logging.debug(exp_info)
 
     # 主程序
     try:
         rate_list = config.fine_mutation_rate_list
-        main(measure_name,rate_list,isTopK=False,K=None)
+        measure_name = exp_info["args"]["measure_name"]
+        isTopK = exp_info["args"]["isTop"]
+        K = exp_info["args"]["K"]
+        main(measure_name,rate_list,isTopK,K)
     except Exception as e:
-        logging.error("发生异常:%s",e)
+        exp_logging.error("发生异常:%s",e)
+        record_logging.error("发生异常:%s",e)

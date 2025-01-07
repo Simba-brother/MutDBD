@@ -1,6 +1,7 @@
 import time
 import queue
 import os
+
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
 
 def test1():
@@ -24,8 +25,18 @@ def test5():
     ans = classification_report(gt_label,pred_label,output_dict=True)
     print(ans)
 
+def test6():
+    timestamp = time.time()
+    date_time = time.localtime(timestamp)
+    formatted_time = time.strftime('%Y-%m-%d_%H:%M:%S', date_time)
+    print(formatted_time)
+
+def test7():
+    res = ",".join(["a","b"])
+    print(res)
+
 if __name__ == "__main__":
-    test5()
+    test7()
 
 
 
