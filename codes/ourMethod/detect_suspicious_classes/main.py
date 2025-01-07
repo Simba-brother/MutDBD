@@ -174,7 +174,7 @@ def main(measure_name,rate_list,isTopK,K):
         if isTopK is False:
             mutated_model_global_id_list = list(range(500))
         else:
-            mutated_model_global_id_list = get_top_k_global_ids(label_df,top_k=K)
+            mutated_model_global_id_list = get_top_k_global_ids(label_df,top_k=K,trend=diff_trend)
         if measure_name  == "precision":
             class_measure_dict = measure_by_model_precision(label_df,mutated_model_global_id_list)
         elif measure_name == "recall":
@@ -354,8 +354,9 @@ if __name__ == "__main__":
         "exp_method":"ScottKnottESD",
         "args":{
             "measure_name":"precision", # default:"precision"
-            "isTop":False,
-            "K":None  # default:50
+            "isTop":True,
+            "K":50,  # default:50
+            "diff_trend":"smaller" # default:smaller, condidate val:dsmaller|bigger
         }
     }
 
@@ -378,6 +379,7 @@ if __name__ == "__main__":
         measure_name = exp_info["args"]["measure_name"]
         isTopK = exp_info["args"]["isTop"]
         K = exp_info["args"]["K"]
+        diff_trend = exp_info["args"]["diff_trend"]
         # 主程序开始
         main(measure_name,rate_list,isTopK,K)
         exp_logger.debug("Successfully finish")

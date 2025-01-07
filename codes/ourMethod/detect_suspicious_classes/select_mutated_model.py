@@ -9,7 +9,7 @@ from sklearn.metrics import classification_report
 from codes import config
 from codes.utils import priorityQueue_2_list
 
-def get_top_k_global_ids(df,top_k=50):
+def get_top_k_global_ids(df,top_k=50,trend="smaller"):
     # 优先级队列q,值越小优先级越高
     q = queue.PriorityQueue()
     GT_labels = df["GT_label"]
@@ -20,7 +20,10 @@ def get_top_k_global_ids(df,top_k=50):
         preLabel_m = df[col_name]
         report_m = classification_report(GT_labels,preLabel_m,output_dict=True,zero_division=0)
         acc_dif = abs(report_o["accuracy"] - report_m["accuracy"])
-        item = (acc_dif, m_i)
+        if trend == "smaller":
+            item = (acc_dif, m_i)
+        else:
+            item = (-acc_dif, m_i)
         q.put(item)
     
     priority_list = priorityQueue_2_list(q)
