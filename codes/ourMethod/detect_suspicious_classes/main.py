@@ -355,7 +355,7 @@ if __name__ == "__main__":
         "args":{
             "measure_name":"precision", # default:"precision"
             "isTop":True,
-            "K":50,  # type:int,default:50
+            "K":10,  # type:int,default:50
             "diff_trend":"bigger" # type:str,default:smaller,condidate val:dsmaller|bigger|None
         }
     }
