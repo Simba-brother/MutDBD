@@ -6,7 +6,7 @@ import time
 import torch.nn as nn 
 from codes import models
 from codes import config
-from codes.ourMethod.detect_suspicious_classes import main_2
+from codes.ourMethod.detect_suspicious_classes import select_mutated_model
 from codes.scripts.dataset_constructor import *
 from codes.tools import model_train_test,EvalModel
 from collections import defaultdict
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     target_class_clean_set = ExtractTargetClassDataset(pureCleanTrainDataset, target_class_idx = target_class_i)
     # target class中的poisoned set
     target_class_poisoned_set = ExtractTargetClassDataset(purePoisonedTrainDataset, target_class_idx = target_class_i)
-    sorted_weights_path_list = main_2(
+    sorted_weights_path_list = select_mutated_model(
             model_struct = victim_model,
             mutation_weights_path_list = mutation_weights_path_list,
             target_class_clean_set = target_class_clean_set,

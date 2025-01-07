@@ -32,3 +32,13 @@ def get_suspicious_classes_by_ScottKnottESD(data_dict):
     suspicious_classes_top = group_map[top_key]
     suspicious_classes_low = group_map[low_key]
     return suspicious_classes_top,suspicious_classes_low
+
+if __name__ == "__main__":
+    data_dict = {
+        0:[0,0,0,0],
+        1:[0,0,0,0],
+        2:[1,1,1,1],
+        3:[1,1,1,1],
+        4:[1,2,3,1]
+    }
+    get_suspicious_classes_by_ScottKnottESD(data_dict)

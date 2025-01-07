@@ -15,8 +15,8 @@ from collections import defaultdict
 import pandas as pd
 from collections import defaultdict
 from codes.utils import entropy
-from sklearn.metrics import accuracy_score, precision_score, f1_score, recall_score, classification_report,confusion_matrix
-
+from sklearn.metrics import classification_report,confusion_matrix
+from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
 
 
 def calu_p_and_dela_value(list_1, list_2):
@@ -78,10 +78,6 @@ def get_suspicious_classes_by_Rule(data_dict):
 
     suspicious_classes = rule_1_classes | rule_2_classes | rule_3_classes
     return suspicious_classes
-
-
-    
-
 
 def reconstruct_data(report_dataset,measure_name):
     '''
@@ -146,45 +142,18 @@ def detect(report_dataset,measure_name):
         ans[ratio] = suspicious_classes
     return ans
 
-
-def main_v1(measure_name):
+def main(measure_name,rate_list,isTopK=False,K=50):
     '''
-    measure_name: precison | recall | f1-score
+    measure_name: precison|recall|f1-score|LCR|AccDif|confidence
+    isTopK:是否取TopK的变异模型
     '''
-    # 加载变异模型评估结果
-    evalMutationResult = joblib.load(os.path.join(
-        config.exp_root_dir,
-        "EvalMutationResult_for_SuspiciousClasses",
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name,
-        "res.data"
-    ))
-
-    # 得到各个变异率下的target class
-    suspicious_class_ans = detect(evalMutationResult,measure_name)
-    logging.debug(suspicious_class_ans)
-    # 保存实验结果
-    save_dir = os.path.join(
-        config.exp_root_dir,
-        "SuspiciousClasses",
-        config.dataset_name, 
-        config.model_name, 
-        config.attack_name
-    )
-    os.makedirs(save_dir,exist_ok=True)
-    save_file_name = f"SuspiciousClasses_SK_{measure_name}.data"
-    save_file_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(suspicious_class_ans,save_file_path)
-    logging.debug(f"target class结果保存在:{save_file_path}")
-
-def main_v2(measure_name):
+    # 计算实验结果
     '''
-    measure_name: precison | recall | f1-score
+    res = {rate:{"top":[],"low":[]}}
     '''
     res = {}
     logging.debug("开始:获得每个变异率下的Suspicious Classes")
-    for rate in config.fine_mutation_rate_list:
+    for rate in rate_list: # config.fine_mutation_rate_list:
         logging.debug(f"变异率:{rate}")
         label_df = pd.read_csv(os.path.join(
                 config.exp_root_dir,
@@ -202,22 +171,23 @@ def main_v2(measure_name):
                 config.attack_name,
                 str(rate),
                 "confidence.csv"))
-        
+        if isTopK is False:
+            mutated_model_global_id_list = list(range(500))
+        else:
+            mutated_model_global_id_list = get_top_k_global_ids(label_df,top_k=K)
         if measure_name  == "precision":
-            class_measure_dict = measure_by_model_precision(label_df)
+            class_measure_dict = measure_by_model_precision(label_df,mutated_model_global_id_list)
         elif measure_name == "recall":
-            class_measure_dict = measure_by_model_recall(label_df)
+            class_measure_dict = measure_by_model_recall(label_df,mutated_model_global_id_list)
         elif measure_name == "f1-score":
-            class_measure_dict = measure_by_model_f1_score(label_df)
+            class_measure_dict = measure_by_model_f1_score(label_df,mutated_model_global_id_list)
         elif measure_name == "LCR":
-            class_measure_dict = measure_by_model_LCR(label_df)
+            class_measure_dict = measure_by_model_LCR(label_df,mutated_model_global_id_list)
         elif measure_name == "AccDif":
-            class_measure_dict = measure_by_model_AccDif(label_df)
+            class_measure_dict = measure_by_model_AccDif(label_df,mutated_model_global_id_list)
         elif measure_name == "confidence":
-            # class_measure_dict = measure_by_model_confidence(confidence_df)
-            pass
-            
-        
+            class_measure_dict = measure_by_model_confidence(confidence_df,mutated_model_global_id_list)
+
         # 把绘制箱线图的数据保存一下
         box_data_save_dir = os.path.join(config.exp_root_dir,"SK",config.dataset_name,config.model_name,config.attack_name)
         save_dir = os.path.join(box_data_save_dir,str(rate))
@@ -231,9 +201,12 @@ def main_v2(measure_name):
             new_col_name_list.append("C"+str(old_col_name))
         df.columns = new_col_name_list
         df.to_csv(save_path,index=False)
+        # SK计算
         suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_measure_dict)
         res[rate] = {"top":suspicious_classes_top,"low":suspicious_classes_low}
+    # 日志记录实验数据
     logging.debug(res)
+
     # 保存实验结果
     save_dir = os.path.join(
         config.exp_root_dir,
@@ -247,13 +220,12 @@ def main_v2(measure_name):
     save_file_path = os.path.join(save_dir,save_file_name)
     joblib.dump(res,save_file_path)
     logging.debug(f"SuspiciousClasses结果保存在:{save_file_path}")
-    
 
-def measure_by_model_precision(df:pd.DataFrame):
+def measure_by_model_precision(df:pd.DataFrame,mutated_model_global_id_list:list):
     data_dict = defaultdict(list)
     # ground truth label
     GT_label_list = df["GT_label"]
-    for mutated_model_global_id in range(500):
+    for mutated_model_global_id in mutated_model_global_id_list:
         model_col_name = f"model_{mutated_model_global_id}"
         pred_label_list = list(df[model_col_name])
         report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
@@ -262,11 +234,11 @@ def measure_by_model_precision(df:pd.DataFrame):
             data_dict[class_i].append(measure)
     return data_dict
 
-def measure_by_model_recall(df:pd.DataFrame):
+def measure_by_model_recall(df:pd.DataFrame,mutated_model_global_id_list:list):
     data_dict = defaultdict(list)
     # ground truth label
     GT_label_list = df["GT_label"]
-    for mutated_model_global_id in range(500):
+    for mutated_model_global_id in mutated_model_global_id_list:
         model_col_name = f"model_{mutated_model_global_id}"
         pred_label_list = list(df[model_col_name])
         report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
@@ -275,11 +247,11 @@ def measure_by_model_recall(df:pd.DataFrame):
             data_dict[class_i].append(measure)
     return data_dict
 
-def measure_by_model_f1_score(df:pd.DataFrame):
+def measure_by_model_f1_score(df:pd.DataFrame,mutated_model_global_id_list:list):
     data_dict = defaultdict(list)
     # ground truth label
     GT_label_list = df["GT_label"]
-    for mutated_model_global_id in range(500):
+    for mutated_model_global_id in mutated_model_global_id_list:
         model_col_name = f"model_{mutated_model_global_id}"
         pred_label_list = list(df[model_col_name])
         report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
@@ -288,12 +260,12 @@ def measure_by_model_f1_score(df:pd.DataFrame):
             data_dict[class_i].append(measure)
     return data_dict
 
-def measure_by_model_LCR(df:pd.DataFrame):
+def measure_by_model_LCR(df:pd.DataFrame,mutated_model_global_id_list):
     data_dict = defaultdict(list)
     for class_id in range(config.class_num):
         class_df = df.loc[df["GT_label"]==class_id]
         original_model_pred_label_list = list(class_df["original_backdoorModel_preLabel"])
-        for mutated_model_global_id in range(500):
+        for mutated_model_global_id in mutated_model_global_id_list:
             count = 0
             model_col_name = f"model_{mutated_model_global_id}"
             pred_label_list = list(class_df[model_col_name])
@@ -304,7 +276,7 @@ def measure_by_model_LCR(df:pd.DataFrame):
             data_dict[class_id].append(lcr)
     return data_dict
 
-def measure_by_model_AccDif(df:pd.DataFrame):
+def measure_by_model_AccDif(df:pd.DataFrame,mutated_model_global_id_list:list):
     '''
     注意：在单类别上acc === recall且precision === 1
     '''
@@ -313,7 +285,7 @@ def measure_by_model_AccDif(df:pd.DataFrame):
     GT_label_list = df["GT_label"]
     original_backdoorModel_preLabel_list = df["original_backdoorModel_preLabel"]
     report_o = classification_report(GT_label_list,original_backdoorModel_preLabel_list,output_dict=True, zero_division=0)
-    for mutated_model_global_id in range(500):
+    for mutated_model_global_id in mutated_model_global_id_list:
         model_col_name = f"model_{mutated_model_global_id}"
         pred_label_list = list(df[model_col_name])
         report_m = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
@@ -322,11 +294,11 @@ def measure_by_model_AccDif(df:pd.DataFrame):
             data_dict[class_i].append(measure)
     return data_dict
 
-def measure_by_model_confidence(df:pd.DataFrame):
+def measure_by_model_confidence(df:pd.DataFrame,mutated_model_global_id_list):
     data_dict = defaultdict(list)
     for class_id in range(config.class_num):
         class_df = df.loc[df["GT_label"]==class_id]
-        for mutated_model_global_id in range(500):
+        for mutated_model_global_id in mutated_model_global_id_list:
             confidence_list = []
             model_col_name = f"model_{mutated_model_global_id}"
             confidence_list = list(class_df[model_col_name])
@@ -334,16 +306,14 @@ def measure_by_model_confidence(df:pd.DataFrame):
             data_dict[class_id].append(avg_confidence)
     return data_dict
 
-    
-
-def measure_by_sample_entropy(df:pd.DataFrame):
+def measure_by_sample_entropy(df:pd.DataFrame,mutated_model_global_id_list:list):
     data_dict = defaultdict(list)
     for class_id in range(config.class_num):
         class_df = df.loc[df["GT_label"]==class_id]
         for row_id, row in class_df.iterrows():
             # 当前row(样本)在所有变异模型集上的预测标签
             cur_row_labels = []
-            for mutated_model_global_id in range(500):
+            for mutated_model_global_id in mutated_model_global_id_list:
                 model_col_name = f"model_{mutated_model_global_id}"
                 cur_row_labels.append(row[model_col_name])
             # 计算该row(样本)的标签熵
@@ -351,9 +321,7 @@ def measure_by_sample_entropy(df:pd.DataFrame):
             data_dict[class_id].append(cur_entropy)
     return data_dict
 
-
-
-def see_res(measure_name):
+def see_res(measure_name,rate_list):
     data_dir = os.path.join(
         config.exp_root_dir,
         "SuspiciousClasses",
@@ -365,22 +333,22 @@ def see_res(measure_name):
     data_path = os.path.join(data_dir,file_name)
     data_dict = joblib.load(data_path)
     target_class_idx = config.target_class_idx
-    for rate in config.fine_mutation_rate_list:
+    for rate in rate_list:
         print(f"rate:{rate}")
         top_class_list = data_dict[rate]["top"]
         low_class_list = data_dict[rate]["low"]
         if target_class_idx in top_class_list:
             print("Top_group")
             ranking_within_the_group = top_class_list.index(target_class_idx)
-            print(f"ranking_within_the_group:{ranking_within_the_group}")
+            print(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(top_class_list)}")
         if target_class_idx in low_class_list:
             print("Low_group")
             ranking_within_the_group = low_class_list.index(target_class_idx)
-            print(f"ranking_within_the_group:{ranking_within_the_group}")
+            print(f"ranking_within_the_group:{ranking_within_the_group+1}/{len(low_class_list)}")
         if (target_class_idx not in top_class_list) and (target_class_idx not in low_class_list):
             print("Mid_group")
-        
-            
+        print("="*10)
+
 if __name__ == "__main__":
     # 进程名称
     measure_name = "confidence" # precision|recall|f1-score|LCR|AccDif|confidence
@@ -398,10 +366,9 @@ if __name__ == "__main__":
     logging.debug(proctitle)
 
     try:
-        # main_v1(measure_name)
-        main_v2(measure_name)
-        # see_res(measure_name)
-        pass
+        rate_list = [0.05]
+        main(measure_name,rate_list,isTopK=True,K=50)
+        see_res(measure_name,rate_list)
     except Exception as e:
         logging.error("发生异常:%s",e)
 

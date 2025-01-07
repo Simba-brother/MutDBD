@@ -1,0 +1,114 @@
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 7, in <module>
+    import setproctitle
+ModuleNotFoundError: No module named 'setproctitle'
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 7, in <module>
+    import setproctitle
+ModuleNotFoundError: No module named 'setproctitle'
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 7, in <module>
+    import setproctitle
+ModuleNotFoundError: No module named 'setproctitle'
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 7, in <module>
+    import setproctitle
+ModuleNotFoundError: No module named 'setproctitle'
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 131, in <module>
+    main(measure_name)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 70, in main
+    suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_dict)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/get_suspicious.py", line 15, in get_suspicious_classes_by_ScottKnottESD
+    r_sk = sk.sk_esd(df)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 208, in __call__
+    return (super(SignatureTranslatedFunction, self)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 131, in __call__
+    res = super(Function, self).__call__(*new_args, **new_kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface_lib/conversion.py", line 45, in _
+    cdata = function(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface.py", line 890, in __call__
+    raise embedded.RRuntimeError(_rinterface._geterrmessage())
+rpy2.rinterface_lib.embedded.RRuntimeError: Error in if (diff(k, g, av, means)) { : 
+  missing value where TRUE/FALSE needed
+
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 131, in <module>
+    main(measure_name)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 70, in main
+    suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_dict)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/get_suspicious.py", line 15, in get_suspicious_classes_by_ScottKnottESD
+    r_sk = sk.sk_esd(df)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 208, in __call__
+    return (super(SignatureTranslatedFunction, self)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 131, in __call__
+    res = super(Function, self).__call__(*new_args, **new_kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface_lib/conversion.py", line 45, in _
+    cdata = function(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface.py", line 890, in __call__
+    raise embedded.RRuntimeError(_rinterface._geterrmessage())
+rpy2.rinterface_lib.embedded.RRuntimeError: Error in if (diff(k, g, av, means)) { : 
+  missing value where TRUE/FALSE needed
+
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 131, in <module>
+    main(measure_name)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 70, in main
+    suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_dict)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/get_suspicious.py", line 15, in get_suspicious_classes_by_ScottKnottESD
+    r_sk = sk.sk_esd(df)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 208, in __call__
+    return (super(SignatureTranslatedFunction, self)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 131, in __call__
+    res = super(Function, self).__call__(*new_args, **new_kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface_lib/conversion.py", line 45, in _
+    cdata = function(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface.py", line 890, in __call__
+    raise embedded.RRuntimeError(_rinterface._geterrmessage())
+rpy2.rinterface_lib.embedded.RRuntimeError: Error in if (diff(k, g, av, means) | (ord1 == k)) { : 
+  missing value where TRUE/FALSE needed
+
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 131, in <module>
+    main(measure_name)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/main_2.py", line 70, in main
+    suspicious_classes_top,suspicious_classes_low = get_suspicious_classes_by_ScottKnottESD(class_dict)
+  File "/home/mml/workspace/backdoor_detect/codes/ourMethod/detect_suspicious_classes/get_suspicious.py", line 15, in get_suspicious_classes_by_ScottKnottESD
+    r_sk = sk.sk_esd(df)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 208, in __call__
+    return (super(SignatureTranslatedFunction, self)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/robjects/functions.py", line 131, in __call__
+    res = super(Function, self).__call__(*new_args, **new_kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface_lib/conversion.py", line 45, in _
+    cdata = function(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/rpy2/rinterface.py", line 890, in __call__
+    raise embedded.RRuntimeError(_rinterface._geterrmessage())
+rpy2.rinterface_lib.embedded.RRuntimeError: Error in if (diff(k, g, av, means)) { : 
+  missing value where TRUE/FALSE needed
+
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/update_csv.py", line 35, in <module>
+    original_backdoorModel_preLabel_list = e.get_pred_labels()
+  File "/home/mml/workspace/backdoor_detect/codes/common/eval_model.py", line 141, in get_pred_labels
+    preds = self.model(X)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 78, in forward
+    out = self.trans1(self.dense1(out))
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/container.py", line 215, in forward
+    input = module(input)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mml/workspace/backdoor_detect/codes/datasets/GTSRB/models/densenet.py", line 19, in forward
+    out = self.conv2(F.relu(self.bn2(out)))
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/functional.py", line 1471, in relu
+    result = torch.relu(input)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 64.00 MiB. GPU 0 has a total capacty of 79.15 GiB of which 25.00 MiB is free. Process 1173908 has 43.38 GiB memory in use. Process 3672937 has 34.91 GiB memory in use. Including non-PyTorch memory, this process has 822.00 MiB memory in use. Of the allocated memory 272.59 MiB is allocated by PyTorch, and 45.41 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
