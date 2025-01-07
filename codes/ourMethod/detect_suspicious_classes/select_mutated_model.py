@@ -23,7 +23,7 @@ def get_top_k_global_ids(df,top_k=50):
         item = (acc_dif, m_i)
         q.put(item)
     
-    priority_list = priorityQueue_2_list(queue)
+    priority_list = priorityQueue_2_list(q)
     selected_m_i_list = [m_i for priority, m_i in  priority_list[0:top_k]]
     return selected_m_i_list
 

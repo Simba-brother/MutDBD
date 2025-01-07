@@ -334,6 +334,7 @@ def see_res(measure_name,rate_list):
     data_dict = joblib.load(data_path)
     target_class_idx = config.target_class_idx
     for rate in rate_list:
+        print("="*10)
         print(f"rate:{rate}")
         top_class_list = data_dict[rate]["top"]
         low_class_list = data_dict[rate]["low"]
@@ -351,7 +352,7 @@ def see_res(measure_name,rate_list):
 
 if __name__ == "__main__":
     # 进程名称
-    measure_name = "confidence" # precision|recall|f1-score|LCR|AccDif|confidence
+    measure_name = "precision" # precision|recall|f1-score|LCR|AccDif|confidence
     proctitle = f"SuspiciousClasses_SK_{measure_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -371,6 +372,3 @@ if __name__ == "__main__":
         see_res(measure_name,rate_list)
     except Exception as e:
         logging.error("发生异常:%s",e)
-
-
-    
