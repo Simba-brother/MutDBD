@@ -53,13 +53,9 @@ def main():
     items = list(speed_dict.items())
     #[(class_x,speed)]
     items.sort(key=lambda x:x[1],reverse=False) # 从小到大,下降速度越慢排名越高
-    # [class_x,class_y]
-    key_list = [key for key in items.keys()]
-    look_data = {}
-    for i in range(key_list):
-        key = key_list[i]
-        look_data[key] = i
-    print(look_data)
+    for rank_i in range(len(items)):
+        class_i,speed = items[rank_i]
+        exp_logger.debug(f"rank:{rank_i},class:{class_i},speed:{speed}")
 
 
 if __name__ == "__main__":
@@ -81,4 +77,10 @@ if __name__ == "__main__":
     record_logger = get_Logger("HighLevel",log_file_dir="log",log_file_name="exp_process_record.log",filemode="a")
     record_logger.debug(exp_info)
     record_logger.debug(f"exp_log in:{os.path.join(exp_log_file_dir,exp_log_file_name)}")
-    main()
+    # 主程序
+    try:
+        main()
+        exp_logger.debug("Successfully finish")
+    except Exception as e:
+        exp_logger.error("发生异常:%s",e)
+        record_logger.error("发生异常:%s",e)
