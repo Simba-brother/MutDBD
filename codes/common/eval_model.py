@@ -201,6 +201,38 @@ class EvalModel(object):
                 outputs.extend(probability.tolist())
         return outputs
     
+    def get_CEloss(self,batch_size =128):
+        '''
+        得到交叉熵损失值
+        '''
+        testset_loader = DataLoader(
+            self.testset,
+            batch_size = batch_size,
+            shuffle=False,
+            # num_workers=self.current_schedule['num_workers'],
+            drop_last=False,
+            pin_memory=False,
+            worker_init_fn=_seed_worker
+        )
+        # 评估开始时间
+        self.model.to(self.device)
+        self.model.eval()  # put network in train mode for Dropout and Batch Normalization
+        CE_loss = []
+        with torch.no_grad():
+            for batch_id, batch in enumerate(testset_loader):
+                X = batch[0]
+                Y = batch[1]
+                X = X.to(self.device)
+                Y = Y.to(self.device)
+                # 模型最后一层输出(可以为非概率分布形式)
+                output = self.model(X)
+                # 计算交叉熵
+                criterion = torch.nn.CrossEntropyLoss()
+                loss = criterion(output,Y)
+                CE_loss.extend(loss.item())
+        return CE_loss
+
+    
     def get_confidence_list(self,batch_size =128):
         '''
         得到top1 confidence list

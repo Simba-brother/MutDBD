@@ -38,6 +38,29 @@ def get_mutation_models_pred_labels(dataset):
                 eval_ans[ratio][operator].append(pred_label_list)
     return eval_ans
 
+def get_mutation_models_CELoss(dataset):
+    mutations_dir = os.path.join(
+        config.exp_root_dir,
+        "MutationModels",
+        config.dataset_name,
+        config.model_name,
+        config.attack_name
+    )
+    eval_ans = {}
+    for ratio in config.fine_mutation_rate_list:
+        logging.debug(f"变异率:{str(ratio)}")
+        eval_ans[ratio] = {}
+        for operator in config.mutation_name_list:
+            logging.debug(f"\t变异算子:{operator}")
+            eval_ans[ratio][operator] = []
+            for i in range(config.mutation_model_num):
+                mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
+                backdoor_model.load_state_dict(torch.load(mutation_model_path))
+                em = EvalModel(backdoor_model,dataset,device)
+                CELoss_list = em.get_CEloss()
+                eval_ans[ratio][operator].append(CELoss_list)
+    return eval_ans
+
 def get_mutation_models_confidence(dataset):
     mutations_dir = os.path.join(
         config.exp_root_dir,
@@ -93,6 +116,8 @@ def get_mutation_models_prob_outputs(dataset):
 
 
 
+
+
 def ansToCSV(data_dict,save_path):
 
     # 所有的变异模型列
@@ -122,6 +147,35 @@ def ansToCSV(data_dict,save_path):
     df = pd.DataFrame(total_dict)
     # 保存为csv
     df.to_csv(save_path,index=False)
+
+def ansToParquet(data_dict,save_path):
+    # 所有的变异模型列
+    # global_model_id：[0-99]是GF变异模型，[100-199]是WS变异模型，
+    # [200-299]是NAI变异模型，[300-399]是NB变异模型，[400-499]是NS变异模型
+    total_dict = {}
+    global_model_id = 0
+    for operator in config.mutation_name_list:
+        for i in range(config.mutation_model_num):
+            pred_label_list = data_dict[operator][i]
+            model_name = f"model_{global_model_id}"
+            total_dict[model_name] = pred_label_list # 变异模型列
+            global_model_id += 1
+
+    # sampled_id列,GT_label列和isPoisoned列
+    total_dict["sampled_id"] = []
+    total_dict["GT_label"] = []
+    total_dict["isPoisoned"] = []
+    for i in range(len(poisoned_trainset)):
+        total_dict["sampled_id"].append(i)
+        total_dict["GT_label"].append(poisoned_trainset[i][1])
+        if i in poisoned_ids:
+            total_dict["isPoisoned"].append(True)
+        else:
+            total_dict["isPoisoned"].append(False)
+    # 构建DataFrame
+    df = pd.DataFrame(total_dict)
+    # 保存为csv
+    df.to_parquet(save_path,index=False)
 
 def ansTodictData(data_dict,save_path):
     total_dict = {}
@@ -153,6 +207,8 @@ def main(exp_sub,save_format):
         mutation_models_pred_dict = get_mutation_models_pred_labels(poisoned_trainset)
     elif exp_sub == "confidence":
         mutation_models_pred_dict = get_mutation_models_confidence(poisoned_trainset)
+    elif exp_sub == "CELoss":
+        mutation_models_pred_dict = get_mutation_models_CELoss(poisoned_trainset)
     elif exp_sub == "prob_outputs":
         mutation_models_pred_dict = get_mutation_models_prob_outputs(poisoned_trainset)
     logging.debug(f"开始:将结果整理为csv文件")
@@ -160,7 +216,7 @@ def main(exp_sub,save_format):
         data_dict = mutation_models_pred_dict[rate]
         save_dir = os.path.join(
             config.exp_root_dir,
-            exp_name,
+            main_exp_name,
             config.dataset_name,
             config.model_name,
             config.attack_name,
@@ -172,16 +228,22 @@ def main(exp_sub,save_format):
             save_file_path = os.path.join(save_dir,save_file_name)
             ansToCSV(data_dict,save_file_path)
             logging.debug(f"csv保存在:{save_file_path}")
-        elif save_format == "dict":
-            save_file_name = f"{exp_sub}.data" # preLabel.csv or prob.csv
+        elif save_format == "joblib":
+            save_file_name = f"{exp_sub}.joblib" # preLabel.csv or prob.csv
             save_file_path = os.path.join(save_dir,save_file_name)
             ansTodictData(data_dict,save_file_path)
             logging.debug(f"字典数据保存在:{save_file_path}")
+        elif save_format == "parquet":
+            save_file_name = f"{exp_sub}.parquet" # preLabel.csv or prob.csv
+            save_file_path = os.path.join(save_dir,save_file_name)
+            ansToParquet(data_dict,save_file_path)
+
 
 if __name__ == "__main__":
     # 进程名称
-    exp_name = "EvalMutationToCSV" 
-    proctitle = f"{exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    main_exp_name = "EvalMutationToCSV" 
+    sub_exp_name = "CELoss"
+    proctitle = f"{main_exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
     
@@ -190,7 +252,7 @@ if __name__ == "__main__":
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
     LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
     os.makedirs(LOG_FILE_DIR,exist_ok=True)
-    LOG_FILE_NAME = f"{exp_name}.log"
+    LOG_FILE_NAME = f"{main_exp_name}_{sub_exp_name}.log"
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
     logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
     logging.debug(proctitle)
@@ -208,8 +270,9 @@ if __name__ == "__main__":
         backdoor_model = backdoor_data["backdoor_model"]
         poisoned_trainset = backdoor_data["poisoned_trainset"]
         poisoned_ids = backdoor_data["poisoned_ids"]
-        logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测标签结果")
-        main("prob_outputs",save_format="dict")
+        logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")
+        # main("prob_outputs",save_format="parquet")
+        main(f"{sub_exp_name}",save_format="csv")
     except Exception as e:
         logging.error("发生异常:%s",e)
 
