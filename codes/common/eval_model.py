@@ -225,11 +225,15 @@ class EvalModel(object):
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 # 模型最后一层输出(可以为非概率分布形式)
-                output = self.model(X)
-                # 计算交叉熵
-                criterion = torch.nn.CrossEntropyLoss()
-                loss = criterion(output,Y)
-                CE_loss.extend(loss.item())
+                outputs = self.model(X)
+                loss_ce_list = []
+                for i in range(outputs.shape[0]):
+                    output = outputs[i]
+                    y = Y[i]
+                    criterion = torch.nn.CrossEntropyLoss()
+                    loss_ce = criterion(output,y)
+                    loss_ce_list.append(loss_ce.item())
+                CE_loss.extend(loss_ce_list)
         return CE_loss
 
     

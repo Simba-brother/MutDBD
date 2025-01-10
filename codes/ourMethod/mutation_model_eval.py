@@ -57,7 +57,7 @@ def get_mutation_models_CELoss(dataset):
                 mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
                 backdoor_model.load_state_dict(torch.load(mutation_model_path))
                 em = EvalModel(backdoor_model,dataset,device)
-                CELoss_list = em.get_CEloss()
+                CELoss_list = em.get_CEloss(batch_size = 16834)
                 eval_ans[ratio][operator].append(CELoss_list)
     return eval_ans
 
