@@ -22,25 +22,28 @@ def _seed_worker(worker_id):
     random.seed(random_seed)
 
 class EvalModel(object):
-    def __init__(self, model, testset, device):
+    def __init__(self, model, dataset, device, batch_size, num_workers):
         # 3个属性：模型，数据集和设备
-        self.model = model 
-        self.testset = testset
+        self.model = model
         self.device = device
+        self.dataset_loader = self.get_dataset_loader(dataset,batch_size,num_workers)
 
-    def eval_acc(self,batch_size=128):
-        '''
-        评估模型的accuracy
-        '''
-        testset_loader = DataLoader(
-            self.testset,
+    def get_dataset_loader(self, dataset,batch_size,num_workers):
+        dataset_loader = DataLoader(
+            dataset,
             batch_size = batch_size,
             shuffle=False,
-            num_workers=4,
+            num_workers=num_workers,
             drop_last=False,
             pin_memory=False,
             worker_init_fn=_seed_worker
         )
+        return dataset_loader
+
+    def eval_acc(self):
+        '''
+        评估模型的accuracy
+        '''
         self.model.to(self.device)
           # put network in train mode for Dropout and Batch Normalization
         self.model.eval()
@@ -48,7 +51,7 @@ class EvalModel(object):
         total_num = len(self.testset)
         correct_num = 0 
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 Y = batch[1]
                 X = X.to(self.device)
@@ -59,25 +62,15 @@ class EvalModel(object):
         acc = round(acc.item(),3)
         return acc
 
-    def eval_TrueOrFalse(self,batch_size=128):
+    def eval_TrueOrFalse(self):
         '''
         评估TrueorFalse结果
         '''
-        testset_loader = DataLoader(
-            self.testset,
-            batch_size = batch_size,
-            shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
-            drop_last=False,
-            pin_memory=False,
-            worker_init_fn=_seed_worker
-        )
-        
         self.model.to(self.device)
         self.model.eval()
         trueOrFalse_list = []
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 Y = batch[1]
                 X = X.to(self.device)
@@ -86,25 +79,16 @@ class EvalModel(object):
                 trueOrFalse_list.extend((torch.argmax(preds, dim=1) == Y).tolist()) 
         return trueOrFalse_list
     
-    def eval_classification_report(self,batch_size =128):
+    def eval_classification_report(self):
         '''
         获得classification_report
         '''
-        testset_loader = DataLoader(
-            self.testset,
-            batch_size = batch_size,
-            shuffle=False,
-            num_workers= 1,
-            drop_last=False,
-            pin_memory=False
-            # worker_init_fn=_seed_worker
-        )
         self.model.to(self.device)
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         pred_labels = []
         true_labels = []
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 Y = batch[1]
                 X = X.to(self.device)
@@ -115,25 +99,16 @@ class EvalModel(object):
         report = classification_report(true_labels, pred_labels, output_dict=True)
         return report
     
-    def get_pred_labels(self,batch_size =128):
+    def get_pred_labels(self):
         '''
         得到预测的标签
         '''
-        testset_loader = DataLoader(
-            self.testset,
-            batch_size = batch_size,
-            shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
-            drop_last=False,
-            pin_memory=False,
-            worker_init_fn=_seed_worker
-        )
         self.model.to(self.device)
         self.model.eval()
         pred_labels = []
         # true_labels = []
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 # Y = batch[1]
                 X = X.to(self.device)
@@ -143,26 +118,17 @@ class EvalModel(object):
                 # true_labels.extend(Y.tolist()) 
         return pred_labels
     
-    def get_outputs(self,batch_size =128):
+    def get_outputs(self):
         '''
         得到输出值
         '''
-        testset_loader = DataLoader(
-            self.testset,
-            batch_size = batch_size,
-            shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
-            drop_last=False,
-            pin_memory=False,
-            worker_init_fn=_seed_worker
-        )
         # 评估开始时间
         start = time.time()
         self.model.to(self.device)
         self.model.eval()
         outputs = []
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 Y = batch[1]
                 X = X.to(self.device)
@@ -173,25 +139,15 @@ class EvalModel(object):
         print("cost time:", end-start)
         return outputs
     
-    def get_prob_outputs(self,batch_size =128):
+    def get_prob_outputs(self):
         '''
         得到概率输出值
         '''
-        testset_loader = DataLoader(
-            self.testset,
-            batch_size = batch_size,
-            shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
-            drop_last=False,
-            pin_memory=False,
-            worker_init_fn=_seed_worker
-        )
-        # 评估开始时间
         self.model.to(self.device)
-        self.model.eval()  # put network in train mode for Dropout and Batch Normalization
+        self.model.eval()  # put network in eval mode for Dropout and Batch Normalization
         outputs = []
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 Y = batch[1]
                 X = X.to(self.device)
@@ -199,27 +155,18 @@ class EvalModel(object):
                 preds = self.model(X)
                 probability = F.softmax(preds, dim=1)
                 outputs.extend(probability.tolist())
-        return outputs
+        outputs_round = [list(np.round(output,3)) for output in outputs]
+        return outputs_round
     
-    def get_CEloss(self,batch_size =128):
+    def get_CEloss(self):
         '''
         得到交叉熵损失值
         '''
-        testset_loader = DataLoader(
-            self.testset,
-            batch_size = batch_size,
-            shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
-            drop_last=False,
-            pin_memory=False,
-            worker_init_fn=_seed_worker
-        )
-        # 评估开始时间
         self.model.to(self.device)
-        self.model.eval()  # put network in train mode for Dropout and Batch Normalization
+        self.model.eval()  # put network in eval mode for Dropout and Batch Normalization
         CE_loss = []
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 Y = batch[1]
                 X = X.to(self.device)
@@ -237,24 +184,15 @@ class EvalModel(object):
         return CE_loss
 
     
-    def get_confidence_list(self,batch_size =128):
+    def get_confidence_list(self):
         '''
         得到top1 confidence list
         '''
-        testset_loader = DataLoader(
-            self.testset,
-            batch_size = batch_size,
-            shuffle=False,
-            # num_workers=self.current_schedule['num_workers'],
-            drop_last=False,
-            pin_memory=False,
-            worker_init_fn=_seed_worker
-        )
         self.model.to(self.device)
         self.model.eval()  # put network in train mode for Dropout and Batch Normalization
         confidence_list = []
         with torch.no_grad():
-            for batch_id, batch in enumerate(testset_loader):
+            for batch_id, batch in enumerate(self.dataset_loader):
                 X = batch[0]
                 Y = batch[1]
                 X = X.to(self.device)

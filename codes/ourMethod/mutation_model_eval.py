@@ -46,6 +46,7 @@ def get_mutation_models_CELoss(dataset):
         config.model_name,
         config.attack_name
     )
+    em = EvalModel(backdoor_model, dataset, device, batch_size=512, num_workers=8)
     eval_ans = {}
     for ratio in config.fine_mutation_rate_list:
         logging.debug(f"变异率:{str(ratio)}")
@@ -54,10 +55,11 @@ def get_mutation_models_CELoss(dataset):
             logging.debug(f"\t变异算子:{operator}")
             eval_ans[ratio][operator] = []
             for i in range(config.mutation_model_num):
+                logging.debug(f"\t\tmodel_id:{i}")
                 mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
                 backdoor_model.load_state_dict(torch.load(mutation_model_path))
-                em = EvalModel(backdoor_model,dataset,device)
-                CELoss_list = em.get_CEloss(batch_size = 16834)
+                em.model = backdoor_model
+                CELoss_list = em.get_CEloss()
                 eval_ans[ratio][operator].append(CELoss_list)
     return eval_ans
 
@@ -95,6 +97,7 @@ def get_mutation_models_prob_outputs(dataset):
         config.model_name,
         config.attack_name
     )
+    em = EvalModel(backdoor_model, dataset, device, batch_size=256, num_workers=4)
     '''
     {rate:operator:[prob_outputs]}
     '''
@@ -107,9 +110,10 @@ def get_mutation_models_prob_outputs(dataset):
             logging.debug(f"\t变异算子:{operator}")
             eval_ans[ratio][operator] = []
             for i in range(config.mutation_model_num):
+                logging.debug(f"\t\t变异model_id:{i}")
                 mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
                 backdoor_model.load_state_dict(torch.load(mutation_model_path))
-                em = EvalModel(backdoor_model,dataset,device)
+                em.model = backdoor_model
                 prob_outputs_list = em.get_prob_outputs()
                 eval_ans[ratio][operator].append(prob_outputs_list)
     return eval_ans
@@ -242,7 +246,7 @@ def main(exp_sub,save_format):
 if __name__ == "__main__":
     # 进程名称
     main_exp_name = "EvalMutationToCSV" 
-    sub_exp_name = "CELoss"
+    sub_exp_name = "prob_outputs"
     proctitle = f"{main_exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -271,8 +275,7 @@ if __name__ == "__main__":
         poisoned_trainset = backdoor_data["poisoned_trainset"]
         poisoned_ids = backdoor_data["poisoned_ids"]
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")
-        # main("prob_outputs",save_format="parquet")
-        main(f"{sub_exp_name}",save_format="csv")
+        main(f"{sub_exp_name}",save_format="joblib")
     except Exception as e:
         logging.error("发生异常:%s",e)
 
