@@ -123,7 +123,6 @@ def get_mutation_models_prob_outputs(dataset):
 
 
 def ansToCSV(data_dict,save_path):
-
     # 所有的变异模型列
     # global_model_id：[0-99]是GF变异模型，[100-199]是WS变异模型，
     # [200-299]是NAI变异模型，[300-399]是NB变异模型，[400-499]是NS变异模型
@@ -246,7 +245,7 @@ def main(exp_sub,save_format):
 if __name__ == "__main__":
     # 进程名称
     main_exp_name = "EvalMutationToCSV" 
-    sub_exp_name = "prob_outputs"
+    sub_exp_name = "CELoss"
     proctitle = f"{main_exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")
@@ -275,7 +274,7 @@ if __name__ == "__main__":
         poisoned_trainset = backdoor_data["poisoned_trainset"]
         poisoned_ids = backdoor_data["poisoned_ids"]
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")
-        main(f"{sub_exp_name}",save_format="joblib")
+        main(f"{sub_exp_name}",save_format="csv")
     except Exception as e:
         logging.error("发生异常:%s",e)
 

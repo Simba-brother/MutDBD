@@ -155,15 +155,16 @@ class EvalModel(object):
                 preds = self.model(X)
                 probability = F.softmax(preds, dim=1)
                 outputs.extend(probability.tolist())
-        outputs_round = [list(np.round(output,3)) for output in outputs]
-        return outputs_round
+        return outputs
     
     def get_CEloss(self):
         '''
         得到交叉熵损失值
         '''
+        criterion = torch.nn.CrossEntropyLoss(reduction='none')
         self.model.to(self.device)
         self.model.eval()  # put network in eval mode for Dropout and Batch Normalization
+        # 存储该模型在训练集样本上的交叉熵损失
         CE_loss = []
         with torch.no_grad():
             for batch_id, batch in enumerate(self.dataset_loader):
@@ -173,14 +174,8 @@ class EvalModel(object):
                 Y = Y.to(self.device)
                 # 模型最后一层输出(可以为非概率分布形式)
                 outputs = self.model(X)
-                loss_ce_list = []
-                for i in range(outputs.shape[0]):
-                    output = outputs[i]
-                    y = Y[i]
-                    criterion = torch.nn.CrossEntropyLoss()
-                    loss_ce = criterion(output,y)
-                    loss_ce_list.append(loss_ce.item())
-                CE_loss.extend(loss_ce_list)
+                loss_ce = criterion(outputs,Y) 
+                CE_loss.extend(loss_ce.tolist())
         return CE_loss
 
     
