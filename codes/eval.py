@@ -7,9 +7,28 @@ from codes.scripts.dataset_constructor import *
 from codes.tools import EvalModel
 
 
-
-
-
+def check_poisoned_testset(dataset):
+    N = len(dataset)
+    label_list = []
+    for i in range(N):
+        sample,label,isPoisoned =  dataset[i]
+        label_list.append(label)
+    label_set = set(label_list)
+    if len(label_set) == 1 and list(label_set)[0] == 3:
+        return "pass"
+    return "No pass"
+def check_poisoned_trainset(dataset,poisoned_ids):
+    isPoisoned_list = []
+    label_list = []
+    for i in poisoned_ids:
+        sample, label, isPoisoned = dataset[i]
+        isPoisoned_list.append(isPoisoned)
+        label_list.append(label)
+    if len(isPoisoned_list) == len(poisoned_ids) and len(set(isPoisoned_list)) == 1 and list(set(isPoisoned_list))[0] == True:
+        if len(set(label_list)) == 1 and list(set(label_list))[0] == 3:
+            return "pass"
+    else:
+        return "No pass"
 
 
 if __name__ == "__main__":
@@ -19,7 +38,7 @@ if __name__ == "__main__":
     print(f"proctitle:{proctitle}")
     # 获得backdoor_data
     backdoor_data_path = os.path.join(config.exp_root_dir, 
-                                    "attack", 
+                                    "ATTACK", 
                                     config.dataset_name, 
                                     config.model_name, 
                                     config.attack_name, 
@@ -36,15 +55,17 @@ if __name__ == "__main__":
     # 干净的测试集
     clean_testset =backdoor_data["clean_testset"]
 
-    # 让数据在此处经过transform,为了后面训练加载的更快
-    poisoned_trainset = ExtractDataset(poisoned_trainset)
-    pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset,poisoned_ids)
-    purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset,poisoned_ids)
-    poisoned_testset = ExtractDataset(poisoned_testset)
-
-    device = torch.device(f"cuda:{config.gpu_id}")
-    evalModel = EvalModel(backdoor_model, poisoned_testset, device)
-    print("No defence ASR:",evalModel.eval_acc())
-
-    evalModel = EvalModel(backdoor_model, clean_testset, device)
-    print("No defence CleanACC:",evalModel.eval_acc())
+    # 检验poisoned_testset的label
+    check_res_testset = check_poisoned_testset(poisoned_testset)
+    if check_res_testset == "No pass":
+        print("check_res_testset No pass")
+    else:
+        check_res_trainset =  check_poisoned_trainset(poisoned_trainset,poisoned_ids)
+        if check_res_trainset == "No pass":
+            print("check_res_trainset No pass")
+        else:
+            device = torch.device(f"cuda:{config.gpu_id}")
+            evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
+            print("ASR:",evalModel.eval_acc())
+            evalModel = EvalModel(backdoor_model, clean_testset, device, batch_size=512, num_workers=4)
+            print("CleanAcc:",evalModel.eval_acc())

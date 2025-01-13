@@ -48,7 +48,7 @@ class EvalModel(object):
           # put network in train mode for Dropout and Batch Normalization
         self.model.eval()
         acc = torch.tensor(0., device=self.device) 
-        total_num = len(self.testset)
+        total_num = 0
         correct_num = 0 
         with torch.no_grad():
             for batch_id, batch in enumerate(self.dataset_loader):
@@ -58,6 +58,7 @@ class EvalModel(object):
                 Y = Y.to(self.device)
                 preds = self.model(X)
                 correct_num += (torch.argmax(preds, dim=1) == Y).sum()
+                total_num += X.shape[0]
         acc = correct_num/total_num
         acc = round(acc.item(),3)
         return acc
