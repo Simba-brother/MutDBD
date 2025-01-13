@@ -2,11 +2,12 @@ import os
 from collections import defaultdict
 import pandas as pd
 import matplotlib.pyplot as plt
+import statistics
 
 from codes import config
+from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
 
-
-def get_class_dict(df):
+def get_class_dict(df,selected_model_i_list=list(range(500))):
     '''
     基于df,获得变异模型在每个分类的上的平均CE_loss.
     return:
@@ -15,31 +16,28 @@ def get_class_dict(df):
         }
     '''
     data_dict = {}
-    # 标签列表:[0,1,2,...,]
-    labels = list(range(config.class_num))
     # 变异模型全局id列表:[0,1,2,..,400]
-    m_i_list = list(range(500))
+    m_i_list = selected_model_i_list
     # 遍历每个分类，从df中抽取分类i的df
     for class_i in range(config.class_num):
         df_class_i = df.loc[df["GT_label"]==class_i]
-        # 得到df_class_i中的gt_label_list,记为y_true
-        y_true = list(df_class_i["GT_label"])
         # 保存该类别(class_i)的平均ce loss
-        avg_CE_loss = 0
+        CE_loss_list = []
         # 遍历每个变异模型
         for m_i in m_i_list:
             # 计算该模型在该类别上的ce_loss
             ce_loss_list = df_class_i[f"model_{m_i}"]
-            avg_CE_loss += round(sum(ce_loss_list)/len(ce_loss_list),4)
-        avg_CE_loss /= len(m_i_list)
-        avg_CE_loss = round(avg_CE_loss,4)
-        data_dict[class_i] = avg_CE_loss
+            CE_loss_list.append(round(sum(ce_loss_list)/len(ce_loss_list),4))
+        avg = statistics.mean(CE_loss_list)
+        median = statistics.median(CE_loss_list)
+        var = statistics.variance(CE_loss_list)
+        data_dict[class_i] = avg
     return data_dict
 
 def get_rate_class_dict():
     data_dict = {}
     for rate in config.fine_mutation_rate_list:
-        prob_outputs_data_path = os.path.join(
+        CELoss_data_path = os.path.join(
             config.exp_root_dir,
             "EvalMutationToCSV",
             config.dataset_name,
@@ -48,16 +46,19 @@ def get_rate_class_dict():
             str(rate),
             "CELoss.csv"
         )
-        '''
-        prob_outputs = {
-            model_id:[prob_outputs_0,prob_outputs_1,...],
-            "sampled_id":[0,1,2,...]
-            "GT_label":[0,0,..,1,1,..,9,]
-            "isPoisoned":[True,False,...]
-        }
-        '''
-        df = pd.read_csv(prob_outputs_data_path)
-        class_dict = get_class_dict(df)
+        preLabel_data_path = os.path.join(
+            config.exp_root_dir,
+            "EvalMutationToCSV",
+            config.dataset_name,
+            config.model_name,
+            config.attack_name,
+            str(rate),
+            "preLabel.csv"
+        )
+        preLabel_df = pd.read_csv(preLabel_data_path)
+        selected_model_i_list = get_top_k_global_ids(preLabel_df,top_k=50,trend="bigger")
+        df = pd.read_csv(CELoss_data_path)
+        class_dict = get_class_dict(df,selected_model_i_list)
         data_dict[rate] = class_dict
     return data_dict
 
