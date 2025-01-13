@@ -29,7 +29,7 @@ dataset_name = "GTSRB"
 # 数据集分类任务数量
 class_num = 43 #  CIFAR-10:10,GTSRB:43
 # 当前实验设置的模型名字
-model_name = "DenseNet"
+model_name = "VGG19"
 # 当前实验设置的攻击
 attack_name = "WaNet"
 # GPU设备

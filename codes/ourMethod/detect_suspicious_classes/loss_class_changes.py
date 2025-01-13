@@ -1,13 +1,9 @@
-from sklearn.metrics import log_loss
-import pandas as pd
-import joblib
 import os
 from collections import defaultdict
-from codes import config
+import pandas as pd
 import matplotlib.pyplot as plt
 
-def get_cross_entropy_loss(y_true,y_pred,labels):
-    return log_loss(y_true,y_pred,labels=labels)
+from codes import config
 
 
 def get_class_dict(df):
@@ -71,7 +67,10 @@ def draw_line(x_ticks:list, title:str, xlabel:str, ylabel:str, save_path:str, dr
     # plt.figure(figsize=(20, 8), dpi=800)
     x_list = [x for x in list(range(len(x_ticks)))]
     for key,value in draw_data_dict.items():
-        plt.plot(x_list, value, label=key, marker='o')
+        if key == 3:
+            plt.plot(x_list, value, label=key, marker='o', color="black")
+        else:
+            plt.plot(x_list, value, label=key, marker='o')
     # 设置x轴的刻度
     font_size=10
     plt.xticks(x_list,x_ticks,fontsize=font_size) # rotation=45
