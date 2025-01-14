@@ -5,6 +5,9 @@ exp_root_dir = "/data/mml/backdoor_detect/experiments/"
 CIFAR10_dataset_dir = "/data/mml/backdoor_detect/dataset/cifar10"
 # GTSRB dataset dir
 GTSRB_dataset_dir = "/data/mml/backdoor_detect/dataset/GTSRB"
+# ImageNet2012_subset dir
+ImageNet2012_subset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset"
+
 
 # 随机种子
 random_seed = 666
