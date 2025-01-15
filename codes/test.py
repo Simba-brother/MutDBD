@@ -35,8 +35,12 @@ def test7():
     res = ",".join(["a","b"])
     print(res)
 
+def test8():
+    res = [[True]*3]*2
+    print(res)
+    
 if __name__ == "__main__":
-    test7()
+    test8()
 
 
 

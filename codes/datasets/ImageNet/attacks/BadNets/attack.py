@@ -1,22 +1,17 @@
 import os
-import time
 import cv2
-import numpy as np
 import random
-from collections import defaultdict
+
 import setproctitle
+import numpy as np
 
 import torch
 import torch.nn as nn
 from torchvision.datasets import DatasetFolder
-from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
-from codes.core.models.resnet import ResNet
-from codes.datasets.GTSRB.models.vgg import VGG
-from codes.datasets.GTSRB.models.densenet import DenseNet121
+
+from torchvision.models import resnet18,vgg19,densenet121
 from codes.core.attacks import BadNets
-from codes.utils import create_dir
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 from codes.datasets.ImageNet.attacks.BadNets.utils import create_backdoor_data
 from codes.datasets.utils import eval_backdoor,update_backdoor_data
@@ -28,18 +23,24 @@ deterministic = True
 torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
-dataset_name = "ImageNet"
-model_name = "ResNet18"
+dataset_name = "ImageNet2012_subset"
+model_name = "VGG19"
 attack_name = "BadNets"
 
-# victim model
 num_classes = 30
 if model_name == "ResNet18":
-    model = ResNet(num = 18, num_classes=num_classes)
+    model = resnet18(pretrained = True)
+    fc_features = model.fc.in_features
+    model.fc = nn.Linear(fc_features, num_classes)
 elif model_name == "VGG19":
-    model = VGG("VGG19", num_classes)
+    deterministic = False
+    model = vgg19(pretrained = True)
+    in_features = model.classifier[-1].in_features
+    model.classifier[-1] = nn.Linear(in_features, num_classes)
 elif model_name == "DenseNet":
-    model = DenseNet121(num_classes)
+    model = densenet121(pretrained = True)
+    in_features = model.classifier.in_features
+    model.classifier = nn.Linear(in_features, num_classes)
 
 def _seed_worker(worker_id):
     np.random.seed(global_seed)

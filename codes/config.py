@@ -12,7 +12,7 @@ ImageNet2012_subset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset
 # 随机种子
 random_seed = 666
 # 4个数据集名字
-dataset_name_list = ["CIFAR10","GTSRB", "MNIST", "ImageNet"]
+dataset_name_list = ["CIFAR10","GTSRB", "MNIST", "ImageNet2012_subset"]
 # 6种攻击的名字
 attack_name_list = ["BadNets", "Blended", "IAD", "LabelConsistent", "Refool", "WaNet"]
 # 模型名字
@@ -34,13 +34,13 @@ poisoned_rate = 0.05
 ###########################################################
 
 # 当前实验设置的数据集名字
-dataset_name = "CIFAR10"
+dataset_name = "ImageNet2012_subset"
 # 数据集分类任务数量
-class_num = 10 #  CIFAR-10:10,GTSRB:43
+class_num = 30 #  CIFAR-10:10,GTSRB:43
 # 当前实验设置的模型名字
-model_name = "VGG19"
+model_name = "ResNet18"
 # 当前实验设置的攻击
-attack_name = "IAD"
+attack_name = "BadNets"
 # GPU设备
 gpu_id = 0
 
