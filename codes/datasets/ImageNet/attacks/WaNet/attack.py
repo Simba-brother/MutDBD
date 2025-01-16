@@ -75,10 +75,9 @@ def gen_grid(height, k):
 # 获得训练集transform
 transform_train = Compose([
     ToPILImage(), 
-    # Resize((224, 224)),  # 调整图像大小
     RandomResizedCrop(224),
     RandomHorizontalFlip(),
-    ToTensor(), # CHW
+    ToTensor(),
 ])
 # 测试集transform
 transform_test = Compose([
