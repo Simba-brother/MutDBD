@@ -30,7 +30,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "ResNet18"
+model_name = "DenseNet"
 attack_name = "WaNet"
 
 num_classes = 30
@@ -75,16 +75,17 @@ def gen_grid(height, k):
 # 获得训练集transform
 transform_train = Compose([
     ToPILImage(), 
+    # Resize((224, 224)),  # 调整图像大小
     RandomResizedCrop(224),
     RandomHorizontalFlip(),
-    ToTensor() # CHW
+    ToTensor(), # CHW
 ])
 # 测试集transform
 transform_test = Compose([
     ToPILImage(), 
     Resize(256),
     CenterCrop(224),
-    ToTensor()
+    ToTensor(),
 ])
 # 获得数据集
 trainset = DatasetFolder(
@@ -108,18 +109,16 @@ batch_size = 128
 identity_grid,noise_grid=gen_grid(224,16)
 
 wanet = WaNet(
-    train_dataset=trainset,
-    test_dataset=testset,
+    train_dataset=trainset, # type:Dataset
+    test_dataset=testset, # type:Dataset
     model=model,
+    # model=core.models.BaselineMNISTNetwork(),
     loss=nn.CrossEntropyLoss(),
     y_target=config.target_class_idx,
     poisoned_rate=config.poisoned_rate,
     identity_grid=identity_grid,
     noise_grid=noise_grid,
-    noise=True,
-    poisoned_transform_train_index=0,
-    poisoned_transform_test_index=0,
-    poisoned_target_transform_index=0,
+    noise=False,
     seed=global_seed,
     deterministic=deterministic
 )

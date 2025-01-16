@@ -52,8 +52,10 @@ class AddTriggerMixin(object):
         # generate random numbers for refelection-based trigger generation and keep them fixed during training 
         self.reflection_candidates_index = np.random.randint(0,len(self.reflection_candidates),total_num)
         self.alpha_bs = 1.-np.random.uniform(0.05,0.45,total_num) if alpha_b<0 else np.zeros(total_num)+alpha_b
+        # 根据鬼影率确定出list中哪些位置需要ghost,True表示进行ghost
         self.ghost_values = (np.random.uniform(0,1,total_num) < ghost_rate) # [TrueOrFalse]
         if offset == (0,0):
+            # 默认条件
             self.offset_xs = np.random.random_integers(3,8,total_num)
             self.offset_ys = np.random.random_integers(3,8,total_num)
         else:
@@ -63,6 +65,7 @@ class AddTriggerMixin(object):
         self.ghost_alpha_switchs = np.random.uniform(0,1,total_num)
         self.ghost_alphas = np.random.uniform(0.15,0.5,total_num) if ghost_alpha < 0 else np.zeros(total_num)+ghost_alpha
         self.sigmas = np.random.uniform(1,5,total_num) if sigma<0 else np.zeros(total_num)+sigma
+        # np.random.random
         self.atts = 1.08 + np.random.random(total_num)/10.0
         self.new_ws = np.random.uniform(0,1,total_num)
         self.new_hs = np.random.uniform(0,1,total_num)
@@ -80,25 +83,34 @@ class AddTriggerMixin(object):
         if channels == 1 and img_r.shape[-1]==3: 
             img_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)[:,:,np.newaxis]
 
+        # 图像归一化操作
         b = np.float32(img_b) / 255.
         r = np.float32(img_r) / 255.
-        
+
+        # 图像数据比例缩放操作
         # convert t.shape to max_image_size's limitation
         scale_ratio = float(max(h, w)) / float(self.max_image_size)
         w, h = (self.max_image_size, int(round(h / scale_ratio))) if w > h \
             else (int(round(w / scale_ratio)), self.max_image_size)
+        # 原图（b）和反射图（r）缩放到（w,h）
         b = cv2.resize(b, (w, h), cv2.INTER_CUBIC)
         r = cv2.resize(r, (w, h), cv2.INTER_CUBIC)
         if channels == 1:
             b = b[:,:,np.newaxis]
             r = r[:,:,np.newaxis]
-        
+
+        # 原图占混合图的百分比，越大的化原图修改就越小
         alpha_b = self.alpha_bs[index]
+
+        # 下面为2种refool攻击模式鬼影和焦点攻击
         if self.ghost_values[index]:
+            # 如果该后门样本需要ghost操作
+            # np.power(a,b)表示a中元素的b次方
             b = np.power(b, 2.2)
             r = np.power(r, 2.2)
 
             # generate the blended image with ghost effect
+            # 得到该后门实例对应的offset
             offset = (self.offset_xs[index],self.offset_ys[index])
             r_1 = np.lib.pad(r, ((0, offset[0]), (0, offset[1]), (0, 0)),
                          'constant', constant_values=0)
@@ -113,7 +125,9 @@ class AddTriggerMixin(object):
             ghost_r = cv2.resize(ghost_r[offset[0]: -offset[0], offset[1]: -offset[1], :], (w, h))
             if channels==1:
                 ghost_r = ghost_r[:,:,np.newaxis]
+            # 反射掩码
             reflection_mask = ghost_r * (1 - alpha_b)
+            # 混合图像
             blended = reflection_mask + b * alpha_b
             transmission_layer = np.power(b * alpha_b, 1 / 2.2)
 
@@ -129,19 +143,24 @@ class AddTriggerMixin(object):
             blended = np.uint8(blended * 255)
             transmission_layer = np.uint8(transmission_layer * 255)
         else:
-            # generate the blended image with focal blur
+            # generate the blended image with focal blur(焦点模糊)
             sigma = self.sigmas[index]
 
+            # 图像幂操作
             b = np.power(b, 2.2)
             r = np.power(r, 2.2)
 
+            # np.ceil向上取整
             sz = int(2 * np.ceil(2 * sigma) + 1)
+            # cv2.GaussianBlur 是 OpenCV 图像处理库中的一个函数，它用于对图像进行高斯模糊处理。
             r_blur = cv2.GaussianBlur(r, (sz, sz), sigma, sigma, 0)
             if channels==1:
                 r_blur = r_blur[:,:,np.newaxis]
+            # 反射图像高斯模糊后加到原图中
             blend = r_blur + b
 
             # get the reflection layers' proper range
+            # self.atts = 1.08 + np.random.random(total_num)/10.0
             att = self.atts[index]
             for i in range(channels):
                 maski = blend[:, :, i] > 1
@@ -183,6 +202,7 @@ class AddTriggerMixin(object):
 class AddDatasetFolderTriggerMixin(AddTriggerMixin):
     """Add reflection-based trigger to DatasetFolder images."""
     def add_trigger(self, img, index):
+        # 根据不同的img数据类型进行不同的操作
         if type(img) == PIL.Image.Image:
             img = F.pil_to_tensor(img) # CHW
             img = self._add_trigger(img,index) # 其父类中方法
@@ -522,7 +542,7 @@ class Refool(Base):
                  loss,
                  y_target,
                  poisoned_rate,
-                 reflection_candidates,
+                 reflection_candidates, # opencv读取到的反射图像ndarray数据
                  poisoned_transform_train_index=0,
                  poisoned_transform_test_index=0,
                  poisoned_target_transform_index=0,

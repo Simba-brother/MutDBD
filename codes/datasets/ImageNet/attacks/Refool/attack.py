@@ -8,8 +8,6 @@ import torch.nn as nn
 import setproctitle
 
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
-from torchvision import transforms
-from torch.utils.data import DataLoader
 from torchvision.datasets import DatasetFolder
 
 # 导入攻击模块
@@ -31,7 +29,7 @@ def _seed_worker():
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "ResNet18"
+model_name = "DenseNet"
 attack_name = "Refool"
 
 
@@ -74,7 +72,7 @@ def read_image(img_path, type=None):
 
 # reflection image dir下所有的img path
 reflection_image_path = os.listdir(reflection_data_dir)
-# 读出来前200个reflection img
+# opencv读出来前200个reflection img
 reflection_images = [read_image(os.path.join(reflection_data_dir,img_path)) for img_path in reflection_image_path[:200]]
 # 训练集transform
 transform_train = Compose([
@@ -121,6 +119,12 @@ refool= Refool(
     seed=global_seed,
     deterministic=deterministic,
     reflection_candidates = reflection_images,
+    max_image_size=560,
+    ghost_rate=0.49, # default:0.49 焦点模糊比例+ghost比例 = 1.焦点模糊和ghost是refool攻击的2种模式
+    alpha_b=0.3, # 默认值：-1。原图占比，直观上讲该值越小攻击效果越好
+    offset=(0, 0),
+    sigma=5, # default:-1 # 焦点模糊模式中的反射图像的高斯模糊操作，值域为[1,5]，直观上讲越大攻击效果越好。
+    ghost_alpha=-1 # default:-1 两种偏移比重
 )
 
 schedule = {
