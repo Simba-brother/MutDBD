@@ -9,6 +9,7 @@ import numpy as np
 from collections import defaultdict
 import logging
 from sklearn.metrics import classification_report
+import joblib
 
 from codes import config
 # 得到格式化时间串
@@ -16,6 +17,7 @@ from codes.common.time_handler import get_formattedDateTime
 from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
 from codes.utils import entropy,priorityQueue_2_list,calcu_LCR
 from codes.common.logging_handler import get_Logger
+
 
 
 '''
@@ -323,15 +325,15 @@ def detect_method_pool(
         class_num:int,
         mutated_model_global_id_list:list[int],
         method:str):
-    if method == "Precision_avg":
+    if method == "Precision_mean":
         class_rank,rank_rate = detect_by_precision(df_Label,class_num,mutated_model_global_id_list,stat_name="mean")
     if method == "Precision_var":
         class_rank,rank_rate = detect_by_precision(df_Label,class_num,mutated_model_global_id_list,stat_name="var")
-    if method == "Loss_avg":
+    if method == "Loss_mean":
         class_rank,rank_rate = detect_by_loss(df_CELoss,class_num,mutated_model_global_id_list,stat_name="mean")
     if method == "Loss_var":
         class_rank,rank_rate = detect_by_loss(df_CELoss,class_num,mutated_model_global_id_list,stat_name="var")
-    if method == "Recall_avg":
+    if method == "Recall_mean":
         class_rank,rank_rate = detect_by_recall(df_Label,class_num,mutated_model_global_id_list,stat_name="mean")
     if method == "Recall_var":
         class_rank,rank_rate = detect_by_recall(df_Label,class_num,mutated_model_global_id_list,stat_name="var")
@@ -363,39 +365,41 @@ def main():
     mutation_rate_list = config.fine_mutation_rate_list
     detect_method_list = ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var",
                         "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
-                        "LCR_model_mean","LCR_sample_var"
+                        "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"
                         ]
     for dataset_name in dataset_name_list:
+        print(f"dataset_name:{dataset_name}")
         data[dataset_name] = {}
         if dataset_name == "CIFAR10":
             class_num = 10
         if dataset_name == "GTSRB":
             class_num = 43
         for model_name in model_name_list:
+            print(f"\tmodel_name:{model_name}")
             data[dataset_name][model_name] = {}
             for attack_name in attack_name_list:
-                dataset_name[dataset_name][model_name][attack_name] = {}
+                print(f"\t\tattack_name:{attack_name}")
+                data[dataset_name][model_name][attack_name] = {}
                 for mutated_rate in mutation_rate_list:
-                    dataset_name[dataset_name][model_name][attack_name][mutated_rate] = {}
+                    print(f"\t\t\tmutated_rate:{str(mutated_rate)}")
+                    data[dataset_name][model_name][attack_name][mutated_rate] = {}
                     # 预测标签df
                     df_Label = load_df(dataset_name,model_name,attack_name,mutated_rate,"preLabel")
                     # 选择出top50变异模型
                     mutated_model_global_id_list = get_top_k_global_ids(df_Label,top_k=50,trend="bigger")
                     df_CELoss = load_df(dataset_name,model_name,attack_name,mutated_rate,"CELoss")
                     for detect_method in detect_method_list:
+                        print(f"\t\t\t\tdetect_method:{detect_method}")
                         class_rank,target_class_ranking_percent = detect_method_pool(df_Label,df_CELoss,class_num,mutated_model_global_id_list,detect_method)
-                        dataset_name[dataset_name][model_name][attack_name][mutated_rate][detect_method] = {
-                            "class_rank":class_rank,
-                            "target_class_ranking_percent":target_class_ranking_percent
-                        }
-    for mutated_rate in mutation_rate_list:
-        
-        for detect_method in detect_method_list:
-            for attack_name in attack_name_list:
-                for dataset_name in dataset_name_list:
-                    for model_name in model_name_list:
-
-
+                        print(f"\t\t\t\t\tclass_rank:{class_rank}")
+                        print(f"\t\t\t\t\ttarget_class_ranking_percent:{str(target_class_ranking_percent)}")
+                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method] = {}
+                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_rank"] = class_rank
+                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["target_class_ranking_percent"] = target_class_ranking_percent
+    save_dir = config.exp_root_dir
+    save_file_name = "grid.joblib"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(data,save_path)
 
 if __name__ == "__main__":
     main()
