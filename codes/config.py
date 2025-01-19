@@ -13,10 +13,13 @@ ImageNet2012_subset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset
 random_seed = 666
 # 4个数据集名字
 dataset_name_list = ["CIFAR10","GTSRB", "MNIST", "ImageNet2012_subset"]
+cur_dataset_name_list = ["CIFAR10","GTSRB"]
 # 6种攻击的名字
 attack_name_list = ["BadNets", "Blended", "IAD", "LabelConsistent", "Refool", "WaNet"]
+cur_attack_name_list = ["BadNets","IAD","Refool","WaNet"]
 # 模型名字
 model_name_list = ["ResNet18", "VGG19", "DenseNet", "BaselineMNISTNetwork", "CNN_Model_1"]
+cur_model_name_list = ["ResNet18","VGG19","DenseNet"]
 # 5种模型级别变异算子
 # mutation_name_list = ["gf","neuron_activation_inverse","neuron_block","neuron_switch","weight_shuffle"]
 mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]

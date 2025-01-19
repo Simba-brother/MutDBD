@@ -140,6 +140,14 @@ def priorityQueue_2_list(q:queue.PriorityQueue):
         res.append(q.get())
     assert len(res) == qsize, "队列数量不对"
     return res
+def calcu_LCR(label_list_o:list,label_list:list):
+    res = 0 
+    count = 0
+    for label_o,label in zip(label_list_o,label_list):
+        if label_o != label:
+            count += 1
+    res = round(count/len(label_list_o),4)
+    return res
 
 if __name__ == "__main__":
     pass
