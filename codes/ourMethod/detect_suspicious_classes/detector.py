@@ -401,8 +401,24 @@ def main():
     save_path = os.path.join(save_dir,save_file_name)
     joblib.dump(data,save_path)
 
+
+def look_1():
+    grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
+    mutated_rate = 0.1
+    for measure_name in ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var",
+                        "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
+                        "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"
+                        ]:
+        print(measure_name)
+        for dataset_name in config.cur_dataset_name_list:
+            for model_name in config.cur_model_name_list:
+                for attack_name in config.cur_attack_name_list:
+                    precent = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["target_class_ranking_percent"]
+                    print(f"{round(precent*100,1)}%",end='\t')
+                print("\n")
+        print("="*30)
 if __name__ == "__main__":
-    main()
+    look_1()
     
 
 
