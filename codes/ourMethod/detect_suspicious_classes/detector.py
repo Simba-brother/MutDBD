@@ -402,7 +402,10 @@ def main():
     joblib.dump(data,save_path)
 
 
-def look_1():
+def look_res():
+    '''
+    根据需要看结果
+    '''
     grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
     mutated_rate = 0.1
     for measure_name in ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var",
@@ -410,15 +413,39 @@ def look_1():
                         "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"
                         ]:
         print(measure_name)
-        for dataset_name in config.cur_dataset_name_list:
-            for model_name in config.cur_model_name_list:
-                for attack_name in config.cur_attack_name_list:
+        for dataset_name in config.cur_dataset_name_list: # 2个
+            for model_name in config.cur_model_name_list: # 3个
+                for attack_name in config.cur_attack_name_list: # 4个
                     precent = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["target_class_ranking_percent"]
                     print(f"{round(precent*100,1)}%",end='\t')
                 print("\n")
         print("="*30)
+
+def look_res_2():
+    '''
+    根据需要看结果
+    '''
+    grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
+    
+
+    threshold = 0.75
+    for measure_name in ["Precision_mean","Loss_mean","Recall_mean","Precision_var","Loss_var","Recall_var",
+                        "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
+                        "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"
+                        ]:
+        total = 24
+        count  = 0
+        for mutated_rate in config.fine_mutation_rate_list:
+            for dataset_name in config.cur_dataset_name_list: # 2个
+                for model_name in config.cur_model_name_list: # 3个
+                    for attack_name in config.cur_attack_name_list: # 4个
+                        percent = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["target_class_ranking_percent"]
+                        if percent >= threshold:
+                            count += 1
+            avg_count = round(count/len(config.fine_mutation_rate_list),3)
+        print(f"{avg_count}/{total}")
 if __name__ == "__main__":
-    look_1()
+    look_res_2()
     
 
 
