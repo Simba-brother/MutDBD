@@ -41,12 +41,14 @@ transform_train = Compose([
     RandomCrop((32, 32), padding=5),
     RandomRotation(10),
     RandomHorizontalFlip(p=0.5),
+    # 图像数据归一化
     ToTensor(),
     Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
 ])
 transform_test = Compose([
     ToPILImage(),
     Resize((32, 32)),
+    # 归一化
     ToTensor(),
     Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
 ])
@@ -82,6 +84,7 @@ testset1 = DatasetFolder(
     target_transform=None,
     is_valid_file=None)
 # 获得加载器
+'''
 batch_size = 128
 trainset_loader = DataLoader(
     trainset,
@@ -101,6 +104,7 @@ testset_loader = DataLoader(
     pin_memory=False,
     worker_init_fn=_seed_worker
     )
+'''
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"

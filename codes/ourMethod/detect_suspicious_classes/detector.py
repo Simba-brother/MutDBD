@@ -407,7 +407,7 @@ def look_res():
     根据需要看结果
     '''
     grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
-    mutated_rate = 0.1
+    mutated_rate = 0.01
     for measure_name in ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var",
                         "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
                         "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"
@@ -444,8 +444,9 @@ def look_res_2():
                             count += 1
             avg_count = round(count/len(config.fine_mutation_rate_list),3)
         print(f"{avg_count}/{total}")
+
 if __name__ == "__main__":
-    look_res_2()
+    look_res()
     
 
 

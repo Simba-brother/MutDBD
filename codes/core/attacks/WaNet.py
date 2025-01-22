@@ -67,6 +67,7 @@ class AddDatasetFolderTrigger(AddTrigger):
         self.noise = noise
         self.s = s
         self.grid_rescale = grid_rescale
+        # 网格
         grid = self.identity_grid + self.s * self.noise_grid / self.h
         self.grid = torch.clamp(grid * self.grid_rescale, -1, 1)
         self.noise_rescale = noise_rescale

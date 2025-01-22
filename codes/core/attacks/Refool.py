@@ -336,8 +336,11 @@ class PoisonedDatasetFolder(DatasetFolder, AddDatasetFolderTriggerMixin):
         isPoisoned = False
         if index in self.poisoned_set:
             if len(self.pre_poisoned_transform.transforms):
+                # 预训练前部分先修改图像数据
                 sample = self.pre_poisoned_transform(sample)
+            # 加trigger
             sample = self.add_trigger(sample, index) # 第二个父类方法
+            # 预训练后半部继续修改
             sample = self.post_poisoned_transform(sample)
             target = self.poisoned_target_transform(target)
             isPoisoned = True

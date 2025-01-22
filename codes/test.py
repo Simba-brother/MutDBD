@@ -38,9 +38,14 @@ def test7():
 def test8():
     res = [[True]*3]*2
     print(res)
+
+def test9():
+    data = [0,1,2]
+    data.insert(-3,4)
+    print(data)
     
 if __name__ == "__main__":
-    test8()
+    test9()
 
 
 
