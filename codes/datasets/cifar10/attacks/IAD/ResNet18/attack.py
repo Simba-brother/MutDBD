@@ -42,8 +42,7 @@ transform_train = Compose([
     RandomRotation(10),
     RandomHorizontalFlip(p=0.5),
     ToTensor(),
-    Normalize((0.4914, 0.4822, 0.4465),
-              (0.247, 0.243, 0.261))
+    Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
 ])
 transform_test = Compose([
     ToPILImage(),

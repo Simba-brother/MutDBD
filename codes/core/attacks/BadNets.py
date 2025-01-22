@@ -122,6 +122,7 @@ class AddDatasetFolderTrigger(AddTrigger):
             return img
 
         if type(img) == PIL.Image.Image:
+            # 图像类型为PIL
             img = F.pil_to_tensor(img) # [C],H,W且在0~1
             img = add_trigger(img) # type(img) = torch.Tensor
             # 1 x H x W

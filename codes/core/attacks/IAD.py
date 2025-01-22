@@ -489,7 +489,7 @@ class IAD(Base):
                     test_loader,
                     test_loader1,
                     self.model,
-                    self.modelG,
+                    self.modelG, # trigger generator
                     self.modelM
                 )
                 msg = "==========Test result on benign test dataset==========\n" + \
@@ -630,7 +630,7 @@ class IAD(Base):
         # 一批次一批次的生成bd样本
         batch_num = range(len(train_dl1))
         for batch_idx, (inputs1, targets1), (inputs2, targets2) in zip(batch_num, train_dl1, train_dl2):
-            # 这里的inputs1和inputs2是经过transforms的
+            # 这里的inputs1和inputs2是经过transforms预处理的
             # victim model 优化器中的参数梯度清零
             optimizerC.zero_grad()
             # 获得一批数据和label
@@ -817,6 +817,7 @@ class IAD(Base):
         total_correct_cross = 0.0
         self.test_poisoned_data, self.test_poisoned_label = [], []
         for batch_idx, (inputs1, targets1), (inputs2, targets2) in zip(range(len(test_dl1)), test_dl1, test_dl2):
+            # 这里的inputs都是经过正常预处理的
             with torch.no_grad():
                 inputs1, targets1 = inputs1.to(device), targets1.to(device)
                 inputs2, targets2 = inputs2.to(device), targets2.to(device)
