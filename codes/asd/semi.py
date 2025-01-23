@@ -86,7 +86,7 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
             output = model(data)
             # feature = model.backbone(data)
             # output = model.linear(feature)
-        criterion.reduction = "none"
+        criterion.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
         raw_loss = criterion(output, target)
 
         target_record.update(target)
@@ -125,8 +125,8 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     meter_list = [loss_meter, xloss_meter, uloss_meter, lambda_u_meter]
 
     # 数据加载器转化成迭代器
-    xiter = iter(xloader)
-    uiter = iter(uloader)
+    xiter = iter(xloader) # 有监督
+    uiter = iter(uloader) # 无监督
 
     model.train()
     
@@ -136,6 +136,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             xbatch = next(xiter)
             xinput, xtarget = xbatch["img"], xbatch["target"]
         except:
+            # 如果迭代器走到最后无了,则从头再来迭代
             xiter = iter(xloader)
             xbatch = next(xiter)
             xinput, xtarget = xbatch["img"], xbatch["target"]
@@ -144,6 +145,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             ubatch = next(uiter)
             uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
         except:
+            # 如果迭代器走到最后无了,则从头再来迭代
             uiter = iter(uloader)
             ubatch = next(uiter)
             uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
@@ -198,6 +200,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             mixed_target[batch_size:],
             epoch + batch_idx / kwargs["train_iteration"],
         )
+        # 半监督损失
         loss = Lx + lambda_u * Lu
         optimizer.zero_grad()
         loss.backward()

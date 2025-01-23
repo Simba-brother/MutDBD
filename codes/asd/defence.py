@@ -266,7 +266,7 @@ def defence_train(
     '''
     model.to(device)
     # 损失函数
-    criterion = nn.CrossEntropyLoss(reduction = "mean")
+    criterion = nn.CrossEntropyLoss()
     # 损失函数对象放到gpu上
     criterion.to(device)
     # 用于分割的损失函数
@@ -277,7 +277,7 @@ def defence_train(
     semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=15) # rampup_length = 120  same as epoches
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
-    # 优化器
+    # 模型参数的优化器
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.002)
     # 先选择clean seed
     # clean seed samples
@@ -305,26 +305,30 @@ def defence_train(
     choice_num = 0
     best_acc = -1
     best_epoch = -1
+    # 总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
         print("===Epoch: {}/{}===".format(epoch, total_epoch))
         if epoch < 60:
+            # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
             if epoch % 5 == 0 and epoch != 0:
-                # 每五个epoch 就选择10个
+                # 每五个epoch 每个class中选择数量就多加10个
                 choice_num += 10
             print("Mining clean data by class-aware loss-guided split...")
             # 0表示在污染池,1表示在clean pool
             split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
-        elif epoch < 90:       
+        elif epoch < 90:
+            # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch:
+            # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             meta_virtual_model = deepcopy(model)
             dataset_name = kwargs["dataset_name"]
@@ -353,19 +357,24 @@ def defence_train(
             #                 {'params': meta_virtual_model.backbone.layer4.parameters()},
             #                 {'params': meta_virtual_model.linear.parameters()}
             #             ]
+            # 元模型的参数优化器
             meta_optimizer = torch.optim.Adam(param_meta, lr=0.015)
-            meta_criterion = nn.CrossEntropyLoss(reduction = "mean")
+            # 元模型的损失函数
+            meta_criterion = nn.CrossEntropyLoss()
             meta_criterion.to(device)
             for _ in range(1):
+                # 使用完整的训练集训练一轮元模型
                 train_the_virtual_model(
                                         meta_virtual_model=meta_virtual_model, 
                                         poison_train_loader=poisoned_train_dataset_loader, 
                                         meta_optimizer=meta_optimizer,
                                         meta_criterion=meta_criterion,
                                         device = device
-                                        )      
+                                        )
+            # 使用元模型对数据集进行一下record      
             meta_record_list = poison_linear_record(meta_virtual_model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
 
+            # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
             split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids)
 
@@ -426,10 +435,12 @@ def defence_train(
 
         is_best = False
         if clean_test_result["acc"] > best_acc:
+            # 干净集测试acc的best
             is_best = True
             best_acc = clean_test_result["acc"]
             best_epoch = epoch
          # 保存状态
+         # 每个训练轮次的状态
         saved_dict = {
             "epoch": epoch,
             "result": result,
@@ -443,6 +454,7 @@ def defence_train(
         ckpt_dir = os.path.join(save_dir, "ckpt")
         create_dir(ckpt_dir)
         if is_best:
+            # clean testset acc的best model
             best_ckpt_path = os.path.join(ckpt_dir, "best_model.pt")
             torch.save(saved_dict, best_ckpt_path)
             print("Save the best model to {}".format(best_ckpt_path))
@@ -461,23 +473,24 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
     keys = [record.name for record in record_list]
     loss = record_list[keys.index("loss")].data.numpy()
     # poison = record_list[keys.index("poison")].data.numpy()
-    clean_pool_flag = np.zeros(len(loss))
-    # 存总共选择的clean 的idx,包括seed和loss最底的sample idx
-    total_indice = choice_clean_indice.tolist()
+    clean_pool_flag = np.zeros(len(loss)) # 每次选择都清空
+    # 存总共选择的clean 的idx,包括seed和loss最低的的sample idx
+    total_indice = choice_clean_indice.tolist() # choice_clean_indice装的seed
     for class_idx, sample_indice in all_data_info.items():
         # 遍历每个class_idx
         sample_indice = np.array(sample_indice)
         loss_class = loss[sample_indice]
         indice_class = loss_class.argsort()[: choice_num]
         indice = sample_indice[indice_class]
+        # list的extend操作
         total_indice += indice.tolist()
-    # 统计构建出的clean pool 中还混有污染样本的数量
+    # 统计构建出的clean pool 其中可能还混有污染样本的数量,这里我们统计一下
     poisoned_count = 0
     for idx in total_indice:
         if idx in poisoned_indice:
             poisoned_count+=1
     total_indice = np.array(total_indice)
-    clean_pool_flag[total_indice] = 1
+    clean_pool_flag[total_indice] = 1 # 1表示clean
 
     print(
         "{}/{} poisoned samples in clean data pool".format(poisoned_count, clean_pool_flag.sum())
@@ -513,7 +526,9 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
     meta_loss = meta_record_list[keys.index("loss")].data.numpy()
     # poison = record_list[keys.index("poison")].data.numpy()
     clean_pool_flag = np.zeros(len(loss))
+    # model_loss - meta-loss
     loss = loss - meta_loss
+    # dif小的样本被选择为clean样本
     total_indice = loss.argsort()[: int(len(loss) * ratio)]
     poisoned_count = 0
     for idx in total_indice:
