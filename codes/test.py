@@ -1,6 +1,7 @@
 import time
 import queue
 import os
+import numpy as np
 
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
 
@@ -44,8 +45,14 @@ def test9():
     data.insert(-3,4)
     print(data)
     
+
+def test10():
+    data = np.array([4,1,2])
+    ranked_idx_array =  data.argsort()
+    print("")
+
 if __name__ == "__main__":
-    test9()
+    test10()
 
 
 

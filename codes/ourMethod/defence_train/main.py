@@ -1,254 +1,71 @@
-# ASD baseline mian file
+import os
+import random
+
+from copy import deepcopy
 
 import joblib
-import setproctitle
-import os
-from copy import deepcopy
-import cv2
 import numpy as np
+
 import torch
 import torch.nn as nn
-# import torch.nn.functional as F
-from torch.utils.data import DataLoader # 用于批量加载训练集的
+from torch.utils.data import DataLoader
 
-from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomCrop
-from torchvision.datasets import DatasetFolder
 from codes import config
-from codes.core.attacks import BadNets
-from codes.core.models.resnet import ResNet
+from codes.models import get_model
 from codes.asd.loss import SCELoss, MixMatchLoss
 from codes.asd.semi import poison_linear_record, mixmatch_train,linear_test
 from codes.asd.dataset import MixMatchDataset
-# from ASD.log import result2csv
-from codes.utils import create_dir
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
-# from ASD.models.resnet_cifar import get_model
 
-def main_test():
-    # 进程名称
-    proctitle = f"ASD|{config.dataset_name}|{config.model_name}|{config.attack_name}"
-    setproctitle.setproctitle(proctitle)
-    print(f"proctitle:{proctitle}")
-    # 准备数据集
-    dataset = prepare_data()
-    trainset = dataset["trainset"]
-    testset = dataset["testset"]
-    # 准备victim model
-    model = prepare_model()
-    # 攻击
-    backdoor_data = backdoor_attack(trainset,testset,model)
-    # ASD防御训练
-    defence_train(
-        model = prepare_model(),
-        class_num = config.class_num,
-        poisoned_train_dataset = backdoor_data["poisoned_train_dataset"], # 有污染的训练集
-        poisoned_ids = backdoor_data["poisoned_ids"], # 被污染的样本id list
-        poisoned_eval_dataset_loader = backdoor_data["poisoned_eval_dataset_loader"], # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-        poisoned_train_dataset_loader = backdoor_data["poisoned_train_dataset_loader"], #有污染的训练集加载器
-        clean_test_dataset_loader = backdoor_data["clean_test_dataset_loader"], # 干净的测试集加载器
-        poisoned_test_dataset_loader = backdoor_data["poisoned_test_dataset_loader"], # 污染的测试集加载器
-        device = torch.device(f"cuda:{config.gpu_id}"),
-        save_dir = os.path.join(config.exp_root_dir, "ASD", config.dataset_name, config.model_name, config.attack_name)
-    )
-    
-def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=True):
+
+def get_class_sampled_prob_map(classes_rank):
+    classes_num = len(classes_rank)
+    class_map = {}
+    intervals = []
+    for cut_rate in [0.25,0.5,0.75]:
+        intervals.append(int(cut_rate*classes_num))
+    for i in range(classes_num):
+        cls = classes_rank[i]
+        if i <= intervals[0]:
+            # [0,25%]
+            prob = 0.25
+        elif i <= intervals[1]:
+            # (25%,50%]
+            prob = 0.5
+        elif i <= intervals[2]:
+            # (50%,75%]
+            prob = 0.75
+        else:
+            # (75%,100%]
+            prob = 1
+        class_map[cls] = prob
+    return class_map
+
+
+def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_list):
     '''
-    攻击方法：
+    采样
     Args:
-        trainset: 训练集(已经经过了普通的transforms)
-        trainset: 测试集(已经经过了普通的transforms)
-        model: victim model
-    Return:
-        攻击后的字典数据
+        samples_num (int): 采样的数量
+        ranked_sample_idx_array (1dArray):排序的样本id array
+        label_prob_map (dict):样本标签到采样概率的映射
+        label_list（1dArray）:样本标签array
     '''
-    if config.attack_name == "BadNets":
-        pattern = torch.zeros((32, 32), dtype=torch.uint8)
-        pattern[-3:, -3:] = 255
-        weight = torch.zeros((32, 32), dtype=torch.float32)
-        weight[-3:, -3:] = 1.0
-              
-        # torch.manual_seed(global_seed)
-        # np.random.seed(global_seed)
-        # random.seed(global_seed)
-        badnets = BadNets(
-            train_dataset=trainset,
-            test_dataset=testset,
-            model=model,
-            loss=nn.CrossEntropyLoss(),
-            y_target=config.target_class_idx,
-            poisoned_rate=0.1,
-            pattern=pattern,
-            weight=weight,
-            seed=random_seed,
-            poisoned_transform_train_index= -1,
-            poisoned_transform_test_index= -1,
-            poisoned_target_transform_index=0,
-            deterministic=deterministic
-        )
-        # 被污染的训练集
-        poisoned_train_dataset = badnets.poisoned_train_dataset
-        # 数据集中被污染的实例id
-        poisoned_ids = poisoned_train_dataset.poisoned_set
-        # 被污染的训练集加载器
-        poisoned_train_dataset_loader = DataLoader(
-            poisoned_train_dataset,
-            batch_size=64,
-            shuffle=True,
-            num_workers=4,
-            pin_memory=True,
-            )
-        # 验证集加载器（可以是被污染的训练集但是不打乱）
-        poisoned_eval_dataset_loader = DataLoader(
-            poisoned_train_dataset,
-            batch_size=64,
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True,
-            )
-        # 被污染的测试集
-        poisoned_test_dataset = badnets.poisoned_test_dataset
-        # 被污染的测试集加载器
-        poisoned_test_dataset_loader = DataLoader(
-            poisoned_test_dataset,
-            batch_size=64,
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True,
-            )
-        # 干净污染的测试集加载器
-        clean_test_dataset_loader = DataLoader(
-            testset,
-            batch_size=64,
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True,
-            )
-        exp_root_dir = "/data/mml/backdoor_detect/experiments"
-        dataset_name = "CIFAR10"
-        model_name = "ResNet18"
-        attack_name = "BadNets"
-        schedule = {
-            'device': f'cuda:{config.gpu_id}',
-            'benign_training': False,
-            'batch_size': 128,
-            'num_workers': 4,
-
-            'lr': 0.1,
-            'momentum': 0.9,
-            'weight_decay': 5e-4,
-            'gamma': 0.1,
-            'schedule': [150, 180], # epoch区间
-
-            'epochs': 200,
-
-            'log_iteration_interval': 100,
-            'test_epoch_interval': 10,
-            'save_epoch_interval': 10,
-
-            'save_dir': os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-            'experiment_name': 'attack'
-        }
-        badnets.train(schedule)
-        # 工作dir
-        work_dir = badnets.work_dir
-        # 获得backdoor model weights
-        backdoor_model = badnets.best_model
-        # clean testset
-        clean_testset = testset
-        # poisoned testset
-        poisoned_testset = badnets.poisoned_test_dataset
-        # poisoned trainset
-        poisoned_trainset = badnets.poisoned_train_dataset
-        # poisoned_ids
-        poisoned_ids = poisoned_trainset.poisoned_set
-        # pure clean trainset
-        pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
-        # pure poisoned trainset
-        purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
-        dict_state = {}
-        dict_state["backdoor_model"] = backdoor_model
-        dict_state["poisoned_trainset"]=poisoned_trainset
-        dict_state["poisoned_ids"]=poisoned_ids
-        dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
-        dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
-        dict_state["clean_testset"]=clean_testset
-        dict_state["poisoned_testset"]=poisoned_testset
-        dict_state["pattern"] = pattern
-        dict_state['weight']=weight
-        save_file_name = f"dict_state.pth"
-        save_path = os.path.join(work_dir, save_file_name)
-        torch.save(dict_state, save_path)
-        print(f"BadNets攻击完成,数据和日志被存入{save_path}")
-    res = {
-        "backdoor_model":badnets.best_model,
-        "poisoned_train_dataset":poisoned_train_dataset,
-        "poisoned_ids":poisoned_ids,
-        "poisoned_train_dataset_loader":poisoned_train_dataset_loader,
-        "poisoned_eval_dataset_loader":poisoned_eval_dataset_loader,
-        "poisoned_test_dataset":poisoned_test_dataset,
-        "poisoned_test_dataset_loader":poisoned_test_dataset_loader,
-        "clean_testset":testset,
-        "clean_trainset":trainset,
-        "clean_test_dataset_loader":clean_test_dataset_loader,
-    }
-    return res
-    
-def prepare_model():
-    '''
-    准备模型
-    Return:
-        model
-    '''
-    if config.model_name == "ResNet18":
-        model = ResNet(num=18, num_classes=config.class_num)
-    return model
-
-def prepare_data():
-    '''
-    准备训练集和测试集
-    '''
-    # 加载数据集
-    # 训练集transform    
-    transform_train = Compose([
-        # Convert a tensor or an ndarray to PIL Image
-        ToPILImage(), 
-        # 训练数据增强,随机水平翻转 
-        RandomCrop(size=32,padding=4,padding_mode="reflect"), # img (PIL Image or Tensor): Image to be cropped.
-        RandomHorizontalFlip(),
-        ToTensor() # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
-    ])
-    # 测试集transform
-    transform_test = Compose([
-        ToPILImage(),
-        ToTensor()
-    ])
-    # 数据集文件夹
-    dataset_dir = config.CIFAR10_dataset_dir
-    # 获得训练数据集
-    trainset = DatasetFolder(
-        root=os.path.join(dataset_dir, "train"),
-        loader=cv2.imread, # ndarray (H,W,C)
-        extensions=('png',),
-        transform=transform_train,
-        target_transform=None,
-        is_valid_file=None)
-    # 获得测试数据集
-    testset = DatasetFolder(
-        root=os.path.join(dataset_dir, "test"),
-        loader=cv2.imread, # ndarray (H,W,C)
-        extensions=('png',),
-        transform=transform_test,
-        target_transform=None,
-        is_valid_file=None)
-    res = {
-        "trainset":trainset,
-        "testset":testset,
-    }
-    return res
-
-
+    choice_indice = []
+    while len(choice_indice) < samples_num:
+        for sample_idx in ranked_sample_idx_array:
+            prob = label_prob_map[label_list[sample_idx]]
+            if random.random() < prob:
+                # 概率出现,该样本进入total_indice
+                choice_indice.append(sample_idx)
+                if len(choice_indice) < samples_num:
+                    # 如果数量够了直接break
+                    break
+    assert len(choice_indice) == samples_num, "数量不对"
+    return choice_indice
 
 def defence_train(
+        dataset_name:str,
+        model_name:str,
         model, # victim model
         class_num, # 分类数量
         poisoned_train_dataset, # 有污染的训练集,不打乱的list
@@ -259,10 +76,11 @@ def defence_train(
         poisoned_test_dataset_loader, # 污染的测试集加载器
         device, # GPU设备对象
         save_dir, # 实验结果存储目录 save_dir = os.path.join(exp_root_dir, "ASD", dataset_name, model_name, attack_name)
-        **kwargs
-        ):
+        epochs:int,
+        class_prob_map:dict
+        ): 
     '''
-    ASD防御训练方法
+    改进的ASD防御训练方法
     '''
     model.to(device)
     # 损失函数
@@ -274,7 +92,7 @@ def defence_train(
     # 分割损失函数对象放到gpu上
     split_criterion.to(device)
     # semi 损失函数
-    semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=15) # rampup_length = 120  same as epoches
+    semi_criterion = MixMatchLoss(rampup_length=epochs, lambda_u=15) # rampup_length = 120  same as epoches
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     # 模型参数的优化器
@@ -300,18 +118,19 @@ def defence_train(
         choice_clean_indice.extend(choice_list)
         # 从all_data_info中剔除选择出的clean seed sample index
         all_data_info[class_idx] = [x for x in all_data_info[class_idx] if x not in choice_list]
+    # 选择出的干净种子样本索引
     choice_clean_indice = np.array(choice_clean_indice)
 
     choice_num = 0
     best_acc = -1
     best_epoch = -1
     # 总共的训练轮次
-    total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
+    total_epoch = epochs
     for epoch in range(total_epoch):
         print("===Epoch: {}/{}===".format(epoch, total_epoch))
         if epoch < 60:
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
-            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
+            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=dataset_name, model_name=model_name)
             if epoch % 5 == 0 and epoch != 0:
                 # 每五个epoch 每个class中选择数量就多加10个
                 choice_num += 10
@@ -322,17 +141,15 @@ def defence_train(
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < 90:
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
-            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
+            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=dataset_name, model_name=model_name)
             print("Mining clean data by class-agnostic loss-guided split...")
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids)
+            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids,class_prob_map)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch:
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
-            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
+            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=dataset_name, model_name=model_name)
             meta_virtual_model = deepcopy(model)
-            dataset_name = kwargs["dataset_name"]
-            model_name = kwargs["model_name"]
             if dataset_name in ["CIFAR10","GTSRB"]:
                 if model_name == "ResNet18":
                     param_meta = [  
@@ -372,7 +189,7 @@ def defence_train(
                                         device = device
                                         )
             # 使用元模型对数据集进行一下record      
-            meta_record_list = poison_linear_record(meta_virtual_model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
+            meta_record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=dataset_name, model_name=model_name)
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
@@ -423,7 +240,7 @@ def defence_train(
         }
         
         result_epochs_dir = os.path.join(save_dir, "result_epochs")
-        create_dir(result_epochs_dir)
+        os.makedirs(result_epochs_dir,exist_ok=True)
         save_file_name = f"result_epoch_{epoch}.data"
         save_file_path = os.path.join(result_epochs_dir, save_file_name)
         joblib.dump(result,save_file_path)
@@ -452,7 +269,7 @@ def defence_train(
         print("Best test accuaracy {} in epoch {}".format(best_acc, best_epoch))
         # 每当best acc更新后，保存checkpoint
         ckpt_dir = os.path.join(save_dir, "ckpt")
-        create_dir(ckpt_dir)
+        os.makedirs(ckpt_dir,exist_ok=True)
         if is_best:
             # clean testset acc的best model
             best_ckpt_path = os.path.join(ckpt_dir, "best_model.pt")
@@ -466,7 +283,12 @@ def defence_train(
     print("asd_train() End")
     return best_ckpt_path,latest_ckpt_path
 
-def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_indice):
+def class_aware_loss_guided_split(
+        record_list, 
+        choice_clean_indice, 
+        all_data_info, 
+        choice_num, 
+        poisoned_indice):
     """
     Adaptively split the poisoned dataset by class-aware loss-guided split.
     """
@@ -479,7 +301,9 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
     for class_idx, sample_indice in all_data_info.items():
         # 遍历每个class_idx
         sample_indice = np.array(sample_indice)
+        # 得到该类别下样本的loss值
         loss_class = loss[sample_indice]
+        # 得到loss最小的choice_num个类内索引
         indice_class = loss_class.argsort()[: choice_num]
         indice = sample_indice[indice_class]
         # list的extend操作
@@ -497,51 +321,74 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
     )
     return clean_pool_flag
 
-def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice):
+def class_agnostic_loss_guided_split(record_list, rate, poisoned_indice,class_prob_map):
     """
     Adaptively split the poisoned dataset by class-agnostic loss-guided split.
     """
+    # 按顺序获得记录薄的名字
     keys = [record.name for record in record_list]
+    # 根据记录薄的名字找到记录薄中的数据并从tensor转为numpy
+    gt_label_array = record_list[keys.index("target")].data.numpy()
     loss = record_list[keys.index("loss")].data.numpy()
-    # poison = record_list[keys.index("poison")].data.numpy()
+    # 用于存样本选择的状态，1表示该样本放入clean pool
     clean_pool_flag = np.zeros(len(loss))
-    total_indice = loss.argsort()[: int(len(loss) * ratio)]
-    # 统计构建出的clean pool 中还混有污染样本的数量
+    # 按照loss值对样本idx进行排序
+    ranked_sample_idx_array =  loss.argsort()
+    # 采样准备放入clean pool的
+    samples_num = int(len(ranked_sample_idx_array)*rate)
+    choice_idx_list = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
+    # 看看选出的clean pool中有多少中毒的样本
     poisoned_count = 0
-    for idx in total_indice:
+    for idx in choice_idx_list:
         if idx in poisoned_indice:
             poisoned_count+=1
     print(
-        "{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice))
+        "{}/{} poisoned samples in clean data pool".format(poisoned_count, len(choice_idx_list))
     )
-    clean_pool_flag[total_indice] = 1
+    # 状态赋值
+    clean_pool_flag[choice_idx_list] = 1
+
     return clean_pool_flag
 
-def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
+def meta_split(record_list, meta_record_list, rate, poisoned_indice,class_prob_map):
     """
     Adaptively split the poisoned dataset by meta-split.
     """
     keys = [record.name for record in record_list]
+    # 根据记录薄的名字找到记录薄中的数据并从tensor转为numpy
+    gt_label_array = record_list[keys.index("target")].data.numpy()
     loss = record_list[keys.index("loss")].data.numpy()
     meta_loss = meta_record_list[keys.index("loss")].data.numpy()
     # poison = record_list[keys.index("poison")].data.numpy()
     clean_pool_flag = np.zeros(len(loss))
     # model_loss - meta-loss
-    loss = loss - meta_loss
-    # dif小的样本被选择为clean样本
-    total_indice = loss.argsort()[: int(len(loss) * ratio)]
+    loss = loss - meta_loss # 1darray中元素对应相减 dif小的样本被选择为clean样本
+    # 按照loss值对样本idx进行排序
+    ranked_sample_idx_array =  loss.argsort()
+    # 采样准备放入clean pool的
+    samples_num = int(len(ranked_sample_idx_array)*rate)
+    choice_idx_list = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
+
     poisoned_count = 0
-    for idx in total_indice:
+    for idx in choice_idx_list:
         if idx in poisoned_indice:
             poisoned_count += 1
-    print("{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice)))
-    clean_pool_flag[total_indice] = 1
-    predict_p_idx_list = loss.argsort()[int(len(loss) * ratio):]
+    print("{}/{} poisoned samples in clean data pool".format(poisoned_count, len(choice_idx_list)))
+    clean_pool_flag[choice_idx_list] = 1
+
+    # 获得预测为中毒的样本list
+    total_idx_list = list(range(len(ranked_sample_idx_array)))
+    predict_p_idx_list = []
+    for i in total_idx_list:
+        if i not in choice_idx_list:
+            predict_p_idx_list.append(i)
+    
     tp_num= len(set(predict_p_idx_list) & set(poisoned_indice))
     recall = round(tp_num/len(poisoned_indice),4)
     precision = round(tp_num / len(predict_p_idx_list),4)
     f1 = 2*recall*precision/(precision+recall)
     print(f"recall:{recall},precison:{precision},f1:{f1}")
+    
     return clean_pool_flag
 
 def train_the_virtual_model(meta_virtual_model, poison_train_loader, meta_optimizer, meta_criterion, device):
@@ -565,5 +412,95 @@ def train_the_virtual_model(meta_virtual_model, poison_train_loader, meta_optimi
         # 优化器中的参数更新
         meta_optimizer.step()
 
+
+def main():
+    
+    exp_root_dir = config.exp_root_dir
+    dataset_name = config.dataset_name
+    model_name = config.model_name
+    attack_name = config.attack_name
+    class_num = config.class_num
+    random.seed(config.random_seed)
+
+    # 获得backdoor_data
+    backdoor_data_path = os.path.join(exp_root_dir,"ATTACK",dataset_name,model_name,attack_name,"backdoor_data.pth")
+    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_trainset = backdoor_data["poisoned_trainset"]
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    poisoned_testset = backdoor_data["poisoned_testset"]
+    clean_testset = backdoor_data["clean_testset"]
+    victim_model = get_model(dataset_name,model_name)
+
+
+    # 数据加载器
+    poisoned_trainset_loader = DataLoader(
+                poisoned_trainset,
+                batch_size=64,
+                shuffle=True,
+                num_workers=4,
+                pin_memory=True)
+
+    poisoned_evalset_loader = DataLoader( # 不打乱的训练集加载器
+                poisoned_trainset, 
+                batch_size=64,
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+
+    clean_testset_loader = DataLoader(
+                clean_testset,
+                batch_size=64, 
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+
+    poisoned_testset_loader = DataLoader(
+                poisoned_testset,
+                batch_size=64,
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+
+    # 获得类别排序
+    grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
+    mutated_rate = 0
+    measure_name = "Precision_mean"
+    classes_rank = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["classes_rank"]
+    class_prob_map = get_class_sampled_prob_map(classes_rank)
+    
+    # 开始防御训练
+    device = torch.device(f"cuda:{config.gpu_id}")
+    save_dir = os.path.join(exp_root_dir, "OurMethod", "defence_train",dataset_name, model_name, attack_name)
+    epochs = config.asd_config[dataset_name]["epoch"]
+    defence_train(
+        dataset_name,
+        model_name,
+        victim_model,
+        class_num, # 分类数量
+        poisoned_trainset, # 有污染的训练集,不打乱的list
+        poisoned_ids, # 被污染的样本id list
+        poisoned_evalset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
+        poisoned_trainset_loader, #有污染的训练集加载器,打乱顺序加载
+        clean_testset_loader, # 干净的测试集加载器
+        poisoned_testset_loader, # 污染的测试集加载器
+        device, # GPU设备对象
+        save_dir, # 实验结果存储目录 
+        epochs,
+        class_prob_map)
+        
+        
+
+    
+  
+
+
+
+
+
+
+
 if __name__ == "__main__":
-    main_test()
+
+
+    pass
