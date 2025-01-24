@@ -17,7 +17,7 @@ from codes.datasets.GTSRB.models.densenet import DenseNet121
 def get_model(dataset_name,model_name):
     if dataset_name == "CIFAR10":
         if model_name == "ResNet18":
-            return ResNet(num=18,num_classes=10),
+            return ResNet(num=18,num_classes=10)
         elif model_name == "VGG19":
             return VGG("VGG19")
         elif model_name == "DenseNet":

@@ -1,8 +1,7 @@
-import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from asd.models.linearModel import LinearModel
+from codes.asd.models.linearModel import LinearModel
 
 class BasicBlock(nn.Module):
     expansion = 1

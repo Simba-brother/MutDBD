@@ -57,7 +57,7 @@ def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_l
             if random.random() < prob:
                 # 概率出现,该样本进入total_indice
                 choice_indice.append(sample_idx)
-                if len(choice_indice) < samples_num:
+                if len(choice_indice) == samples_num:
                     # 如果数量够了直接break
                     break
     assert len(choice_indice) == samples_num, "数量不对"
@@ -193,7 +193,7 @@ def defence_train(
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids)
+            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids,class_prob_map)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
@@ -388,7 +388,7 @@ def meta_split(record_list, meta_record_list, rate, poisoned_indice,class_prob_m
     precision = round(tp_num / len(predict_p_idx_list),4)
     f1 = 2*recall*precision/(precision+recall)
     print(f"recall:{recall},precison:{precision},f1:{f1}")
-    
+
     return clean_pool_flag
 
 def train_the_virtual_model(meta_virtual_model, poison_train_loader, meta_optimizer, meta_criterion, device):
@@ -464,14 +464,15 @@ def main():
 
     # 获得类别排序
     grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
-    mutated_rate = 0
+    mutated_rate = 0.01
     measure_name = "Precision_mean"
-    classes_rank = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["classes_rank"]
+    classes_rank = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["class_rank"]
     class_prob_map = get_class_sampled_prob_map(classes_rank)
     
     # 开始防御训练
     device = torch.device(f"cuda:{config.gpu_id}")
     save_dir = os.path.join(exp_root_dir, "OurMethod", "defence_train",dataset_name, model_name, attack_name)
+    os.makedirs(save_dir,exist_ok=True)
     epochs = config.asd_config[dataset_name]["epoch"]
     defence_train(
         dataset_name,
@@ -488,19 +489,8 @@ def main():
         save_dir, # 实验结果存储目录 
         epochs,
         class_prob_map)
-        
-        
-
-    
-  
-
-
-
-
-
-
 
 if __name__ == "__main__":
 
-
+    main()
     pass

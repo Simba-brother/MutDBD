@@ -18,7 +18,7 @@ print(proctitle)
 
 # 加载后门攻击配套数据
 
-backdoor_data = torch.load(os.path.join(config.exp_root_dir, "attack", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth"), map_location="cpu")
+backdoor_data = torch.load(os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth"), map_location="cpu")
 backdoor_model = backdoor_data["backdoor_model"]
 poisoned_trainset = backdoor_data["poisoned_trainset"]
 poisoned_ids = backdoor_data["poisoned_ids"]
