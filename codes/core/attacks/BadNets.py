@@ -509,7 +509,7 @@ class BadNets(Base):
             seed=seed,
             deterministic=deterministic)
         
-        # 创建出污染数据集（train set）
+        # 创建出污染数据集（train set) 这里返回的是 DatasetFolder 类型
         self.poisoned_train_dataset = CreatePoisonedDataset(
             train_dataset, 
             y_target,

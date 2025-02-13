@@ -145,17 +145,13 @@ class MixMatchDataset(Dataset):
         else:
             item1 = self.dataset[self.semi_indice[index]]
             item2 = self.dataset[self.semi_indice[index]]
-            # img1, img2 = item1.pop("img"), item2.pop("img")
-            # item1.update({"img1": img1, "img2": img2})
-            # item = item1
-            # item["labeled"] = False
             img1 = item1[0]
             img2 = item2[0]
             item = {}
             item["img1"] = img1
             item["img2"] = img2
             item["target"] = item1[1]
-            item["labeled"] = True
+            item["labeled"] = False
         return item
 
     def __len__(self):

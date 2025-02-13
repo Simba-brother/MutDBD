@@ -1,0 +1,1 @@
+from codes.poisoned_dataset.cifar10.badNets.generator import gen_poisoned_dataset as cifar10_badNets

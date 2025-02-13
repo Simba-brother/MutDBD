@@ -246,8 +246,6 @@ def prepare_data():
     }
     return res
 
-
-
 def defence_train(
         model, # victim model
         class_num, # 分类数量
@@ -308,7 +306,7 @@ def defence_train(
     # 总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
-        print("===Epoch: {}/{}===".format(epoch, total_epoch))
+        print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
         if epoch < 60:
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
@@ -335,10 +333,11 @@ def defence_train(
             model_name = kwargs["model_name"]
             if dataset_name in ["CIFAR10","GTSRB"]:
                 if model_name == "ResNet18":
+                    # 元虚拟模型要更新的参数
                     param_meta = [  
                                     {'params': meta_virtual_model.layer3.parameters()},
                                     {'params': meta_virtual_model.layer4.parameters()},
-                                    {'params': meta_virtual_model.linear.parameters()},
+                                    # {'params': meta_virtual_model.linear.parameters()},
                                     {'params': meta_virtual_model.classifier.parameters()}
                                 ]
                 elif model_name == "VGG19":
@@ -352,15 +351,10 @@ def defence_train(
                                     {'params': meta_virtual_model.dense4.parameters()},
                                     {'params': meta_virtual_model.classifier.parameters()}
                                 ]
-            # param_meta = [
-            #                 {'params': meta_virtual_model.backbone.layer3.parameters()},
-            #                 {'params': meta_virtual_model.backbone.layer4.parameters()},
-            #                 {'params': meta_virtual_model.linear.parameters()}
-            #             ]
             # 元模型的参数优化器
             meta_optimizer = torch.optim.Adam(param_meta, lr=0.015)
             # 元模型的损失函数
-            meta_criterion = nn.CrossEntropyLoss()
+            meta_criterion = nn.CrossEntropyLoss(reduction="mean")
             meta_criterion.to(device)
             for _ in range(1):
                 # 使用完整的训练集训练一轮元模型
@@ -472,7 +466,6 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
     """
     keys = [record.name for record in record_list]
     loss = record_list[keys.index("loss")].data.numpy()
-    # poison = record_list[keys.index("poison")].data.numpy()
     clean_pool_flag = np.zeros(len(loss)) # 每次选择都清空
     # 存总共选择的clean 的idx,包括seed和loss最低的的sample idx
     total_indice = choice_clean_indice.tolist() # choice_clean_indice装的seed
@@ -480,6 +473,7 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
         # 遍历每个class_idx
         sample_indice = np.array(sample_indice)
         loss_class = loss[sample_indice]
+        # 选择SCE loss较低的
         indice_class = loss_class.argsort()[: choice_num]
         indice = sample_indice[indice_class]
         # list的extend操作
@@ -503,7 +497,6 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice):
     """
     keys = [record.name for record in record_list]
     loss = record_list[keys.index("loss")].data.numpy()
-    # poison = record_list[keys.index("poison")].data.numpy()
     clean_pool_flag = np.zeros(len(loss))
     total_indice = loss.argsort()[: int(len(loss) * ratio)]
     # 统计构建出的clean pool 中还混有污染样本的数量
@@ -524,9 +517,7 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
     keys = [record.name for record in record_list]
     loss = record_list[keys.index("loss")].data.numpy()
     meta_loss = meta_record_list[keys.index("loss")].data.numpy()
-    # poison = record_list[keys.index("poison")].data.numpy()
     clean_pool_flag = np.zeros(len(loss))
-    # model_loss - meta-loss
     loss = loss - meta_loss
     # dif小的样本被选择为clean样本
     total_indice = loss.argsort()[: int(len(loss) * ratio)]

@@ -84,8 +84,6 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
             feature_dic = feature_extractor(data)
             feature = feature_dic[node_str]
             output = model(data)
-            # feature = model.backbone(data)
-            # output = model.linear(feature)
         criterion.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
         raw_loss = criterion(output, target)
 

@@ -6,6 +6,7 @@ import config
 from codes.asd import defence_train
 from codes.scripts.dataset_constructor import *
 from codes.models import get_model
+from codes.poisoned_dataset.cifar10.badNets.generator import gen_poisoned_dataset
 
 from codes.tools import model_train_test
 import torch.nn as nn
@@ -20,11 +21,15 @@ print(proctitle)
 
 backdoor_data = torch.load(os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth"), map_location="cpu")
 backdoor_model = backdoor_data["backdoor_model"]
-poisoned_trainset = backdoor_data["poisoned_trainset"]
 poisoned_ids = backdoor_data["poisoned_ids"]
 poisoned_testset = backdoor_data["poisoned_testset"]
 clean_testset = backdoor_data["clean_testset"]
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
+
+# 根据poisoned_ids得到非预制菜poisoneds_trainset
+poisoned_trainset = gen_poisoned_dataset(poisoned_ids)
+
+
 
 # 数据加载器
 poisoned_trainset_loader = DataLoader(
@@ -58,7 +63,7 @@ poisoned_testset_loader = DataLoader(
 device = torch.device(f"cuda:{config.gpu_id}")
 
 # 开始防御式训练
-print("开始防御式训练")
+print("开始ASD防御式训练")
 time_1 = time.perf_counter()
 best_ckpt_path, latest_ckpt_path = defence_train(
         model = victim_model, # victim model
@@ -66,7 +71,7 @@ best_ckpt_path, latest_ckpt_path = defence_train(
         poisoned_train_dataset = poisoned_trainset, # 有污染的训练集
         poisoned_ids = poisoned_ids, # 被污染的样本id list
         poisoned_eval_dataset_loader = poisoned_evalset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-        poisoned_train_dataset_loader = poisoned_trainset_loader, # 有污染的训练集加载器
+        poisoned_train_dataset_loader = poisoned_trainset_loader, # 有污染的训练集加载器（打乱加载）
         clean_test_dataset_loader = clean_testset_loader, # 干净的测试集加载器
         poisoned_test_dataset_loader = poisoned_testset_loader, # 污染的测试集加载器
         device=device, # GPU设备对象
