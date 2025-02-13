@@ -76,7 +76,7 @@ class PoisonedDatasetFolder(DatasetFolder):
 
         return sample, target, isPoisoned
 
-def gen_poisoned_dataset(poisoned_ids:list):
+def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
 
     #  数据集
     trainset,testset = cifar10_BadNets()
@@ -86,9 +86,10 @@ def gen_poisoned_dataset(poisoned_ids:list):
     pattern[-3:, -3:] = 255
     weight = torch.zeros((32, 32), dtype=torch.float32)
     weight[-3:, -3:] = 1.0
-
-    # 中毒的数据集
-    poisonedDatasetFolder = PoisonedDatasetFolder(trainset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
+    if trainOrtest == "train":
+        # 中毒的数据集
+        poisonedDatasetFolder = PoisonedDatasetFolder(trainset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
+    elif trainOrtest == "test":
+        # 中毒的数据集
+        poisonedDatasetFolder = PoisonedDatasetFolder(testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     return poisonedDatasetFolder
-    
-    

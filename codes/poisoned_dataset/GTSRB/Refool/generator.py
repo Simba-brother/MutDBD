@@ -11,7 +11,7 @@ from torchvision.datasets import DatasetFolder
 from torchvision.transforms import Compose
 
 from codes import config
-from codes.transform_dataset import cifar10_Refool
+from codes.transform_dataset import gtsrb_Refool
 from codes.core.attacks.Refool import AddDatasetFolderTriggerMixin,ModifyTarget
 
 
@@ -120,7 +120,7 @@ def read_image(img_path, type=None):
 def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
 
     #  数据集
-    trainset,testset = cifar10_Refool()
+    trainset,testset = gtsrb_Refool()
 
     # backdoor pattern
     reflection_images = []
@@ -137,7 +137,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
             trainset, 
             config.target_class_idx, 
             poisoned_ids, 
-            poisoned_transform_index=1, 
+            poisoned_transform_index=0, 
             poisoned_target_transform_index=1, 
             reflection_cadidates=reflection_images,
             max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
@@ -146,7 +146,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
             testset, 
             config.target_class_idx, 
             poisoned_ids, 
-            poisoned_transform_index=1, 
+            poisoned_transform_index=0, 
             poisoned_target_transform_index=1, 
             reflection_cadidates=reflection_images,
             max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)

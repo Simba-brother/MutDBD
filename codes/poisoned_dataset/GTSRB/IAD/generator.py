@@ -4,7 +4,7 @@ import torch
 from torchvision.datasets import DatasetFolder
 from torchvision.transforms import Compose
 
-from codes.transform_dataset import cifar10_IAD
+from codes.transform_dataset import gtsrb_IAD
 from codes import config
 from codes.core.attacks.IAD import Generator
 from codes.scripts.dataset_constructor import Add_IAD_DatasetFolderTrigger,ModifyTarget
@@ -77,10 +77,10 @@ def get_attack_dict_path(model_name:str):
     if model_name == "ResNet18":
         attack_dict_path = os.path.join(config.exp_root_dir,
                                     "ATTACK",
-                                    "CIFAR10",
+                                    "GTSRB",
                                     f"{model_name}",
                                     "IAD",
-                                    "ATTACK_2024-12-18_13:17:49",
+                                    "ATTACK_2024-12-26_11:06:15",
                                     "dict_state.pth")
     elif model_name == "VGG19":
         attack_dict_path = os.path.join(config.exp_root_dir,
@@ -88,7 +88,7 @@ def get_attack_dict_path(model_name:str):
                             "CIFAR10",
                             f"{model_name}",
                             "IAD",
-                            "ATTACK_2024-12-18_13:20:48",
+                            "ATTACK_2024-12-26_11:06:59",
                             "dict_state.pth")
     elif model_name == "DenseNet":
         attack_dict_path = os.path.join(config.exp_root_dir,
@@ -96,19 +96,19 @@ def get_attack_dict_path(model_name:str):
                             "CIFAR10",
                             f"{model_name}",
                             "IAD",
-                            "ATTACK_2024-12-18_13:24:29",
+                            "ATTACK_2024-12-26_21:31:24",
                             "dict_state.pth")
 
     return attack_dict_path
 
 def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     #  数据集
-    trainset,trainset1, testset, testset1 = cifar10_IAD()
+    trainset,trainset1, testset, testset1 = gtsrb_IAD()
 
     # backdoor pattern
     attack_dict_path = get_attack_dict_path(model_name)
-    modelG = Generator("cifar10")
-    modelM = Generator("cifar10", out_channels=1)
+    modelG = Generator("gtsrb")
+    modelM = Generator("gtsrb", out_channels=1)
     
     dict_state = torch.load(attack_dict_path, map_location="cpu")
     modelG.load_state_dict(dict_state["modelG"])
@@ -118,7 +118,6 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     modelM.eval()
 
     if trainOrtest == "train":
-    
         poisonedDatasetFolder =  IADPoisonedDatasetFolder(
             benign_dataset = trainset,
             y_target = config.target_class_idx,
@@ -137,11 +136,3 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     return poisonedDatasetFolder
     
     
-
-    # poisoned_testset =  IADPoisonedDatasetFolder(
-    #     benign_dataset = testset,
-    #     y_target = config.target_class_idx,
-    #     poisoned_rate = 1,
-    #     modelG = modelG,
-    #     modelM = modelM
-    # )

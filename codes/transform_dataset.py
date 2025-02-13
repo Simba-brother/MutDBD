@@ -5,6 +5,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 from torchvision.datasets import DatasetFolder
 from codes import config
 
+# BadNets
 def cifar10_BadNets():
     # 训练集transform    
     transform_train = Compose([
@@ -42,7 +43,7 @@ def cifar10_BadNets():
     )
     return trainset,testset
 
-
+# IAD
 def cifar10_IAD():
     # 使用BackdoorBox的transform
     transform_train = Compose([
@@ -95,6 +96,8 @@ def cifar10_IAD():
         is_valid_file=None)
     return trainset, trainset1, testset, testset1
 
+
+# Refool
 def cifar10_Refool():
     # 训练集transform
     transform_train = Compose([

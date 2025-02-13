@@ -228,6 +228,7 @@ def attack():
     # 中毒的测试集
     dict_state["poisoned_testset"]=poisoned_testset
     dict_state["backdoor_model"] = model
+    # trigger
     dict_state["identity_grid"]=identity_grid
     dict_state["noise_grid"]=noise_grid
     save_path = os.path.join(work_dir,"dict_state.pth")

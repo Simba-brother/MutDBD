@@ -9,7 +9,7 @@ from torchvision.transforms import Compose
 from torchvision.datasets import DatasetFolder
 
 from codes.core.attacks.WaNet import AddDatasetFolderTrigger, ModifyTarget
-from codes.transform_dataset import cifar10_WaNet
+from codes.transform_dataset import gtsrb_WaNet
 from codes import config
 
 
@@ -106,7 +106,7 @@ class PoisonedDatasetFolder(DatasetFolder):
 
 def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     #  数据集
-    trainset,testset = cifar10_WaNet()
+    trainset,testset = gtsrb_WaNet()
     if model_name == "ResNet18":
         attack_dict_path = os.path.join(
             config.exp_root_dir,
@@ -114,7 +114,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
             "CIFAR10",
             "ResNet18",
             "WaNet",
-            "ATTACK_2024-12-18_13:37:18",
+            "ATTACK_2024-12-27_13:36:56",
             "dict_state.pth"
         )
     elif model_name == "VGG19":
@@ -124,7 +124,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
             "CIFAR10",
             "VGG19",
             "WaNet",
-            "ATTACK_2024-12-18_13:39:20",
+            "ATTACK_2024-12-27_13:37:37",
             "dict_state.pth"
         )
     elif model_name == "DenseNet":
@@ -134,7 +134,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
             "CIFAR10",
             "DenseNet",
             "WaNet",
-            "ATTACK_2024-12-18_13:41:03",
+            "ATTACK_2024-12-27_13:37:50",
             "dict_state.pth"
         )
     dict_state = torch.load(attack_dict_path, map_location="cpu")
