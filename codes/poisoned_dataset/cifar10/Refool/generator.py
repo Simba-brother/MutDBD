@@ -133,7 +133,7 @@ def gen_poisoned_dataset(poisoned_ids:list):
     reflection_images = [read_image(os.path.join(reflection_data_dir,img_path)) for img_path in reflection_image_path[:200]]
     # 中毒的数据集
     poisonedDatasetFolder = PoisonedDatasetFolder(
-        trainset, 
+        testset, 
         config.target_class_idx, 
         poisoned_ids, 
         poisoned_transform_index=1, 

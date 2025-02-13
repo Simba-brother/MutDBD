@@ -30,7 +30,6 @@ victim_model = get_model(dataset_name=config.dataset_name, model_name=config.mod
 poisoned_trainset = gen_poisoned_dataset(poisoned_ids)
 
 
-
 # 数据加载器
 poisoned_trainset_loader = DataLoader(
             poisoned_trainset,
