@@ -118,7 +118,6 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     modelM.eval()
 
     if trainOrtest == "train":
-    
         poisonedDatasetFolder =  IADPoisonedDatasetFolder(
             benign_dataset = trainset,
             y_target = config.target_class_idx,

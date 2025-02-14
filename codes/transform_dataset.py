@@ -284,8 +284,6 @@ def gtsrb_WaNet():
         Resize((32, 32)),
         ToTensor()
     ])
-
-
     transform_test = Compose([
         ToTensor(),
         ToPILImage(),

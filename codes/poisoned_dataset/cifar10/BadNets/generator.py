@@ -86,6 +86,8 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     pattern[-3:, -3:] = 255
     weight = torch.zeros((32, 32), dtype=torch.float32)
     weight[-3:, -3:] = 1.0
+
+    # 形成Dataset
     if trainOrtest == "train":
         # 中毒的数据集
         poisonedDatasetFolder = PoisonedDatasetFolder(trainset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)

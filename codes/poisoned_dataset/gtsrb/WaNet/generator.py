@@ -111,7 +111,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
         attack_dict_path = os.path.join(
             config.exp_root_dir,
             "ATTACK",
-            "CIFAR10",
+            "GTSRB",
             "ResNet18",
             "WaNet",
             "ATTACK_2024-12-27_13:36:56",
@@ -121,7 +121,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
         attack_dict_path = os.path.join(
             config.exp_root_dir,
             "ATTACK",
-            "CIFAR10",
+            "GTSRB",
             "VGG19",
             "WaNet",
             "ATTACK_2024-12-27_13:37:37",
@@ -131,7 +131,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
         attack_dict_path = os.path.join(
             config.exp_root_dir,
             "ATTACK",
-            "CIFAR10",
+            "GTSRB",
             "DenseNet",
             "WaNet",
             "ATTACK_2024-12-27_13:37:50",
@@ -142,9 +142,9 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     identity_grid = dict_state["identity_grid"]
     noise_grid = dict_state["noise_grid"]
     if trainOrtest == "train":
-        poisonedDatasetFolder= PoisonedDatasetFolder(trainset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
+        poisonedDatasetFolder= PoisonedDatasetFolder(trainset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=0,poisoned_target_transform_index=0)
     elif trainOrtest == "test":
-        poisonedDatasetFolder= PoisonedDatasetFolder(testset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
+        poisonedDatasetFolder= PoisonedDatasetFolder(testset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=0,poisoned_target_transform_index=0)
     return poisonedDatasetFolder
 
 

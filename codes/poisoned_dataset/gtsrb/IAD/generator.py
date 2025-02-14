@@ -85,7 +85,7 @@ def get_attack_dict_path(model_name:str):
     elif model_name == "VGG19":
         attack_dict_path = os.path.join(config.exp_root_dir,
                             "ATTACK",
-                            "CIFAR10",
+                            "GTSRB",
                             f"{model_name}",
                             "IAD",
                             "ATTACK_2024-12-26_11:06:59",
@@ -93,7 +93,7 @@ def get_attack_dict_path(model_name:str):
     elif model_name == "DenseNet":
         attack_dict_path = os.path.join(config.exp_root_dir,
                             "ATTACK",
-                            "CIFAR10",
+                            "GTSRB",
                             f"{model_name}",
                             "IAD",
                             "ATTACK_2024-12-26_21:31:24",
