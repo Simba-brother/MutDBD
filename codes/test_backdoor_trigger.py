@@ -637,7 +637,7 @@ def GTSRB_DenseNet_WaNet():
     print("ASR_fixed:",evalModel.eval_acc())
 
     device = torch.device(f"cuda:{config.gpu_id}")
-    evalModel = EvalModel(backdoor_model, poisoned_testset, de  vice, batch_size=512, num_workers=4)
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
     print("ASR:",evalModel.eval_acc())
 
 if __name__ == "__main__":    
