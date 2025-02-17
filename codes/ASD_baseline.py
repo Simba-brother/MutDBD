@@ -1,16 +1,25 @@
 import os
 import time
 import torch
+import torch.nn as nn
+import setproctitle
 from torch.utils.data import DataLoader
 import config
 from codes.asd import defence_train
 from codes.scripts.dataset_constructor import *
 from codes.models import get_model
-from codes.poisoned_dataset.cifar10.badNets.generator import gen_poisoned_dataset
-
+# cifar10
+from codes.poisoned_dataset.cifar10.BadNets.generator import gen_poisoned_dataset as cifar10_badNets_gen_poisoned_dataset
+from codes.poisoned_dataset.cifar10.IAD.generator import gen_poisoned_dataset as cifar10_IAD_gen_poisoned_dataset
+from codes.poisoned_dataset.cifar10.Refool.generator import gen_poisoned_dataset as cifar10_Refool_gen_poisoned_dataset
+from codes.poisoned_dataset.cifar10.WaNet.generator import gen_poisoned_dataset as cifar10_WaNet_gen_poisoned_dataset
+# gtsrb
+from codes.poisoned_dataset.gtsrb.BadNets.generator import gen_poisoned_dataset as gtsrb_badNets_gen_poisoned_dataset
+from codes.poisoned_dataset.gtsrb.IAD.generator import gen_poisoned_dataset as gtsrb_IAD_gen_poisoned_dataset
+from codes.poisoned_dataset.gtsrb.Refool.generator import gen_poisoned_dataset as gtsrb_Refool_gen_poisoned_dataset
+from codes.poisoned_dataset.gtsrb.WaNet.generator import gen_poisoned_dataset as gtsrb_WaNet_gen_poisoned_dataset
 from codes.tools import model_train_test
-import torch.nn as nn
-import setproctitle
+
 
 # 进程名称
 proctitle = f"ASD|{config.dataset_name}|{config.model_name}|{config.attack_name}"
@@ -27,9 +36,28 @@ clean_testset = backdoor_data["clean_testset"]
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset
-poisoned_trainset = gen_poisoned_dataset(poisoned_ids)
-
-
+if config.dataset_name == "CIFAR10":
+    if config.attack_name == "BadNets":
+        poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+    elif config.attack_name == "IAD":
+        poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+    elif config.attack_name == "Refool":
+        poisoned_trainset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+    elif config.attack_name == "WaNet":
+        poisoned_trainset = cifar10_WaNet_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+elif config.dataset_name == "GTSRB":
+    if config.attack_name == "BadNets":
+        poisoned_trainset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+    elif config.attack_name == "IAD":
+        poisoned_trainset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+    elif config.attack_name == "Refool":
+        poisoned_trainset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+    elif config.attack_name == "WaNet":
+        poisoned_trainset = gtsrb_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+    else:
+        pass
+else:
+    pass
 # 数据加载器
 poisoned_trainset_loader = DataLoader(
             poisoned_trainset,

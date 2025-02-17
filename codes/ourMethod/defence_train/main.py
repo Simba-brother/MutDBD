@@ -12,7 +12,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from codes.tools import model_train_test
-from codes.poisoned_dataset.cifar10.badNets.generator import gen_poisoned_dataset
+from codes.poisoned_dataset.cifar10.BadNets.generator import gen_poisoned_dataset
 from codes import config
 from codes.models import get_model
 from codes.asd.loss import SCELoss, MixMatchLoss
@@ -58,8 +58,10 @@ def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_l
     choice_indice = []
     while len(choice_indice) < samples_num:
         for sample_idx in ranked_sample_idx_array:
+            # 得到该样本被采样概率
             prob = label_prob_map[label_list[sample_idx]]
-            if random.random() < prob:
+            cur_p =  random.random()
+            if cur_p < prob:
                 # 概率出现,该样本进入total_indice
                 choice_indice.append(sample_idx)
                 if len(choice_indice) == samples_num:
@@ -68,7 +70,7 @@ def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_l
     assert len(choice_indice) == samples_num, "数量不对"
     return choice_indice
 
-def defence_train(
+def our_method_defence_train(
         model, # victim model
         class_num, # 分类数量
         poisoned_train_dataset, # 有污染的训练集,不打乱的list
@@ -130,7 +132,7 @@ def defence_train(
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
-        if epoch < 60:
+        if epoch < 60: # [0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
             if epoch % 5 == 0 and epoch != 0:
@@ -332,10 +334,10 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice,class_p
     loss = record_list[keys.index("loss")].data.numpy()
     gt_label_array = record_list[keys.index("target")].data.numpy()
     clean_pool_flag = np.zeros(len(loss))
-    # total_indice = loss.argsort()[: int(len(loss) * ratio)]
-    ranked_sample_idx_array =  loss.argsort()
-    samples_num = int(len(ranked_sample_idx_array)*ratio)
-    total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
+    total_indice = loss.argsort()[: int(len(loss) * ratio)]
+    # ranked_sample_idx_array =  loss.argsort()
+    # samples_num = int(len(ranked_sample_idx_array)*ratio)
+    # total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
 
     # 统计构建出的clean pool 中还混有污染样本的数量
     poisoned_count = 0
@@ -360,11 +362,11 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice,class_prob_
     clean_pool_flag = np.zeros(len(loss))
     loss = loss - meta_loss
     # dif小的样本被选择为clean样本
-    # total_indice = loss.argsort()[: int(len(loss) * ratio)]
+    total_indice = loss.argsort()[: int(len(loss) * ratio)]
 
-    ranked_sample_idx_array =  loss.argsort()
-    samples_num = int(len(ranked_sample_idx_array)*ratio)
-    total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
+    # ranked_sample_idx_array =  loss.argsort()
+    # samples_num = int(len(ranked_sample_idx_array)*ratio)
+    # total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
 
     poisoned_count = 0
     for idx in total_indice:
@@ -417,8 +419,8 @@ def main():
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_ids = backdoor_data["poisoned_ids"]
-    # 根据poisoned_ids得到非预制菜poisoneds_trainset
-    poisoned_trainset = gen_poisoned_dataset(poisoned_ids)
+    # 根据poisoned_ids得到新鲜poisoneds_trainset
+    poisoned_trainset = gen_poisoned_dataset(poisoned_ids,"train")
     poisoned_testset = backdoor_data["poisoned_testset"]
     clean_testset = backdoor_data["clean_testset"]
     victim_model = get_model(dataset_name,model_name)
@@ -452,7 +454,18 @@ def main():
                 shuffle=False,
                 num_workers=4,
                 pin_memory=True)
+    # list1 = []
+    # for i in range(len(poisoned_trainset)):
+    #     s,l,p = poisoned_trainset[i]
+    #     list1.append(l)
+    # list2 = []
+    # for _, batch in enumerate(poisoned_evalset_loader):
+    #     data = batch[0]
+    #     target = batch[1]
+    #     list2.extend(target.tolist())
+    # print("f")
 
+    
     # 获得类别排序
     grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
     mutated_rate = 0.01
@@ -465,7 +478,7 @@ def main():
     # 开始防御式训练
     print("开始OurMethod防御式训练")
     time_1 = time.perf_counter()
-    best_ckpt_path, latest_ckpt_path = defence_train(
+    best_ckpt_path, latest_ckpt_path = our_method_defence_train(
             model = victim_model, # victim model
             class_num = class_num, # 分类数量
             poisoned_train_dataset = poisoned_trainset, # 有污染的训练集

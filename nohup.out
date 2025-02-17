@@ -6222,3 +6222,4 @@ dataset_name:GTSRB
 				detect_method:LCR_sample_var
 					class_rank:[0, 1, 2, 6, 7, 8, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22, 23, 24, 25, 27, 29, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 26, 28, 5, 15, 32, 9, 18, 4, 3]
 					target_class_ranking_percent:1.0
+python: can't open file '/home/mml/workspace/backdoor_detect/log/OurMethod/defence_train/CIFAR10/ResNet18/BadNets_2.log': [Errno 2] No such file or directory
