@@ -70,7 +70,7 @@ def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_l
     assert len(choice_indice) == samples_num, "数量不对"
     return choice_indice
 
-def our_method_defence_train(
+def ourMethod_defence_train(
         model, # victim model
         class_num, # 分类数量
         poisoned_train_dataset, # 有污染的训练集,不打乱的list
@@ -132,7 +132,7 @@ def our_method_defence_train(
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
-        if epoch < 60: # [0,59]
+        if epoch < 60:
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
             if epoch % 5 == 0 and epoch != 0:
@@ -147,7 +147,7 @@ def our_method_defence_train(
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids,class_prob_map)
+            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch:
@@ -195,7 +195,7 @@ def our_method_defence_train(
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids,class_prob_map)
+            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
@@ -312,11 +312,6 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
     total_indice = np.array(total_indice)
     clean_pool_flag[total_indice] = 1 # 1表示clean
 
-    print(
-        "{}/{} poisoned samples in clean data pool".format(poisoned_count, clean_pool_flag.sum())
-    )
-    return clean_pool_flag
-
 
 '''
 # 按照loss值对样本idx进行排序
@@ -326,19 +321,14 @@ samples_num = int(len(ranked_sample_idx_array)*rate)
 choice_idx_list = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
 '''
 
-def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice,class_prob_map):
+def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice):
     """
     Adaptively split the poisoned dataset by class-agnostic loss-guided split.
     """
     keys = [record.name for record in record_list]
     loss = record_list[keys.index("loss")].data.numpy()
-    gt_label_array = record_list[keys.index("target")].data.numpy()
     clean_pool_flag = np.zeros(len(loss))
     total_indice = loss.argsort()[: int(len(loss) * ratio)]
-    # ranked_sample_idx_array =  loss.argsort()
-    # samples_num = int(len(ranked_sample_idx_array)*ratio)
-    # total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
-
     # 统计构建出的clean pool 中还混有污染样本的数量
     poisoned_count = 0
     for idx in total_indice:
@@ -351,23 +341,17 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice,class_p
     return clean_pool_flag
 
 
-def meta_split(record_list, meta_record_list, ratio, poisoned_indice,class_prob_map):
+def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
     """
     Adaptively split the poisoned dataset by meta-split.
     """
     keys = [record.name for record in record_list]
     loss = record_list[keys.index("loss")].data.numpy()
-    gt_label_array = record_list[keys.index("target")].data.numpy()
     meta_loss = meta_record_list[keys.index("loss")].data.numpy()
     clean_pool_flag = np.zeros(len(loss))
     loss = loss - meta_loss
     # dif小的样本被选择为clean样本
     total_indice = loss.argsort()[: int(len(loss) * ratio)]
-
-    # ranked_sample_idx_array =  loss.argsort()
-    # samples_num = int(len(ranked_sample_idx_array)*ratio)
-    # total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
-
     poisoned_count = 0
     for idx in total_indice:
         if idx in poisoned_indice:
@@ -478,28 +462,27 @@ def main():
     # 开始防御式训练
     print("开始OurMethod防御式训练")
     time_1 = time.perf_counter()
-    best_ckpt_path, latest_ckpt_path = our_method_defence_train(
-            model = victim_model, # victim model
-            class_num = class_num, # 分类数量
-            poisoned_train_dataset = poisoned_trainset, # 有污染的训练集
-            poisoned_ids = poisoned_ids, # 被污染的样本id list
-            poisoned_eval_dataset_loader = poisoned_evalset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-            poisoned_train_dataset_loader = poisoned_trainset_loader, # 有污染的训练集加载器（打乱加载）
-            clean_test_dataset_loader = clean_testset_loader, # 干净的测试集加载器
-            poisoned_test_dataset_loader = poisoned_testset_loader, # 污染的测试集加载器
-            device = device, # GPU设备对象
-            # 实验结果存储目录
-            save_dir = os.path.join(config.exp_root_dir, 
-                    "OurMethod", 
-                    config.dataset_name, 
-                    config.model_name, 
-                    config.attack_name, 
-                    time.strftime("%Y-%m-%d_%H:%M:%S")
-                    ),
-            class_prob_map = class_prob_map,
-            dataset_name = config.dataset_name,
-            model_name = config.model_name,
-            )
+    best_ckpt_path, latest_ckpt_path = ourMethod_defence_train(
+        model = victim_model, # victim model
+        class_num = config.class_num, # 分类数量
+        poisoned_train_dataset = poisoned_trainset, # 有污染的训练集
+        poisoned_ids = poisoned_ids, # 被污染的样本id list
+        poisoned_eval_dataset_loader = poisoned_evalset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
+        poisoned_train_dataset_loader = poisoned_trainset_loader, # 有污染的训练集加载器（打乱加载）
+        clean_test_dataset_loader = clean_testset_loader, # 干净的测试集加载器
+        poisoned_test_dataset_loader = poisoned_testset_loader, # 污染的测试集加载器
+        device=device, # GPU设备对象
+        # 实验结果存储目录
+        save_dir = os.path.join(config.exp_root_dir, 
+                "OurMethod", 
+                config.dataset_name, 
+                config.model_name, 
+                config.attack_name, 
+                time.strftime("%Y-%m-%d_%H:%M:%S")
+                ),
+        dataset_name = config.dataset_name,
+        model_name = config.model_name,
+        )
     time_2 = time.perf_counter()
     print(f"防御式训练完成，共耗时{time_2-time_1}秒")
     # 评估防御结果
