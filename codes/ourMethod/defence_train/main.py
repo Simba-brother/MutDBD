@@ -81,7 +81,7 @@ def ourMethod_defence_train(
         poisoned_test_dataset_loader, # 污染的测试集加载器
         device, # GPU设备对象
         save_dir, # 实验结果存储目录 save_dir = os.path.join(exp_root_dir, "ASD", dataset_name, model_name, attack_name)
-        class_prob_map,
+        # class_prob_map,
         **kwargs
         ):
     '''
