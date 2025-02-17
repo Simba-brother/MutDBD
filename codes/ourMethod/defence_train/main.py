@@ -75,7 +75,7 @@ def ourMethod_defence_train(
         class_num, # 分类数量
         poisoned_train_dataset, # 有污染的训练集,不打乱的list
         poisoned_ids, # 被污染的样本id list
-        poisoned_eval_dataset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
+        poisoned_eval_dataset_loader, # 有污染的验证集加载器（有污染的训练集不打乱加载）
         poisoned_train_dataset_loader, #有污染的训练集加载器,打乱顺序加载
         clean_test_dataset_loader, # 干净的测试集加载器
         poisoned_test_dataset_loader, # 污染的测试集加载器
@@ -311,7 +311,7 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
             poisoned_count+=1
     total_indice = np.array(total_indice)
     clean_pool_flag[total_indice] = 1 # 1表示clean
-
+    return clean_pool_flag
 
 '''
 # 按照loss值对样本idx进行排序
