@@ -37,15 +37,15 @@ poisoned_rate = 0.05
 ###########################################################
 
 # 当前实验设置的数据集名字
-dataset_name = "CIFAR10"
+dataset_name = "ImageNet2012_subset"
 # 数据集分类任务数量
-class_num = 10 #  CIFAR-10:10,GTSRB:43
+class_num = 30 #  CIFAR-10:10,GTSRB:43
 # 当前实验设置的模型名字
-model_name = "ResNet18"
+model_name = "VGG19"
 # 当前实验设置的攻击
 attack_name = "BadNets"
 # GPU设备
-gpu_id = 1
+gpu_id = 0
 
 
 # baseline ASD配置
