@@ -29,7 +29,7 @@ def _seed_worker():
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "DenseNet"
+model_name = "ResNet18"
 attack_name = "Refool"
 
 
@@ -75,6 +75,8 @@ reflection_image_path = os.listdir(reflection_data_dir)
 # opencv读出来前200个reflection img
 reflection_images = [read_image(os.path.join(reflection_data_dir,img_path)) for img_path in reflection_image_path[:200]]
 # 训练集transform
+'''
+第一版
 transform_train = Compose([
     ToPILImage(), 
     RandomResizedCrop(224),
@@ -87,6 +89,23 @@ transform_test = Compose([
     Resize(256),
     CenterCrop(224),
     ToTensor()
+])
+'''
+
+transform_train = Compose([
+    ToPILImage(),
+    Resize((224, 224)),
+    RandomHorizontalFlip(p=0.5),
+    ToTensor(),
+    Normalize((0.485, 0.456, 0.406),
+                        (0.229, 0.224, 0.225))
+])
+transform_test = Compose([
+    ToPILImage(),
+    Resize((224, 224)),
+    ToTensor(),
+    Normalize((0.485, 0.456, 0.406),
+                        (0.229, 0.224, 0.225))
 ])
 # 获得数据集
 trainset = DatasetFolder(
@@ -121,7 +140,7 @@ refool= Refool(
     reflection_candidates = reflection_images,
     max_image_size=560,
     ghost_rate=0.49, # default:0.49 焦点模糊比例+ghost比例 = 1.焦点模糊和ghost是refool攻击的2种模式
-    alpha_b=0.3, # 默认值：-1。原图占比，直观上讲该值越小攻击效果越好
+    alpha_b=0.1, # 默认值：-1。原图占比，直观上讲该值越小攻击效果越好
     offset=(0, 0),
     sigma=5, # default:-1 # 焦点模糊模式中的反射图像的高斯模糊操作，值域为[1,5]，直观上讲越大攻击效果越好。
     ghost_alpha=-1 # default:-1 两种偏移比重
@@ -135,7 +154,7 @@ schedule = {
     'batch_size': 128,
     'num_workers': 8,
 
-    'lr': 0.1,
+    'lr': 0.01,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,

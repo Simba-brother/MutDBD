@@ -641,7 +641,7 @@ def GTSRB_DenseNet_WaNet():
     print("ASR:",evalModel.eval_acc())
 
 if __name__ == "__main__":    
-    GTSRB_DenseNet_WaNet()
+    CIFAR10_ResNet18_WaNet()
 
  
   

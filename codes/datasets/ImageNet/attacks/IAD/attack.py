@@ -8,7 +8,7 @@ import cv2
 import torch
 import torch.nn as nn
 
-from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
+from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop,RandomCrop,RandomRotation
 from torchvision.datasets import DatasetFolder
 # 导入攻击模块
 from codes.core.attacks import IAD
@@ -49,7 +49,8 @@ def _seed_worker(worker_id):
     worker_seed =666
     np.random.seed(worker_seed)
     random.seed(worker_seed)
-
+'''
+原始的
 # 训练集transform    
 transform_train = Compose([
     ToPILImage(), 
@@ -62,6 +63,19 @@ transform_test = Compose([
     ToPILImage(), 
     Resize(256),
     CenterCrop(224),
+    ToTensor()
+])
+'''
+transform_train = Compose([
+    ToPILImage(),
+    Resize((224, 224)),
+    RandomCrop((224, 224), padding=5),
+    RandomRotation(10),
+    ToTensor()
+])
+transform_test = Compose([
+    ToPILImage(),
+    Resize((224, 224)),
     ToTensor()
 ])
 
@@ -154,11 +168,9 @@ iad = IAD(
     deterministic=deterministic
 )
 
-
 def attack():
     iad.train()
     return os.path.join(iad.work_dir,"dict_state.pth")
-
 
 def main():
     proc_title = "ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name

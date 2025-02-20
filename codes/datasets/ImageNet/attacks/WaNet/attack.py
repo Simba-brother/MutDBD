@@ -30,7 +30,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "DenseNet"
+model_name = "ResNet18"
 attack_name = "WaNet"
 
 num_classes = 30
@@ -68,9 +68,10 @@ def gen_grid(height, k):
     array1d = torch.linspace(-1, 1, steps=height)  # 1D coordinate divided by height in [-1, 1]
     x, y = torch.meshgrid(array1d, array1d)  # 2D coordinates height*height
     identity_grid = torch.stack((y, x), 2)[None, ...]  # 1*height*height*2
-
     return identity_grid, noise_grid
 
+'''
+原来的
 
 # 获得训练集transform
 transform_train = Compose([
@@ -85,6 +86,21 @@ transform_test = Compose([
     Resize(256),
     CenterCrop(224),
     ToTensor(),
+])
+'''
+# 获得训练集transform
+transform_train = Compose([
+    ToTensor(),
+    RandomHorizontalFlip(),
+    transforms.ToPILImage(),
+    transforms.Resize((224, 224)),
+    ToTensor()
+])
+transform_test = Compose([
+    ToTensor(),
+    transforms.ToPILImage(),
+    transforms.Resize((224, 224)),
+    ToTensor()
 ])
 # 获得数据集
 trainset = DatasetFolder(
@@ -105,7 +121,7 @@ testset = DatasetFolder(
 # 获得加载器
 batch_size = 128
 
-identity_grid,noise_grid=gen_grid(224,16)
+identity_grid,noise_grid=gen_grid(224,8)
 
 wanet = WaNet(
     train_dataset=trainset, # type:Dataset
@@ -117,9 +133,13 @@ wanet = WaNet(
     poisoned_rate=config.poisoned_rate,
     identity_grid=identity_grid,
     noise_grid=noise_grid,
-    noise=False,
+    noise=True,
+    poisoned_transform_train_index=0,
+    poisoned_transform_test_index=0,
+    poisoned_target_transform_index=0,
     seed=global_seed,
-    deterministic=deterministic
+    deterministic=deterministic,
+    s=0.9
 )
 
 schedule = {
@@ -130,7 +150,7 @@ schedule = {
     'num_workers': 4,
 
     # 优化器需要的
-    'lr': 0.1,
+    'lr': 0.01,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,

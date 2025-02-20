@@ -288,7 +288,7 @@ class IAD(Base):
                  lambda_div, # 1被传入
                  lambda_norm, # 100被传入
                  mask_density, # 0.032被传入
-                 EPSILON, #1e-7被传入
+                 EPSILON, # 1e-7被传入
                  schedule=None, 
                  seed=0, 
                  deterministic=False,
@@ -302,7 +302,7 @@ class IAD(Base):
             seed=seed,
             deterministic=deterministic)
         
-        self.dataset_name = dataset_name # dataset_name="cifar10",
+        self.dataset_name = dataset_name # dataset_name="cifar10","gtsrb","ImageNet"
         self.train_dataset1 = train_dataset1
         self.test_dataset1 = test_dataset1
         self.y_target = y_target
@@ -444,8 +444,6 @@ class IAD(Base):
                     msg = time.strftime("[%Y-%m-%d_%H:%M:%S] ", time.localtime()) + "Test Norm: {:.3f} | Diversity: {:.3f}\n".format(loss_norm_eval, loss_div_eval)
                     log(msg)
                 epoch += 1
-        # self.modelM被训练完成
-        # 此时epoch = 1+25 = 26
         # The backdoor trigger mask generator will been frozen
         self.modelM.eval()
         self.modelM.requires_grad_(False)
@@ -515,10 +513,10 @@ class IAD(Base):
                         "model": self.model.state_dict(),
                         "modelG": self.modelG.state_dict(),
                         "modelM": self.modelM.state_dict(),
-                        "optimizerC": optimizer.state_dict(),
-                        "optimizerG": optimizerG.state_dict(),
-                        "schedulerC": scheduler.state_dict(),
-                        "schedulerG": schedulerG.state_dict(),
+                        # "optimizerC": optimizer.state_dict(),
+                        # "optimizerG": optimizerG.state_dict(),
+                        # "schedulerC": scheduler.state_dict(),
+                        # "schedulerG": schedulerG.state_dict(),
                         "best_acc_clean": best_acc_clean,
                         "best_acc_bd": best_acc_bd,
                         "best_acc_cross": best_acc_cross,
@@ -543,10 +541,10 @@ class IAD(Base):
                     "model": self.model.state_dict(),
                     "modelG": self.modelG.state_dict(),
                     "modelM": self.modelM.state_dict(),
-                    "optimizerC": optimizer.state_dict(),
-                    "optimizerG": optimizerG.state_dict(),
-                    "schedulerC": scheduler.state_dict(),
-                    "schedulerG": schedulerG.state_dict(),
+                    # "optimizerC": optimizer.state_dict(),
+                    # "optimizerG": optimizerG.state_dict(),
+                    # "schedulerC": scheduler.state_dict(),
+                    # "schedulerG": schedulerG.state_dict(),
                     "avg_acc_clean": avg_acc_clean,
                     "avg_acc_bd": avg_acc_bd,
                     "avg_acc_cross": avg_acc_cross,

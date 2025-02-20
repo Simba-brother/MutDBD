@@ -221,7 +221,8 @@ class PoisonedDatasetFolder(DatasetFolder):
                  noise_grid,
                  noise,
                  poisoned_transform_index,
-                 poisoned_target_transform_index):
+                 poisoned_target_transform_index,
+                 s=0.5):
         super(PoisonedDatasetFolder, self).__init__(
             benign_dataset.root,
             benign_dataset.loader,
@@ -249,9 +250,9 @@ class PoisonedDatasetFolder(DatasetFolder):
         else:
             self.poisoned_transform = copy.deepcopy(self.transform)
             self.poisoned_transform_noise = copy.deepcopy(self.transform) # add noise
-        self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid,  noise=False))
+        self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid,  noise=False, s=s)) # defalut:s=0.5
         #add noise transform
-        self.poisoned_transform_noise.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid,  noise=True))
+        self.poisoned_transform_noise.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid,  noise=True, s=s)) # defalut:s=0.5
         # Modify labels
         if self.target_transform is None:
             self.poisoned_target_transform = Compose([])
@@ -437,10 +438,10 @@ class PoisonedCIFAR10(CIFAR10):
         return img, target
 
 
-def CreatePoisonedDataset(benign_dataset, y_target, poisoned_rate, identity_grid, noise_grid, noise, poisoned_transform_index, poisoned_target_transform_index):
+def CreatePoisonedDataset(benign_dataset, y_target, poisoned_rate, identity_grid, noise_grid, noise, poisoned_transform_index, poisoned_target_transform_index, s=0.5):
     class_name = type(benign_dataset)
     if class_name == DatasetFolder:
-        return PoisonedDatasetFolder(benign_dataset, y_target, poisoned_rate, identity_grid, noise_grid, noise, poisoned_transform_index, poisoned_target_transform_index)
+        return PoisonedDatasetFolder(benign_dataset, y_target, poisoned_rate, identity_grid, noise_grid, noise, poisoned_transform_index, poisoned_target_transform_index, s=s)
     elif class_name == MNIST:
         return PoisonedMNIST(benign_dataset, y_target, poisoned_rate, identity_grid, noise_grid, noise, poisoned_transform_index, poisoned_target_transform_index)
     elif class_name == CIFAR10:
@@ -487,7 +488,8 @@ class WaNet(Base):
                  poisoned_target_transform_index=0,
                  schedule=None,
                  seed=0,
-                 deterministic=False):
+                 deterministic=False,
+                 s=0.5):
        
         super(WaNet, self).__init__(
             train_dataset=train_dataset,
@@ -506,7 +508,8 @@ class WaNet(Base):
             noise_grid,
             noise,
             poisoned_transform_train_index,
-            poisoned_target_transform_index)
+            poisoned_target_transform_index,
+            s=s)
       
         self.poisoned_test_dataset = CreatePoisonedDataset(
             test_dataset,
@@ -516,4 +519,5 @@ class WaNet(Base):
             noise_grid,
             noise,
             poisoned_transform_test_index,
-            poisoned_target_transform_index)
+            poisoned_target_transform_index,
+            s=s)
