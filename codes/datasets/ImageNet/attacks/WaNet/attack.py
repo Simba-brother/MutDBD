@@ -121,7 +121,7 @@ testset = DatasetFolder(
 # 获得加载器
 batch_size = 128
 
-identity_grid,noise_grid=gen_grid(224,8)
+identity_grid,noise_grid=gen_grid(224,128)
 
 wanet = WaNet(
     train_dataset=trainset, # type:Dataset
@@ -139,7 +139,7 @@ wanet = WaNet(
     poisoned_target_transform_index=0,
     seed=global_seed,
     deterministic=deterministic,
-    s=0.9
+    s=0.5
 )
 
 schedule = {

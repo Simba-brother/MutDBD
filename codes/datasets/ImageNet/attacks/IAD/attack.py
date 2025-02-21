@@ -27,7 +27,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "ResNet18"
+model_name = "VGG19"
 attack_name = "IAD"
 
 num_classes = 30

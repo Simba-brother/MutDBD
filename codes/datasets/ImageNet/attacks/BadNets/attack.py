@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torchvision.datasets import DatasetFolder
-from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
+from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, RandomCrop, ToPILImage, Resize, RandomResizedCrop, Normalize, CenterCrop
 
 from torchvision.models import resnet18,vgg19,densenet121
 from codes.core.attacks import BadNets
@@ -24,7 +24,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "VGG19"
+model_name = "DenseNet"
 attack_name = "BadNets"
 
 num_classes = 30
@@ -46,6 +46,8 @@ def _seed_worker(worker_id):
     np.random.seed(global_seed)
     random.seed(global_seed)
 
+'''
+原始的
 # 训练集transform    
 transform_train = Compose([
     ToPILImage(), 
@@ -60,7 +62,19 @@ transform_test = Compose([
     CenterCrop(224),
     ToTensor()
 ])
-
+'''
+# 训练集transform    
+transform_train = Compose([
+    ToPILImage(),
+    RandomResizedCrop(size=224), 
+    ToTensor()
+])
+# 测试集transform
+transform_test = Compose([
+    ToPILImage(),
+    Resize((224, 224)),
+    ToTensor()
+])
 
 # 获得数据集
 trainset = DatasetFolder(
@@ -114,7 +128,7 @@ schedule = {
     'gamma': 0.1,
     'schedule': [100, 150], # epoch区间 (150,180)
 
-    'epochs': 200,
+    'epochs': 20, # 默认: 200
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
@@ -143,10 +157,10 @@ def attack():
 
     dict_state = {}
     dict_state["backdoor_model"] = backdoor_model
-    dict_state["poisoned_trainset"]=poisoned_trainset
+    # dict_state["poisoned_trainset"]=poisoned_trainset
     dict_state["poisoned_ids"]=poisoned_ids
-    dict_state["clean_testset"]=clean_testset
-    dict_state["poisoned_testset"]=poisoned_testset
+    # dict_state["clean_testset"]=clean_testset
+    # dict_state["poisoned_testset"]=poisoned_testset
     dict_state["pattern"] = pattern
     dict_state['weight']=weight
     save_file_name = "dict_state.pth"
@@ -168,9 +182,36 @@ def main():
     eval_backdoor(dataset_name,attack_name,model_name)
 
 
+def update():
+    
+    backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "backdoor_data.pth")
+    dict_state_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "ATTACK_2025-02-21_16:21:27", "dict_state.pth")
+    backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
+    dict_state = torch.load(dict_state_path,map_location="cpu")
+
+    # 后门模型
+    backdoor_model = backdoor_data["backdoor_model"]
+    # poisoned_ids
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # trigger
+    pattern = dict_state["pattern"]
+    weight = dict_state['weight']
+
+    new_backdoor_data = {
+        "backdoor_model":backdoor_model,
+        "poisoned_ids":poisoned_ids,
+        "pattern":pattern,
+        "weight":weight
+    }
+    backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "backdoor_data.pth")
+    torch.save(new_backdoor_data,backdoor_data_path)
+    print("update success")
+
+
 
 if __name__ == "__main__":
-    main()
+    # main()
+    # update()
 
     # proc_title = "Eval|"+dataset_name+"|"+attack_name+"|"+model_name
     # setproctitle.setproctitle(proc_title)
