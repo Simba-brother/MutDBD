@@ -15,7 +15,8 @@ from codes.core.attacks import BadNets
 from codes import config
 from codes.datasets.ImageNet.attacks.BadNets.utils import create_backdoor_data
 from codes.datasets.utils import eval_backdoor,update_backdoor_data
-
+from codes.poisoned_dataset.imagenet_sub.BadNets.generator import gen_poisoned_dataset
+from codes.scripts.dataset_constructor import ExtractDataset
 
 global_seed = config.random_seed
 deterministic = True
@@ -24,7 +25,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "DenseNet"
+model_name = "ResNet18"
 attack_name = "BadNets"
 
 num_classes = 30
@@ -185,7 +186,7 @@ def main():
 def update():
     
     backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "backdoor_data.pth")
-    dict_state_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "ATTACK_2025-02-21_16:21:27", "dict_state.pth")
+    dict_state_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "ATTACK_2025-02-21_15:40:27", "dict_state.pth")
     backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
     dict_state = torch.load(dict_state_path,map_location="cpu")
 
@@ -196,22 +197,33 @@ def update():
     # trigger
     pattern = dict_state["pattern"]
     weight = dict_state['weight']
+    # poisoned_trainset
+    poisoned_ids_train = poisoned_ids
+    poisoned_trainset = gen_poisoned_dataset(poisoned_ids_train, "train")
+    poisoned_trainset_fixed = ExtractDataset(poisoned_trainset)
+    # poisoned_testset
+    poisoned_ids_test = list(range(len(testset)))
+    poisoned_testset = gen_poisoned_dataset(poisoned_ids_test, "test")
+    poisoned_testset_fixed = ExtractDataset(poisoned_testset)
 
     new_backdoor_data = {
         "backdoor_model":backdoor_model,
         "poisoned_ids":poisoned_ids,
         "pattern":pattern,
-        "weight":weight
+        "weight":weight,
+        "poisoned_trainset":poisoned_trainset_fixed,
+        "poisoned_testset":poisoned_testset_fixed
     }
     backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "backdoor_data.pth")
     torch.save(new_backdoor_data,backdoor_data_path)
+    print("save_path:",backdoor_data_path)
     print("update success")
 
 
 
 if __name__ == "__main__":
     # main()
-    # update()
+    update()
 
     # proc_title = "Eval|"+dataset_name+"|"+attack_name+"|"+model_name
     # setproctitle.setproctitle(proc_title)

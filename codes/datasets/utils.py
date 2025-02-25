@@ -24,14 +24,15 @@ def update_backdoor_data(backdoor_data_path):
     torch.save(backdoor_data, backdoor_data_path)
     print("update_backdoor_data(),successful.")
 
-def eval_backdoor(dataset_name,attack_name,model_name):
+def eval_backdoor(dataset_name,attack_name,model_name, clean_testset=None):
     
     backdoor_data_path = os.path.join(config.exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_trainset = backdoor_data["poisoned_trainset"]
     poisoned_testset = backdoor_data["poisoned_testset"]
-    clean_testset = backdoor_data["clean_testset"]
+    if clean_testset is None:
+        clean_testset = backdoor_data["clean_testset"]
     poisoned_ids = backdoor_data["poisoned_ids"]
 
     # eval

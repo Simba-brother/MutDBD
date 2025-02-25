@@ -1,7 +1,7 @@
 
 import os
 import cv2
-from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, RandomCrop, Resize, RandomRotation, Normalize
+from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, RandomCrop, Resize, RandomRotation, Normalize, RandomResizedCrop
 from torchvision.datasets import DatasetFolder
 from codes import config
 
@@ -308,4 +308,155 @@ def gtsrb_WaNet():
         is_valid_file=None)
     return trainset,testset
 
+'''
+ImageNet
+'''
+# BadNets
+def imagenet_BadNets():
+    # 训练集transform    
+    transform_train = Compose([
+        ToPILImage(),
+        RandomResizedCrop(size=224), 
+        ToTensor()
+    ])
+    # 测试集transform
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
 
+    # 获得数据集
+    trainset = DatasetFolder(
+        root= os.path.join(config.ImageNet2012_subset_dir,"train"),
+        loader=cv2.imread, # ndarray (H,W,C)
+        extensions=('jpeg',),
+        transform=transform_train,
+        target_transform=None,
+        is_valid_file=None)
+
+    testset = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"test"),
+        loader=cv2.imread,
+        extensions=('jpeg',),
+        transform=transform_test,
+        target_transform=None,
+        is_valid_file=None)
+    return trainset, testset
+
+# IAD
+def imagenet_IAD():
+    transform_train = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        RandomCrop((224, 224), padding=5),
+        RandomRotation(10),
+        ToTensor()
+    ])
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
+    # 获得数据集
+    trainset = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"train"),
+        loader=cv2.imread, # ndarray
+        extensions=('jpeg',),
+        transform=transform_train,
+        target_transform=None,
+        is_valid_file=None)
+    # 另外一份训练集
+    trainset1 = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"train"),
+        loader=cv2.imread, # ndarray
+        extensions=('jpeg',),
+        transform=transform_train,
+        target_transform=None,
+        is_valid_file=None)
+
+    testset = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"test"),
+        loader=cv2.imread,
+        extensions=('jpeg',),
+        transform=transform_test,
+        target_transform=None,
+        is_valid_file=None)
+    # 另外一份测试集
+    testset1 = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"test"),
+        loader=cv2.imread,
+        extensions=('jpeg',),
+        transform=transform_test,
+        target_transform=None,
+        is_valid_file=None)
+    return trainset,trainset1,testset,testset1
+
+# Refool
+def imagenet_Refool():
+    # 训练集transform
+    transform_train = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        RandomHorizontalFlip(p=0.5),
+        ToTensor(),
+        Normalize((0.485, 0.456, 0.406),
+                            (0.229, 0.224, 0.225))
+    ])
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor(),
+        Normalize((0.485, 0.456, 0.406),
+                            (0.229, 0.224, 0.225))
+    ])
+    # 获得数据集
+    trainset = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"train"),
+        loader=cv2.imread, # ndarray
+        extensions=('jpeg',),
+        transform=transform_train,
+        target_transform=None,
+        is_valid_file=None)
+    testset = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"test"),
+        loader=cv2.imread,
+        extensions=('jpeg',),
+        transform=transform_test,
+        target_transform=None,
+        is_valid_file=None)
+    return trainset,testset
+
+# WaNet
+def imagenet_WaNet():
+    # 获得训练集transform
+    transform_train = Compose([
+        ToTensor(),
+        RandomHorizontalFlip(),
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
+    transform_test = Compose([
+        ToTensor(),
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
+    # 获得数据集
+    trainset = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"train"),
+        loader=cv2.imread, # ndarray
+        extensions=('jpeg',),
+        transform=transform_train,
+        target_transform=None,
+        is_valid_file=None)
+
+    testset = DatasetFolder(
+        root=os.path.join(config.ImageNet2012_subset_dir,"test"),
+        loader=cv2.imread,
+        extensions=('jpeg',),
+        transform=transform_test,
+        target_transform=None,
+        is_valid_file=None)
+    return trainset,testset

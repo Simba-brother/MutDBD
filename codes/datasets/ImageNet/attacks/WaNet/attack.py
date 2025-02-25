@@ -217,6 +217,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+    dict_state_path = os.path.join(
+        config.exp_root_dir,
+        "ATTACK",
+        dataset_name,
+        model_name,
+        attack_name,
+        "ATTACK_2025-02-21_12:45:29",
+        "dict_state.pth"
+    )
+    backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+    create_backdoor_data(dict_state_path, backdoor_data_save_path)
 
 
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
