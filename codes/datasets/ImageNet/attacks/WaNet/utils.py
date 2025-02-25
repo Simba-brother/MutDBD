@@ -25,7 +25,6 @@ def create_backdoor_data(attack_dict_path,save_path):
         "poisoned_ids":poisoned_ids,
         "identity_grid":identity_grid,
         "noise_grid":noise_grid
-
     }
     
     torch.save(backdoor_data,save_path)

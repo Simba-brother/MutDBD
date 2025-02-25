@@ -27,7 +27,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "ResNet18"
+model_name = "DenseNet"
 attack_name = "IAD"
 
 num_classes = 30
@@ -185,11 +185,11 @@ def main():
     eval_backdoor(dataset_name,attack_name,model_name)
     
 if __name__ == "__main__":
-    # main()
-    attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/ImageNet2012_subset/ResNet18/IAD/ATTACK_2025-02-20_13:39:35/best_state_dict.pth"
-    backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
-    create_backdoor_data(attack_dict_path,model,trainset,testset,backdoor_data_save_path)
-    eval_backdoor(dataset_name,attack_name,model_name, clean_testset=testset)
+    main()
+    # attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/ImageNet2012_subset/ResNet18/IAD/ATTACK_2025-02-20_13:39:35/best_state_dict.pth"
+    # backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+    # create_backdoor_data(attack_dict_path,model,trainset,testset,backdoor_data_save_path)
+    # eval_backdoor(dataset_name,attack_name,model_name, clean_testset=testset)
 
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)

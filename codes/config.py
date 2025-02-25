@@ -45,7 +45,7 @@ model_name = "ResNet18"
 # 当前实验设置的攻击
 attack_name = "BadNets"
 # GPU设备
-gpu_id = 0
+gpu_id = 1
 
 
 # baseline ASD配置

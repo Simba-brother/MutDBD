@@ -29,7 +29,7 @@ def _seed_worker():
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "VGG19"
+model_name = "DenseNet"
 attack_name = "Refool"
 
 

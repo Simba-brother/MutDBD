@@ -25,7 +25,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "ImageNet2012_subset"
-model_name = "ResNet18"
+model_name = "VGG19"
 attack_name = "BadNets"
 
 num_classes = 30
@@ -186,7 +186,7 @@ def main():
 def update():
     
     backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "backdoor_data.pth")
-    dict_state_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "ATTACK_2025-02-21_15:40:27", "dict_state.pth")
+    dict_state_path = os.path.join(exp_root_dir, "ATTACK", "ImageNet2012_subset", model_name, attack_name, "ATTACK_2025-02-21_16:20:13", "dict_state.pth")
     backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
     dict_state = torch.load(dict_state_path,map_location="cpu")
 
