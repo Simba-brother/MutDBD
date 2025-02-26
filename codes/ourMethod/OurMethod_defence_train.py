@@ -1,11 +1,12 @@
 import os
 import time
+import joblib
 import torch
 import torch.nn as nn
 import setproctitle
 from torch.utils.data import DataLoader
-import config
-from codes.asd import defence_train
+from codes import config
+from codes.ourMethod.defence import defence_train
 from codes.scripts.dataset_constructor import *
 from codes.models import get_model
 # cifar10
@@ -89,6 +90,49 @@ poisoned_testset_loader = DataLoader(
 # 获得设备
 device = torch.device(f"cuda:{config.gpu_id}")
 
+
+
+def get_class_sampled_prob_map(classes_rank):
+    classes_num = len(classes_rank)
+    class_map = {}
+    intervals = []
+    for cut_rate in [0.25,0.5,0.75]:
+        intervals.append(int(cut_rate*classes_num))
+    for i in range(classes_num):
+        cls = classes_rank[i]
+        if i <= intervals[0]:
+            # [0,25%]
+            prob = 0.25
+        elif i <= intervals[1]:
+            # (25%,50%]
+            prob = 0.5
+        elif i <= intervals[2]:
+            # (50%,75%]
+            prob = 0.75
+        else:
+            # (75%,100%]
+            prob = 1
+        class_map[cls] = prob
+    return class_map
+
+# list1 = []
+# for i in range(len(poisoned_trainset)):
+#     s,l,p = poisoned_trainset[i]
+#     list1.append(l)
+# list2 = []
+# for _, batch in enumerate(poisoned_evalset_loader):
+#     data = batch[0]
+#     target = batch[1]
+#     list2.extend(target.tolist())
+# print("f")
+
+# 获得类别排序
+grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
+mutated_rate = 0.01
+measure_name = "Precision_mean"
+classes_rank = grid[config.dataset_name][config.model_name][config.attack_name][mutated_rate][measure_name]["class_rank"]
+class_prob_map = get_class_sampled_prob_map(classes_rank)
+
 # 开始防御式训练
 print("开始OurMethod防御式训练")
 time_1 = time.perf_counter()
@@ -104,14 +148,16 @@ best_ckpt_path, latest_ckpt_path = defence_train(
         device=device, # GPU设备对象
         # 实验结果存储目录
         save_dir = os.path.join(config.exp_root_dir, 
-                "ASD", 
+                "OurMethod", 
                 config.dataset_name, 
                 config.model_name, 
                 config.attack_name, 
                 time.strftime("%Y-%m-%d_%H:%M:%S")
                 ),
+        # **kwargs
         dataset_name = config.dataset_name,
         model_name = config.model_name,
+        class_prob_map = class_prob_map
         )
 time_2 = time.perf_counter()
 print(f"防御式训练完成，共耗时{time_2-time_1}秒")
