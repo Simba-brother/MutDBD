@@ -33,7 +33,7 @@ def get_mutation_models_pred_labels(dataset):
             for i in range(config.mutation_model_num):
                 mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
                 backdoor_model.load_state_dict(torch.load(mutation_model_path))
-                em = EvalModel(backdoor_model,dataset,device)
+                em = EvalModel(backdoor_model,dataset,device,batch_size=512, num_workers=8)
                 pred_label_list = em.get_pred_labels()
                 eval_ans[ratio][operator].append(pred_label_list)
     return eval_ans
@@ -81,7 +81,7 @@ def get_mutation_models_confidence(dataset):
             for i in range(config.mutation_model_num):
                 mutation_model_path = os.path.join(mutations_dir,str(ratio),operator,f"model_{i}.pth")
                 backdoor_model.load_state_dict(torch.load(mutation_model_path))
-                em = EvalModel(backdoor_model,dataset,device)
+                em = EvalModel(backdoor_model,dataset,device, batch_size=512, num_workers=8)
                 confidence_list = em.get_confidence_list()
                 eval_ans[ratio][operator].append(confidence_list)
     return eval_ans
@@ -97,7 +97,7 @@ def get_mutation_models_prob_outputs(dataset):
         config.model_name,
         config.attack_name
     )
-    em = EvalModel(backdoor_model, dataset, device, batch_size=256, num_workers=4)
+    em = EvalModel(backdoor_model, dataset, device, batch_size=512, num_workers=8)
     '''
     {rate:operator:[prob_outputs]}
     '''
@@ -245,7 +245,7 @@ def main(exp_sub,save_format):
 if __name__ == "__main__":
     # 进程名称
     main_exp_name = "EvalMutationToCSV" 
-    sub_exp_name = "CELoss"
+    sub_exp_name = "preLabel"
     proctitle = f"{main_exp_name}|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{config.gpu_id}")

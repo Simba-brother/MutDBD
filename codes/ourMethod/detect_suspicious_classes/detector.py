@@ -1,5 +1,5 @@
 '''
-怀疑集检测器
+怀疑类别集检测器
 '''
 import os
 import queue
@@ -357,7 +357,6 @@ def detect_method_pool(
 
 
 def main():
-
     data = {}
     dataset_name_list = config.cur_dataset_name_list
     model_name_list = config.cur_model_name_list
@@ -374,6 +373,8 @@ def main():
             class_num = 10
         if dataset_name == "GTSRB":
             class_num = 43
+        if dataset_name == "ImageNet2012_subset":
+            class_num = 30
         for model_name in model_name_list:
             print(f"\tmodel_name:{model_name}")
             data[dataset_name][model_name] = {}

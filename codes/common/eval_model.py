@@ -22,7 +22,7 @@ def _seed_worker(worker_id):
     random.seed(random_seed)
 
 class EvalModel(object):
-    def __init__(self, model, dataset, device, batch_size, num_workers):
+    def __init__(self, model, dataset, device, batch_size=512, num_workers=8):
         # 3个属性：模型，数据集和设备
         self.model = model
         self.device = device

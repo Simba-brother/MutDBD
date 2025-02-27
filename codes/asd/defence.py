@@ -531,7 +531,7 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
     tp_num= len(set(predict_p_idx_list) & set(poisoned_indice))
     recall = round(tp_num/len(poisoned_indice),4)
     precision = round(tp_num / len(predict_p_idx_list),4)
-    f1 = 2*recall*precision/(precision+recall)
+    f1 = 2*recall*precision/(precision+recall+1e-10)
     print(f"recall:{recall},precison:{precision},f1:{f1}")
     return clean_pool_flag
 

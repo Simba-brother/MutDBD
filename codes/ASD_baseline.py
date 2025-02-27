@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import setproctitle
 from torch.utils.data import DataLoader
-import config
+from codes import config
 from codes.asd import defence_train
 from codes.scripts.dataset_constructor import *
 from codes.models import get_model

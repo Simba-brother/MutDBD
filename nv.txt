@@ -1,0 +1,37 @@
+Thu Feb 27 15:13:41 2025       
++---------------------------------------------------------------------------------------+
+| NVIDIA-SMI 535.183.01             Driver Version: 535.183.01   CUDA Version: 12.2     |
+|-----------------------------------------+----------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |         Memory-Usage | GPU-Util  Compute M. |
+|                                         |                      |               MIG M. |
+|=========================================+======================+======================|
+|   0  NVIDIA A800 80GB PCIe          Off | 00000000:9C:00.0 Off |                    0 |
+| N/A   62C    P0             252W / 300W |  25007MiB / 81920MiB |    100%      Default |
+|                                         |                      |             Disabled |
++-----------------------------------------+----------------------+----------------------+
+|   1  NVIDIA A800 80GB PCIe          Off | 00000000:9D:00.0 Off |                    0 |
+| N/A   68C    P0             275W / 300W |  33679MiB / 81920MiB |    100%      Default |
+|                                         |                      |             Disabled |
++-----------------------------------------+----------------------+----------------------+
+                                                                                         
++---------------------------------------------------------------------------------------+
+| Processes:                                                                            |
+|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |
+|        ID   ID                                                             Usage      |
+|=======================================================================================|
+|    0   N/A  N/A   2321643      C   ASD|CIFAR10|VGG19|Refool                   1496MiB |
+|    0   N/A  N/A   2523263      C   ...s|ImageNet2012_subset|VGG19|BadNets     2712MiB |
+|    0   N/A  N/A   2544464      C   ...ons|ImageNet2012_subset|VGG19|WaNet     2712MiB |
+|    0   N/A  N/A   3052961      G   /usr/lib/xorg/Xorg                            4MiB |
+|    0   N/A  N/A   3181061      C   ...mageNet2012_subset|ResNet18|BadNets     4008MiB |
+|    0   N/A  N/A   3693208      C   OurMethod|CIFAR10|DenseNet|BadNets         3512MiB |
+|    0   N/A  N/A   3703911      C   OurMethod|CIFAR10|DenseNet|IAD             3500MiB |
+|    0   N/A  N/A   3731263      C   OurMethod|CIFAR10|DenseNet|Refool          3500MiB |
+|    0   N/A  N/A   3737917      C   OurMethod|CIFAR10|DenseNet|WaNet           3500MiB |
+|    1   N/A  N/A   3052961      G   /usr/lib/xorg/Xorg                            4MiB |
+|    1   N/A  N/A   3906216      C   OurMethod|GTSRB|DenseNet|BadNets           8408MiB |
+|    1   N/A  N/A   3942345      C   OurMethod|GTSRB|DenseNet|IAD               8410MiB |
+|    1   N/A  N/A   3980182      C   OurMethod|GTSRB|DenseNet|Refool            8410MiB |
+|    1   N/A  N/A   4006618      C   OurMethod|GTSRB|DenseNet|WaNet             8410MiB |
++---------------------------------------------------------------------------------------+

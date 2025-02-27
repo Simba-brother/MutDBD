@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # 进程名称
     proctitle = f"Mutations|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
-    device = torch.device(f"cuda:{config.gpu_id}")
+    device = torch.device(f"cpu")
     # 变异模型保存目录
     save_dir = os.path.join(
         config.exp_root_dir,
@@ -75,9 +75,10 @@ if __name__ == "__main__":
         backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
         backdoor_model = backdoor_data["backdoor_model"]
         # [OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]
-        for op in tqdm([OpType.NAI,OpType.NB,OpType.NS]):
+        for op in tqdm([OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]):
             logging.debug(op)
             gen_mutation_models(backdoor_model,save_dir,op)
+        logging.debug("End")
     except Exception as e:
         logging.error("发生异常:%s",e)
     
