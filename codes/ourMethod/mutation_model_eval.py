@@ -275,6 +275,7 @@ if __name__ == "__main__":
         poisoned_ids = backdoor_data["poisoned_ids"]
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")
         main(f"{sub_exp_name}",save_format="csv")
+        logging.debug("End")
     except Exception as e:
         logging.error("发生异常:%s",e)
 

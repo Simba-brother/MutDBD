@@ -45,6 +45,7 @@ def gen_mutation_models(model,save_dir,op_type):
             save_file_name = f"model_{i}.pth"
             os.makedirs(temp_save_dir,exist_ok=True)
             save_path = os.path.join(temp_save_dir,save_file_name)
+            # 保存变异模型的状态字典
             torch.save(mutated_model.state_dict(),save_path)
 
 if __name__ == "__main__":
