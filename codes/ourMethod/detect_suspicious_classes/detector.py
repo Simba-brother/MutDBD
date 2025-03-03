@@ -356,6 +356,33 @@ def detect_method_pool(
     return class_rank,rank_rate
 
 
+
+def f(dataset_name,model_name:str,attack_name:str,class_num:int,mutated_rate,detect_method):
+    save_dir = os.path.join(
+        config.exp_root_dir,
+        "ClassRank",
+        dataset_name,
+        model_name,
+        attack_name,
+        str(mutated_rate),
+        detect_method
+    )
+    os.makedirs(save_dir,exist_ok=True)
+    save_file_name = "ClassRank.joblib"
+    save_path = os.path.join(save_dir,save_file_name)
+    df_Label = load_df(dataset_name,model_name,attack_name,mutated_rate,"preLabel")
+    # 选择出top50变异模型
+    mutated_model_global_id_list = get_top_k_global_ids(df_Label,top_k=50,trend="bigger")
+    class_rank,target_class_ranking_percent = detect_method_pool(df_Label,None,class_num,mutated_model_global_id_list,detect_method)
+    print(f"class_rank:{class_rank}")
+    print(f"target_class_ranking_percent:{str(target_class_ranking_percent)}")
+    data = {
+        "class_rank":class_rank,
+        "target_class_ranking_percent":target_class_ranking_percent
+    }
+    joblib.dump(data,save_path)
+    print("save_path",save_path)
+
 def main():
     data = {}
     dataset_name_list = config.cur_dataset_name_list
@@ -388,7 +415,10 @@ def main():
                     df_Label = load_df(dataset_name,model_name,attack_name,mutated_rate,"preLabel")
                     # 选择出top50变异模型
                     mutated_model_global_id_list = get_top_k_global_ids(df_Label,top_k=50,trend="bigger")
-                    df_CELoss = load_df(dataset_name,model_name,attack_name,mutated_rate,"CELoss")
+                    if dataset_name in ["CIFAR10","GTSRB"]:
+                        df_CELoss = load_df(dataset_name,model_name,attack_name,mutated_rate,"CELoss")
+                    else:
+                        df_CELoss = None
                     for detect_method in detect_method_list:
                         print(f"\t\t\t\tdetect_method:{detect_method}")
                         class_rank,target_class_ranking_percent = detect_method_pool(df_Label,df_CELoss,class_num,mutated_model_global_id_list,detect_method)
@@ -447,7 +477,20 @@ def look_res_2():
         print(f"{avg_count}/{total}")
 
 if __name__ == "__main__":
-    look_res()
+    dataset_name = "ImageNet2012_subset"
+    model_name = "DenseNet"
+    attack_name = "WaNet"
+    class_num = 30
+    mutated_rate = 0.01 # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
+    '''
+    ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var", 
+    "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
+    "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"]
+    '''
+    detect_method = "Precision_mean"
+    f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
+    # main()
+    # look_res()
     
 
 

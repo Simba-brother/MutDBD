@@ -16,6 +16,7 @@ from codes.poisoned_dataset.gtsrb.WaNet.generator import gen_poisoned_dataset as
 from codes.poisoned_dataset.imagenet_sub.BadNets.generator import gen_poisoned_dataset as imagenetsub_badNets_gen_poisoned_dataset
 from codes.poisoned_dataset.imagenet_sub.IAD.generator import gen_poisoned_dataset as imagenetsub_IAD_gen_poisoned_dataset
 from codes.poisoned_dataset.imagenet_sub.Refool.generator import gen_poisoned_dataset as imagenetsub_Refool_gen_poisoned_dataset
+from codes.poisoned_dataset.imagenet_sub.WaNet.generator import gen_poisoned_dataset as imagenetsub_WaNet_gen_poisoned_dataset
 
 from codes.common.eval_model import EvalModel
 
@@ -681,11 +682,38 @@ def ImageNetsub_ResNet18_BadNets():
     print("ASR:",evalModel.eval_acc())
 
 def ImageNetsub_VGG19_BadNets():
-    print("ImageNetsub_ResNet18_BadNets")
+    print("ImageNetsub_VGG19_BadNets")
     backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
                                             "ATTACK", 
                                             "ImageNet2012_subset", 
                                             "VGG19", 
+                                            "BadNets", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_badNets_gen_poisoned_dataset(poisoned_ids_test,"test")
+    # 新鲜训练集
+    # poisoned_trainset = imagenetsub_badNets_gen_poisoned_dataset(poisoned_ids_train,"train")
+    # poisoned_ids_train = backdoor_data["poisoned_ids"]
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=4)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
+    print("ASR:",evalModel.eval_acc())
+
+def ImageNetsub_DenseNet_BadNets():
+    print("ImageNetsub_DenseNet_BadNets")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "DenseNet", 
                                             "BadNets", 
                                             "backdoor_data.pth"), map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
@@ -733,8 +761,58 @@ def ImageNetsub_ResNet18_IAD():
     evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
     print("ASR:",evalModel.eval_acc())
 
+def ImageNetsub_VGG19_IAD():
+    print("ImageNetsub_VGG19_IAD")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "VGG19", 
+                                            "IAD", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_ids_train = backdoor_data["poisoned_ids"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_IAD_gen_poisoned_dataset("VGG19",poisoned_ids_test,"test")
+    
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=4)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
+    print("ASR:",evalModel.eval_acc())
+
+def ImageNetsub_DenseNet_IAD():
+    print("ImageNetsub_DenseNet_IAD")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "DenseNet", 
+                                            "IAD", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_ids_train = backdoor_data["poisoned_ids"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_IAD_gen_poisoned_dataset("DenseNet",poisoned_ids_test,"test")
+    
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=4)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
+    print("ASR:",evalModel.eval_acc())
+
 # Refool
-def ImageNet_ResNet18_Refool():
+def ImageNetsub_ResNet18_Refool():
     print("ImageNet_ResNet18_Refool")
     backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
                                             "ATTACK", 
@@ -759,6 +837,132 @@ def ImageNet_ResNet18_Refool():
     evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
     print("ASR:",evalModel.eval_acc())
 
+def ImageNetsub_VGG19_Refool():
+    print("ImageNetsub_VGG19_Refool")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "VGG19", 
+                                            "Refool", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_ids_train = backdoor_data["poisoned_ids"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_Refool_gen_poisoned_dataset(poisoned_ids_test,"test")
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=4)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
+    print("ASR:",evalModel.eval_acc())
+
+def ImageNetsub_DenseNet_Refool():
+    print("ImageNetsub_DenseNet_Refool")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "DenseNet", 
+                                            "Refool", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_ids_train = backdoor_data["poisoned_ids"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_Refool_gen_poisoned_dataset(poisoned_ids_test,"test")
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=4)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
+    print("ASR:",evalModel.eval_acc())
+
+# WaNet
+def ImageNetsub_ResNet18_WaNet():
+    print("ImageNetsub_ResNet18_WaNet")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "ResNet18", 
+                                            "WaNet", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_ids_train = backdoor_data["poisoned_ids"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_WaNet_gen_poisoned_dataset("ResNet18",poisoned_ids_test,"test")
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=8)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=8)
+    print("ASR:",evalModel.eval_acc())
+
+def ImageNetsub_VGG19_WaNet():
+    print("ImageNetsub_VGG19_WaNet")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "VGG19", 
+                                            "WaNet", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_ids_train = backdoor_data["poisoned_ids"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_WaNet_gen_poisoned_dataset("VGG19",poisoned_ids_test,"test")
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=8)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=8)
+    print("ASR:",evalModel.eval_acc())
+
+def ImageNetsub_DenseNet_WaNet():
+    print("ImageNetsub_DenseNet_WaNet")
+    backdoor_data = torch.load(os.path.join(config.exp_root_dir, 
+                                            "ATTACK", 
+                                            "ImageNet2012_subset", 
+                                            "DenseNet", 
+                                            "WaNet", 
+                                            "backdoor_data.pth"), map_location="cpu")
+    backdoor_model = backdoor_data["backdoor_model"]
+    poisoned_ids_train = backdoor_data["poisoned_ids"]
+    # 预制的污染测试集
+    poisoned_testset_fixed = backdoor_data["poisoned_testset"]
+    # 测试集的id
+    poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
+    # 新鲜测试集
+    poisoned_testset = imagenetsub_WaNet_gen_poisoned_dataset("DenseNet",poisoned_ids_test,"test")
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=8)
+    print("ASR_fixed:",evalModel.eval_acc())
+
+    device = torch.device(f"cuda:{config.gpu_id}")
+    evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=8)
+    print("ASR:",evalModel.eval_acc())
+
 if __name__ == "__main__":
-    ImageNetsub_VGG19_BadNets()
+    ImageNetsub_DenseNet_WaNet()
 

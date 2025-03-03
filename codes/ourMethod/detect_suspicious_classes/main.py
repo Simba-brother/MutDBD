@@ -1,5 +1,5 @@
 '''
-检测target class
+检测target classes
 '''
 import os
 from codes import config
@@ -345,17 +345,18 @@ def measure_by_sample_entropy(df:pd.DataFrame,mutated_model_global_id_list:list)
 
 if __name__ == "__main__":
     
+    # 生成实验时间
     exp_time = get_formattedDateTime()
-    # 实验元信息
+    # 构建实验元信息
     exp_info = {
         "exp_obj":"|".join([config.dataset_name,config.model_name,config.attack_name]),
-        "exp_name":"Detect_Suspected_Classes",
-        "exp_time":exp_time,
-        "exp_method":"ScottKnottESD",
+        "exp_name":"Detect_Suspected_Classes", # 检测可疑类别集
+        "exp_time":exp_time, # 实验时间
+        "exp_method":"ScottKnottESD", # 实验使用的方法
         "args":{
-            "measure_name":"precision", # default:"precision"
+            "measure_name":"precision", # default:"precision" 方法使用的度量
             "isTop":True,
-            "K":10,  # type:int,default:50
+            "K":50,  # type:int,default:50
             "diff_trend":"bigger" # type:str,default:smaller,condidate val:dsmaller|bigger|None
         }
     }
