@@ -29,7 +29,7 @@ torch.manual_seed(global_seed)
 
 exp_root_dir = config.exp_root_dir
 dataset_name = "GTSRB"
-model_name = "DenseNet"
+model_name = "VGG19"
 attack_name = "IAD"
 
 # victim model

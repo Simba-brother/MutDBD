@@ -428,8 +428,8 @@ class IAD(Base):
         if epoch == 1:
             # 开始之前先对 modelM训练
             self.modelM.train()
+            # self.modelM.train() train 25轮次
             for i in range(self.current_schedule["epochs_M"]):
-                # self.modelM.train() train 25轮次
                 msg = "Epoch {} | mask_density: {} | - {}  - lambda_div: {}  - lambda_norm: {}\n".format(
                         epoch, self.mask_density, self.dataset_name, self.lambda_div, self.lambda_norm
                     )
@@ -521,9 +521,9 @@ class IAD(Base):
                         "best_acc_bd": best_acc_bd,
                         "best_acc_cross": best_acc_cross,
                         "best_epoch": best_epoch,
-                        "poisoned_trainset_data": self.train_poisoned_data,
-                        "poisoned_trainset_label": self.train_poisoned_label,
-                        "flag_list":self.flag_list
+                        # "poisoned_trainset_data": self.train_poisoned_data,
+                        # "poisoned_trainset_label": self.train_poisoned_label,
+                        # "flag_list":self.flag_list
                         # "pure_poisoned_trainset_data": self.pure_poisoned_trainset_data,
                         # "pure_poisoned_trainset_label": self.pure_poisoned_trainset_label,
                         # "pure_clean_trainset_data": self.pure_clean_trainset_data,
@@ -628,6 +628,7 @@ class IAD(Base):
         # 一批次一批次的生成bd样本
         batch_num = range(len(train_dl1))
         for batch_idx, (inputs1, targets1), (inputs2, targets2) in zip(batch_num, train_dl1, train_dl2):
+            print("batch_idx",batch_idx)
             # 这里的inputs1和inputs2是经过transforms预处理的
             # victim model 优化器中的参数梯度清零
             optimizerC.zero_grad()
@@ -870,6 +871,7 @@ class IAD(Base):
 
         total_loss = 0
         criterion_div = nn.MSELoss(reduction="none")
+        # 轮次数据集
         for batch_idx, (inputs1, targets1), (inputs2, targets2) in zip(range(len(train_dl1)), train_dl1, train_dl2):
             optimizerM.zero_grad()
 

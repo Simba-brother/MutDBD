@@ -41,11 +41,11 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG11')
+    net = VGG('VGG19',class_num=43)
     x = torch.randn(2,3,32,32)
     y = net(x)
     print(y.size())
 
 if __name__ == "__main__":
-    # test()
+    test()
     pass

@@ -117,7 +117,7 @@ schedule = {
     'GPU_num': 1,
 
     'benign_training': False,
-    'batch_size': 128,
+    'batch_size': 128, # 除了VGG19该值设置为256以外,其他都是128
     'num_workers': 4,
 
     'lr': 0.01,
@@ -137,7 +137,7 @@ schedule = {
     'lambda_M': 0.1,
     
     'epochs': 600,
-    'epochs_M': 25,
+    'epochs_M': 25, # 除了VGG19该值设置为10以外,其他都是25
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
@@ -170,7 +170,7 @@ iad = IAD(
 
 def attack():
     iad.train()
-    return os.path.join(iad.work_dir,"dict_state.pth")
+    return os.path.join(iad.work_dir,"best_state_dict.pth")
 
 def main():
     proc_title = "ATTACK|"+dataset_name+"|"+attack_name+"|"+model_name
@@ -186,12 +186,12 @@ def main():
     
 if __name__ == "__main__":
 
-    main()
+    # main()
 
-    # attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/ImageNet2012_subset/DenseNet/IAD/ATTACK_2025-02-25_21:34:58/best_state_dict.pth"
-    # backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
-    # create_backdoor_data(attack_dict_path,model,trainset,testset,backdoor_data_save_path)
-    # eval_backdoor(dataset_name,attack_name,model_name, clean_testset=testset)
+    attack_dict_path = "/data/mml/backdoor_detect/experiments/ATTACK/ImageNet2012_subset/VGG19/IAD/ATTACK_2025-03-04_18:11:28/best_state_dict.pth"
+    backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+    create_backdoor_data(attack_dict_path,model,trainset,testset,backdoor_data_save_path)
+    eval_backdoor(dataset_name,attack_name,model_name, clean_testset=testset)
 
     # backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     # update_backdoor_data(backdoor_data_path)

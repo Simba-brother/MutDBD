@@ -964,5 +964,5 @@ def ImageNetsub_DenseNet_WaNet():
     print("ASR:",evalModel.eval_acc())
 
 if __name__ == "__main__":
-    ImageNetsub_DenseNet_WaNet()
+    ImageNetsub_VGG19_IAD()
 

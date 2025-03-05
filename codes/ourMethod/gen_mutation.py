@@ -29,7 +29,6 @@ def gen_mutation_models(model,save_dir,op_type):
             if op_type == OpType.GF:
                 mutated_model = mo.gf()
                 temp_save_dir = os.path.join(save_dir,str(ration),"Gaussian_Fuzzing")
-                
             elif op_type == OpType.WS:
                 mutated_model = mo.ws()
                 temp_save_dir = os.path.join(save_dir,str(ration),"Weight_Shuffling")
@@ -61,7 +60,7 @@ if __name__ == "__main__":
         config.model_name,
         config.attack_name,
         )
-    os.makedirs(save_dir,exist_ok=True)
+    # os.makedirs(save_dir,exist_ok=True)
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
     LOG_FILE_DIR = os.path.join("log",config.dataset_name,config.model_name,config.attack_name)
