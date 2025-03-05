@@ -75,6 +75,20 @@ class IADPoisonedDatasetFolder(DatasetFolder):
 def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     #  数据集
     trainset,trainset1, testset, testset1 = imagenet_IAD()
+    '''
+    transform_train = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        RandomCrop((224, 224), padding=5),
+        RandomRotation(10),
+        ToTensor()
+    ])
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
+    '''
     backdoor_data = os.path.join(
         config.exp_root_dir,
         "ATTACK",
@@ -86,7 +100,8 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     modelG = Generator("ImageNet")
     modelM = Generator("ImageNet", out_channels=1)
     backdoor_data = torch.load(backdoor_data, map_location="cpu")
-    
+
+    # # 在数据集转换组合transforms.Compose[]的最后进行中毒植入
     modelG.load_state_dict(backdoor_data["modelG"])
     modelM.load_state_dict(backdoor_data["modelM"])
 

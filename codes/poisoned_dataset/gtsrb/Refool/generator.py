@@ -121,6 +121,23 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
 
     #  数据集
     trainset,testset = gtsrb_Refool()
+    '''
+     transform_train = Compose([
+        ToPILImage(),
+        Resize((32, 32)),
+        RandomHorizontalFlip(p=0.5),
+        ToTensor(),
+        Normalize((0.485, 0.456, 0.406),
+                            (0.229, 0.224, 0.225))
+    ])
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((32, 32)),
+        ToTensor(),
+        Normalize((0.485, 0.456, 0.406),
+                            (0.229, 0.224, 0.225))
+    ])
+    '''
 
     # backdoor pattern
     reflection_images = []
@@ -132,6 +149,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     reflection_image_path = os.listdir(reflection_data_dir)
     reflection_images = [read_image(os.path.join(reflection_data_dir,img_path)) for img_path in reflection_image_path[:200]]
     # 中毒的数据集
+    # 直接在transform.Compose([])最开始处投毒
     if trainOrtest == "train":
         poisonedDatasetFolder = PoisonedDatasetFolder(
             trainset, 

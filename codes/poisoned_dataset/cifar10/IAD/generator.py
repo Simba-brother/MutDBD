@@ -104,6 +104,25 @@ def get_attack_dict_path(model_name:str):
 def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     #  数据集
     trainset,trainset1, testset, testset1 = cifar10_IAD()
+    '''
+    transform_train = Compose([
+        ToPILImage(),
+        Resize((32, 32)),
+        RandomCrop((32, 32), padding=5),
+        RandomRotation(10),
+        RandomHorizontalFlip(p=0.5),
+        # 图像数据归一化
+        ToTensor(),
+        Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
+    ])
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((32, 32)),
+        # 归一化
+        ToTensor(),
+        Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
+    ])
+    '''
 
     # backdoor pattern
     attack_dict_path = get_attack_dict_path(model_name)
@@ -117,6 +136,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     modelG.eval()
     modelM.eval()
 
+    # 在数据集转换组合transforms.Compose[]的最后进行中毒植入
     if trainOrtest == "train":
         poisonedDatasetFolder =  IADPoisonedDatasetFolder(
             benign_dataset = trainset,

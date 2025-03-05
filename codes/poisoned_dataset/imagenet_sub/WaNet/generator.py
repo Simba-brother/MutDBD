@@ -107,6 +107,22 @@ class PoisonedDatasetFolder(DatasetFolder):
 def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     #  数据集
     trainset,testset = imagenet_WaNet()
+    '''
+    transform_train = Compose([
+        ToTensor(),
+        RandomHorizontalFlip(),
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
+    transform_test = Compose([
+        ToTensor(),
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
+    '''
+
     # if model_name == "ResNet18":
     #     attack_dict_path = os.path.join(
     #         config.exp_root_dir,
@@ -149,6 +165,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     # trigger
     identity_grid = backdoor_data["identity_grid"]
     noise_grid = backdoor_data["noise_grid"]
+    # 在最前面进行投毒
     if trainOrtest == "train":
         poisonedDatasetFolder= PoisonedDatasetFolder(trainset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=0,poisoned_target_transform_index=0,s=1)
     elif trainOrtest == "test":

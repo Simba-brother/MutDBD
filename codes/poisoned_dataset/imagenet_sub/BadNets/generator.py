@@ -79,6 +79,19 @@ class PoisonedDatasetFolder(DatasetFolder):
 def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     #  数据集
     trainset,testset = imagenet_BadNets()
+    '''
+    transform_train = Compose([
+        ToPILImage(),
+        RandomResizedCrop(size=224), 
+        ToTensor()
+    ])
+    # 测试集transform
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((224, 224)),
+        ToTensor()
+    ])
+    '''
 
     # backdoor pattern
     pattern = torch.zeros((224, 224), dtype=torch.uint8)
@@ -90,5 +103,6 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
         poisonedDatasetFolder = PoisonedDatasetFolder(trainset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     elif trainOrtest == "test":
         # 中毒的数据集
+        # 在数据集转换组合transforms.Compose[]的最后一个元素(ToTensor)之前进行中毒植入
         poisonedDatasetFolder = PoisonedDatasetFolder(testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     return poisonedDatasetFolder

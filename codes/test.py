@@ -42,7 +42,7 @@ def test8():
 
 def test9():
     data = [0,1,2]
-    data.insert(-3,4)
+    data.insert(0,4)
     print(data)
     
 
@@ -51,8 +51,14 @@ def test10():
     ranked_idx_array =  data.argsort()
     print("")
 
+def test11():
+    data = [9,8]
+    a = data[:0]
+    data.insert(-4,1)
+    print(data)
+
 if __name__ == "__main__":
-    test10()
+    test11()
 
 
 

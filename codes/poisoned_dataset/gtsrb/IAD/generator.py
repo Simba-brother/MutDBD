@@ -104,7 +104,20 @@ def get_attack_dict_path(model_name:str):
 def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     #  数据集
     trainset,trainset1, testset, testset1 = gtsrb_IAD()
-
+    '''
+    transform_train = Compose([
+        ToPILImage(),
+        Resize((32, 32)),
+        RandomCrop((32, 32), padding=5),
+        RandomRotation(10),
+        ToTensor()
+    ])
+    transform_test = Compose([
+        ToPILImage(),
+        Resize((32, 32)),
+        ToTensor()
+    ])
+    '''
     # backdoor pattern
     attack_dict_path = get_attack_dict_path(model_name)
     modelG = Generator("gtsrb")
@@ -116,7 +129,8 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
 
     modelG.eval()
     modelM.eval()
-
+    
+    # # 在数据集转换组合transforms.Compose[]的最后进行中毒植入
     if trainOrtest == "train":
         poisonedDatasetFolder =  IADPoisonedDatasetFolder(
             benign_dataset = trainset,

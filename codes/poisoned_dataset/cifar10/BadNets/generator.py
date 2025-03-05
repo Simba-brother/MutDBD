@@ -87,11 +87,28 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     weight = torch.zeros((32, 32), dtype=torch.float32)
     weight[-3:, -3:] = 1.0
 
+    '''
+    transform_train = Compose([
+        # Convert a tensor or an ndarray to PIL Image
+        ToPILImage(), 
+        # img (PIL Image or Tensor): Image to be cropped.
+        RandomCrop(size=32,padding=4,padding_mode="reflect"), 
+        RandomHorizontalFlip(), 
+        # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
+        ToTensor()
+    ])
+    # 测试集transform
+    transform_test = Compose([
+        ToPILImage(),
+        ToTensor()
+    ])
+    '''
     # 形成Dataset
     if trainOrtest == "train":
         # 中毒的数据集
         poisonedDatasetFolder = PoisonedDatasetFolder(trainset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     elif trainOrtest == "test":
         # 中毒的数据集
+        # 在数据集转换组合transforms.Compose[]的最后一个元素(ToTensor)之前进行中毒植入
         poisonedDatasetFolder = PoisonedDatasetFolder(testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     return poisonedDatasetFolder
