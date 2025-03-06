@@ -215,7 +215,7 @@ def main(exp_sub,save_format):
     elif exp_sub == "prob_outputs":
         mutation_models_pred_dict = get_mutation_models_prob_outputs(poisoned_trainset)
     logging.debug(f"开始:将结果整理为csv文件")
-    for rate in config.fine_mutation_rate_list:
+    for rate in [0.01]: # config.fine_mutation_rate_list:
         data_dict = mutation_models_pred_dict[rate]
         save_dir = os.path.join(
             config.exp_root_dir,

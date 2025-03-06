@@ -18,7 +18,7 @@ class OpType(object):
     NS = 'NS' # Neuron Switch
 
 def gen_mutation_models(model,save_dir,op_type):
-    for ration in config.fine_mutation_rate_list:
+    for ration in [0.01]: # config.fine_mutation_rate_list:
         for i in range(config.mutation_model_num):
             mo = MutaionOperator(
                 ration, 
