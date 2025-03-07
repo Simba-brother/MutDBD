@@ -53,7 +53,7 @@ if config.dataset_name == "CIFAR10":
         clean_trainset, clean_testset = cifar10_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
-        clean_trainset, clean_testset = cifar10_IAD()
+        clean_trainset, _, clean_testset, _ = cifar10_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"train")
         clean_trainset, clean_testset = cifar10_Refool()
@@ -66,7 +66,7 @@ elif config.dataset_name == "GTSRB":
         clean_trainset, clean_testset = gtsrb_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
-        clean_trainset, clean_testset = gtsrb_IAD()
+        clean_trainset, _, clean_testset, _ = gtsrb_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"train")
         clean_trainset, clean_testset = gtsrb_Refool()
@@ -79,7 +79,7 @@ elif config.dataset_name == "ImageNet2012_subset":
         clean_trainset, clean_testset = imagenet_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = imagenet_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
-        clean_trainset, clean_testset = imagenet_IAD()
+        clean_trainset, _, clean_testset, _ = imagenet_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"train")
         clean_trainset, clean_testset = imagenet_Refool()
