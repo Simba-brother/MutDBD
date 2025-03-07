@@ -45,7 +45,7 @@ def create_backdoor_data(attack_dict_path,model,clean_trainset,clean_testset, sa
         "backdoor_model":backdoor_model,
         "poisoned_trainset":poisoned_trainset,
         "poisoned_testset":poisoned_testset,
-        #"clean_testset":clean_testset,
+        "clean_testset":clean_testset,
         "poisoned_ids":poisoned_ids,
         "modelG":modelG.state_dict(),
         "modelM":modelM.state_dict()

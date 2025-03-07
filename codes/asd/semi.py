@@ -1,7 +1,7 @@
 import time
 import torch
 import numpy as np
-
+from torchvision.models.feature_extraction import get_graph_node_names
 from torchvision.models.feature_extraction import create_feature_extractor
 from codes.asd.log import Record,AverageMeter,tabulate_step_meter,tabulate_epoch_meter
 from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
@@ -61,6 +61,17 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
         elif model_name == "DenseNet":
             in_features = model.classifier.in_features
             node_str = "linear"
+    elif dataset_name == "ImageNet2012_subset":
+        if model_name == "ResNet18":
+            in_features = model.fc.in_features
+            node_str = "flatten"
+        elif model_name == "VGG19":
+            in_features = model.classifier[-1].in_features
+            node_str = "classifier.5"
+        elif model_name == "DenseNet":
+            in_features = model.classifier.in_features
+            node_str = "flatten"
+
     feature_record = Record("feature", (num_data, in_features))
     
     # feature_record = Record("feature", (num_data, model.backbone.feature_dim))

@@ -18,6 +18,17 @@ from codes.poisoned_dataset.gtsrb.BadNets.generator import gen_poisoned_dataset 
 from codes.poisoned_dataset.gtsrb.IAD.generator import gen_poisoned_dataset as gtsrb_IAD_gen_poisoned_dataset
 from codes.poisoned_dataset.gtsrb.Refool.generator import gen_poisoned_dataset as gtsrb_Refool_gen_poisoned_dataset
 from codes.poisoned_dataset.gtsrb.WaNet.generator import gen_poisoned_dataset as gtsrb_WaNet_gen_poisoned_dataset
+# imagenet
+from codes.poisoned_dataset.imagenet_sub.BadNets.generator import gen_poisoned_dataset as imagenet_badNets_gen_poisoned_dataset
+from codes.poisoned_dataset.imagenet_sub.IAD.generator import gen_poisoned_dataset as imagenet_IAD_gen_poisoned_dataset
+from codes.poisoned_dataset.imagenet_sub.Refool.generator import gen_poisoned_dataset as imagenet_Refool_gen_poisoned_dataset
+from codes.poisoned_dataset.imagenet_sub.WaNet.generator import gen_poisoned_dataset as imagenet_WaNet_gen_poisoned_dataset
+
+# transform数据集
+from codes.transform_dataset import cifar10_BadNets, cifar10_IAD, cifar10_Refool, cifar10_WaNet
+from codes.transform_dataset import gtsrb_BadNets, gtsrb_IAD, gtsrb_Refool, gtsrb_WaNet
+from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Refool, imagenet_WaNet
+
 from codes.tools import model_train_test
 
 
@@ -31,33 +42,50 @@ print(proctitle)
 backdoor_data = torch.load(os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth"), map_location="cpu")
 backdoor_model = backdoor_data["backdoor_model"]
 poisoned_ids = backdoor_data["poisoned_ids"]
-poisoned_testset = backdoor_data["poisoned_testset"]
-clean_testset = backdoor_data["clean_testset"]
+poisoned_testset = backdoor_data["poisoned_testset"] # fixed
+
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset
 if config.dataset_name == "CIFAR10":
     if config.attack_name == "BadNets":
         poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = cifar10_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+        clean_trainset, clean_testset = cifar10_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = cifar10_Refool()
     elif config.attack_name == "WaNet":
         poisoned_trainset = cifar10_WaNet_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        clean_trainset, clean_testset = cifar10_WaNet()
 elif config.dataset_name == "GTSRB":
     if config.attack_name == "BadNets":
         poisoned_trainset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = gtsrb_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        clean_trainset, clean_testset = gtsrb_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = gtsrb_Refool()
     elif config.attack_name == "WaNet":
         poisoned_trainset = gtsrb_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
-    else:
-        pass
-else:
-    pass
+        clean_trainset, clean_testset = gtsrb_WaNet()
+elif config.dataset_name == "ImageNet2012_subset":
+    if config.attack_name == "BadNets":
+        poisoned_trainset = imagenet_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = imagenet_BadNets()
+    elif config.attack_name == "IAD":
+        poisoned_trainset = imagenet_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        clean_trainset, clean_testset = imagenet_IAD()
+    elif config.attack_name == "Refool":
+        poisoned_trainset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = imagenet_Refool()
+    elif config.attack_name == "WaNet":
+        poisoned_trainset = imagenet_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+        clean_trainset, clean_testset = imagenet_WaNet()
 # 数据加载器
 poisoned_trainset_loader = DataLoader(
             poisoned_trainset,
