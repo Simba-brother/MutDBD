@@ -28,7 +28,7 @@ mutation_rate_list = [0.01, 0.05, 0.1, 0.15, 0.20, 0.3, 0.4, 0.5, 0.6, 0.8] # 0.
 # 每个变异率下的每个变异算子生成100个变异模型
 mutation_model_num = 100 
 # 更为精细化的变异比例
-fine_mutation_rate_list = [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
+fine_mutation_rate_list = [0.01] # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
 # 配置攻击类别
 target_class_idx = 3
 # 样本投毒比例
@@ -41,9 +41,9 @@ dataset_name = "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
 # 数据集分类任务数量
 class_num = 30 #  CIFAR-10:10,GTSRB:43,ImageNet2012_subset:30
 # 当前实验设置的模型名字
-model_name = "ResNet18"
+model_name = "VGG19"
 # 当前实验设置的攻击
-attack_name = "BadNets"
+attack_name = "IAD"
 # GPU设备
 gpu_id = 1
 
