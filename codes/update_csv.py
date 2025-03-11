@@ -23,7 +23,7 @@ if __name__ == "__main__":
         # 加载后门模型数据
         backdoor_data_path = os.path.join(
             config.exp_root_dir, 
-            "ATTACK", 
+            "ATTACK",  
             config.dataset_name, 
             config.model_name, 
             config.attack_name, 

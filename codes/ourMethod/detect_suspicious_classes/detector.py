@@ -478,12 +478,12 @@ def look_res_2():
 
 if __name__ == "__main__":
     dataset_name = "ImageNet2012_subset"
-    model_name = "DenseNet"
-    attack_name = "WaNet"
+    model_name = "VGG19"
+    attack_name = "WaNet "
     class_num = 30
     mutated_rate = 0.01 # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
     '''
-    ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var", 
+    ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var" , 
     "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
     "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"]
     '''

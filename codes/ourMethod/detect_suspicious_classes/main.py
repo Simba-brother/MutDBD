@@ -153,7 +153,7 @@ def main(measure_name,rate_list,isTopK,K,diff_trend):
     res = {}
     exp_logger.debug("开始:获得每个变异率下的Suspicious Classes")
     for rate in rate_list: # config.fine_mutation_rate_list:
-        exp_logger.debug(f"变异率:{rate}")
+        exp_logger.debug(f"变异率:{rate}") 
         label_df = pd.read_csv(os.path.join(
                 config.exp_root_dir,
                 "EvalMutationToCSV",
