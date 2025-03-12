@@ -366,7 +366,7 @@ def defence_train(
                                 ]
                 elif model_name == "DenseNet":
                     param_meta = [  
-                                    {'params': meta_virtual_model.denseblock4.parameters()},
+                                    {'params': meta_virtual_model.features.denseblock4.parameters()},
                                     {'params': meta_virtual_model.classifier.parameters()}
                                 ]
             # 元模型的参数优化器
