@@ -13,6 +13,8 @@ from codes import config
 from codes.ourMethod.defence import defence_train
 from codes.scripts.dataset_constructor import *
 from codes.models import get_model
+from codes.common.eval_model import EvalModel
+# from codes.tools import model_train_test
 # cifar10
 from codes.poisoned_dataset.cifar10.BadNets.generator import gen_poisoned_dataset as cifar10_badNets_gen_poisoned_dataset
 from codes.poisoned_dataset.cifar10.IAD.generator import gen_poisoned_dataset as cifar10_IAD_gen_poisoned_dataset
@@ -23,7 +25,9 @@ from codes.poisoned_dataset.gtsrb.BadNets.generator import gen_poisoned_dataset 
 from codes.poisoned_dataset.gtsrb.IAD.generator import gen_poisoned_dataset as gtsrb_IAD_gen_poisoned_dataset
 from codes.poisoned_dataset.gtsrb.Refool.generator import gen_poisoned_dataset as gtsrb_Refool_gen_poisoned_dataset
 from codes.poisoned_dataset.gtsrb.WaNet.generator import gen_poisoned_dataset as gtsrb_WaNet_gen_poisoned_dataset
-from codes.tools import model_train_test
+
+
+
 # imagenet
 from codes.poisoned_dataset.imagenet_sub.BadNets.generator import gen_poisoned_dataset as imagenet_badNets_gen_poisoned_dataset
 from codes.poisoned_dataset.imagenet_sub.IAD.generator import gen_poisoned_dataset as imagenet_IAD_gen_poisoned_dataset
@@ -219,6 +223,9 @@ best_model_ckpt = torch.load(best_ckpt_path, map_location="cpu")
 victim_model.load_state_dict(best_model_ckpt["model_state_dict"])
 new_model = victim_model
 # (1) 评估新模型在clean testset上的acc
+em = EvalModel(new_model,clean_testset,torch.device(f"cuda:{config.gpu_id}"),)
+clean_test_acc = em.eval_acc()
+'''
 clean_test_acc = model_train_test.test(
     model = new_model,
     testset = clean_testset,
@@ -226,7 +233,11 @@ clean_test_acc = model_train_test.test(
     device = torch.device(f"cuda:{config.gpu_id}"),
     loss_fn = nn.CrossEntropyLoss()
     )
+'''
 # (2) 评估新模型在poisoned testset上的acc
+em = EvalModel(new_model,poisoned_testset,torch.device(f"cuda:{config.gpu_id}"),)
+poisoned_test_acc = em.eval_acc()
+'''
 poisoned_test_acc = model_train_test.test(
     model = new_model,
     testset = poisoned_testset,
@@ -234,6 +245,7 @@ poisoned_test_acc = model_train_test.test(
     device = torch.device(f"cuda:{config.gpu_id}"),
     loss_fn = nn.CrossEntropyLoss()
     )
+'''
 print({'clean_test_acc':clean_test_acc, 'poisoned_test_acc':poisoned_test_acc})
 time_4 = time.perf_counter()
 print(f"评估防御结果结束，共耗时{time_4-time_2}秒")
