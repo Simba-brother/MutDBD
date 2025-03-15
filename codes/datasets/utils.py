@@ -1,4 +1,6 @@
 
+'''
+主要用于CIFAR10和GTSRB数据集的backdoor_data的更新和评估测试'''
 import os
 import time
 

@@ -1,3 +1,7 @@
+'''
+重要
+我们防御训练方法的主函数
+'''
 import os
 import time
 import joblib

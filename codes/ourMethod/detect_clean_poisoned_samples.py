@@ -1,4 +1,5 @@
 '''
+# 暂时没用，未来可能要在此基础上改动
 第二步:从target class中分出clean和poisoned
 '''
 import os

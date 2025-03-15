@@ -1,5 +1,9 @@
 # coding:utf8
 '''
+重要
+模型变异算子核心类
+'''
+'''
 This module only supports neuron and weight mutation.
 Ma, Lei, et al. "DeepMutation: Mutation Testing of Deep Learning Systems."
 code:https://github.com/Simba-brother/m_testing_adversatial_sample

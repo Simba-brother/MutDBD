@@ -4,7 +4,7 @@ from codes import config
 from codes.scripts.dataset_constructor import *
 from codes.tools import EvalModel
 from codes.utils import priorityQueue_2_list
-import os
+
 
 def sort_mutated_models(
         model_struct, 

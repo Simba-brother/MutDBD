@@ -1,3 +1,6 @@
+'''
+查看模型的结构类
+'''
 from torchviz import make_dot
 import torch
 class ModelReview(object):

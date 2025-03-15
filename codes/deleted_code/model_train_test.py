@@ -1,5 +1,4 @@
 import os
-import math
 import random
 import numpy as np
 import torch
@@ -11,7 +10,6 @@ def random_seed():
     random.seed(worker_seed)
     np.random.seed(worker_seed)
     torch.manual_seed(worker_seed)
-    deterministic = True
 
 def adjust_learning_rate(optimizer, init_lr, epoch):
     # epoch: 当前训练进行时的epoch

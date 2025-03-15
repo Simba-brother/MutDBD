@@ -1,4 +1,5 @@
 
+# ImageNet2012_subset数据集解压
 #!/bin/bash
  
 # 要解压的tar文件所在目录

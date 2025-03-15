@@ -1,4 +1,7 @@
-# ASD baseline mian file
+'''
+重要
+我们基于ASD的defence方法
+'''
 
 import joblib
 import setproctitle

@@ -1,8 +1,6 @@
 '''
 第一步:确定target_class
 '''
-import os
-import joblib
 from collections import defaultdict
 import numpy as np
 from scipy import stats
