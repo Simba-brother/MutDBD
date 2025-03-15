@@ -20,6 +20,16 @@ from codes.poisoned_dataset.gtsrb.IAD.generator import gen_poisoned_dataset as g
 from codes.poisoned_dataset.gtsrb.Refool.generator import gen_poisoned_dataset as gtsrb_Refool_gen_poisoned_dataset
 from codes.poisoned_dataset.gtsrb.WaNet.generator import gen_poisoned_dataset as gtsrb_WaNet_gen_poisoned_dataset
 from codes.tools import model_train_test
+# imagenet
+from codes.poisoned_dataset.imagenet_sub.BadNets.generator import gen_poisoned_dataset as imagenet_badNets_gen_poisoned_dataset
+from codes.poisoned_dataset.imagenet_sub.IAD.generator import gen_poisoned_dataset as imagenet_IAD_gen_poisoned_dataset
+from codes.poisoned_dataset.imagenet_sub.Refool.generator import gen_poisoned_dataset as imagenet_Refool_gen_poisoned_dataset
+from codes.poisoned_dataset.imagenet_sub.WaNet.generator import gen_poisoned_dataset as imagenet_WaNet_gen_poisoned_dataset
+
+# transform数据集
+from codes.transform_dataset import cifar10_BadNets, cifar10_IAD, cifar10_Refool, cifar10_WaNet
+from codes.transform_dataset import gtsrb_BadNets, gtsrb_IAD, gtsrb_Refool, gtsrb_WaNet
+from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Refool, imagenet_WaNet
 
 
 # 进程名称
@@ -37,28 +47,47 @@ clean_testset = backdoor_data["clean_testset"]
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset
+# 根据poisoned_ids得到非预制菜poisoneds_trainset
 if config.dataset_name == "CIFAR10":
     if config.attack_name == "BadNets":
         poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = cifar10_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+        clean_trainset, _, clean_testset, _ = cifar10_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = cifar10_Refool()
     elif config.attack_name == "WaNet":
         poisoned_trainset = cifar10_WaNet_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        clean_trainset, clean_testset = cifar10_WaNet()
 elif config.dataset_name == "GTSRB":
     if config.attack_name == "BadNets":
         poisoned_trainset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = gtsrb_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        clean_trainset, _, clean_testset, _ = gtsrb_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = gtsrb_Refool()
     elif config.attack_name == "WaNet":
         poisoned_trainset = gtsrb_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
-    else:
-        pass
-else:
-    pass
+        clean_trainset, clean_testset = gtsrb_WaNet()
+elif config.dataset_name == "ImageNet2012_subset":
+    if config.attack_name == "BadNets":
+        poisoned_trainset = imagenet_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = imagenet_BadNets()
+    elif config.attack_name == "IAD":
+        poisoned_trainset = imagenet_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        clean_trainset, _, clean_testset, _ = imagenet_IAD()
+    elif config.attack_name == "Refool":
+        poisoned_trainset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        clean_trainset, clean_testset = imagenet_Refool()
+    elif config.attack_name == "WaNet":
+        poisoned_trainset = imagenet_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+        clean_trainset, clean_testset = imagenet_WaNet()
+
 # 数据加载器
 poisoned_trainset_loader = DataLoader(
             poisoned_trainset,
@@ -127,10 +156,26 @@ def get_class_sampled_prob_map(classes_rank):
 # print("f")
 
 # 获得类别排序
-grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
+
 mutated_rate = 0.01
 measure_name = "Precision_mean"
-classes_rank = grid[config.dataset_name][config.model_name][config.attack_name][mutated_rate][measure_name]["class_rank"]
+if config.dataset_name in ["CIFAR10,GTSRB"]:
+    grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
+    classes_rank = grid[config.dataset_name][config.model_name][config.attack_name][mutated_rate][measure_name]["class_rank"]
+elif config.dataset_name == "ImageNet2012_subset":
+    classRank_data = joblib.load(os.path.join(
+        config.exp_root_dir,
+        "ClassRank",
+        config.dataset_name,
+        config.model_name,
+        config.attack_name,
+        str(mutated_rate),
+        measure_name,
+        "ClassRank.joblib"
+    ))
+    classes_rank =classRank_data["class_rank"]
+else:
+    raise Exception("数据集名称错误")
 class_prob_map = get_class_sampled_prob_map(classes_rank)
 
 # 开始防御式训练

@@ -478,8 +478,8 @@ def look_res_2():
 
 if __name__ == "__main__":
     dataset_name = "ImageNet2012_subset"
-    model_name = "VGG19"
-    attack_name = "WaNet "
+    model_name = "DenseNet"
+    attack_name = "BadNets"
     class_num = 30
     mutated_rate = 0.01 # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
     '''
@@ -489,6 +489,7 @@ if __name__ == "__main__":
     '''
     detect_method = "Precision_mean"
     f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
+    
     # main()
     # look_res()
     

@@ -158,6 +158,24 @@ def defence_train(
                                     {'params': meta_virtual_model.dense4.parameters()},
                                     {'params': meta_virtual_model.classifier.parameters()}
                                 ]
+            elif dataset_name == "ImageNet2012_subset":
+                if model_name == "ResNet18":
+                    # 元虚拟模型要更新的参数
+                    param_meta = [  
+                                    {'params': meta_virtual_model.layer3.parameters()},
+                                    {'params': meta_virtual_model.layer4.parameters()},
+                                    # {'params': meta_virtual_model.linear.parameters()},
+                                    {'params': meta_virtual_model.fc.parameters()}
+                                ]
+                elif model_name == "VGG19":
+                    param_meta = [  
+                                    {'params': meta_virtual_model.classifier.parameters()}
+                                ]
+                elif model_name == "DenseNet":
+                    param_meta = [  
+                                    {'params': meta_virtual_model.features.denseblock4.parameters()},
+                                    {'params': meta_virtual_model.classifier.parameters()}
+                                ]
             # 元模型的参数优化器
             meta_optimizer = torch.optim.Adam(param_meta, lr=0.015)
             # 元模型的损失函数
