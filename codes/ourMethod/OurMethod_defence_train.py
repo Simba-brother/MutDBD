@@ -50,7 +50,6 @@ print(proctitle)
 backdoor_data = torch.load(os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth"), map_location="cpu")
 backdoor_model = backdoor_data["backdoor_model"]
 poisoned_ids = backdoor_data["poisoned_ids"]
-poisoned_testset = backdoor_data["poisoned_testset"]
 poisoned_ids = backdoor_data["poisoned_ids"]
 poisoned_testset = backdoor_data["poisoned_testset"] # fixed
 
