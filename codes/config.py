@@ -43,7 +43,7 @@ class_num = 30 #  CIFAR-10:10,GTSRB:43,ImageNet2012_subset:30
 # 当前实验设置的模型名字
 model_name = "DenseNet"
 # 当前实验设置的攻击
-attack_name = "Refool"
+attack_name = "WaNet "
 # GPU设备
 gpu_id = 1
 
