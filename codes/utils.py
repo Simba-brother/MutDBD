@@ -1,3 +1,8 @@
+'''
+一些小的工具函数和类
+攻击函数：时间格式(format_time)，进度条，创建目录，熵计算(entropy)，优先级队列tolist(priorityQueue_2_list)，计算标签变化率(calcu_LCR)
+类：Log
+'''
 import os
 import torch
 import numpy as np
@@ -97,7 +102,6 @@ def create_dir(dir_path):
         print(f"成功创建文件夹{dir_path}")
         os.makedirs(dir_path)
 
-
 def random_seed():
     # worker_seed = torch.initial_seed() % 2**32
     worker_seed = 666
@@ -124,15 +128,6 @@ def entropy(data):
         ent -= p * math.log2(p)
     return ent
 
-class Log:
-    def __init__(self, log_path):
-        self.log_path = log_path
-
-    def __call__(self, msg):
-        print(msg, end='\n')
-        with open(self.log_path,'a') as f:
-            f.write(msg)
-
 def priorityQueue_2_list(q:queue.PriorityQueue):
     qsize = q.qsize()
     res = []
@@ -140,6 +135,7 @@ def priorityQueue_2_list(q:queue.PriorityQueue):
         res.append(q.get())
     assert len(res) == qsize, "队列数量不对"
     return res
+
 def calcu_LCR(label_list_o:list,label_list:list):
     res = 0 
     count = 0
@@ -149,6 +145,14 @@ def calcu_LCR(label_list_o:list,label_list:list):
     res = round(count/len(label_list_o),4)
     return res
 
+class Log:
+    def __init__(self, log_path):
+        self.log_path = log_path
+
+    def __call__(self, msg):
+        print(msg, end='\n')
+        with open(self.log_path,'a') as f:
+            f.write(msg)
 if __name__ == "__main__":
     pass
     # makdir("experiments/test")

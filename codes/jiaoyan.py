@@ -1,5 +1,5 @@
 '''
-校验看看数据代码有没有错
+根据backdoor_data.pth中的poisoned_ids和EvalMutationToCSV中的preLabel.csv中的df["isPoisoned"]来校验看看数据代码有没有错
 '''
 import os
 import pandas as pd

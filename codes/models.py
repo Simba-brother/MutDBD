@@ -1,3 +1,6 @@
+'''
+根据数据名称和模型名称得到模型结构
+'''
 import torch
 import torch.nn as nn
 from codes.core.models.resnet import ResNet
@@ -9,11 +12,6 @@ from codes.datasets.cifar10.models.densenet import densenet_cifar
 from codes.datasets.GTSRB.models.densenet import DenseNet121
 from torchvision.models.feature_extraction import get_graph_node_names
 from torchvision.models.feature_extraction import create_feature_extractor
-# def get_resnet(num,num_classes):
-#     return ResNet(num,num_classes) # ResNet(18,10)
-
-# def get_resnet_cifar(num_classes):
-#     return resnet_cifar.get_model(num_classes)
 
 def get_model(dataset_name,model_name):
     if dataset_name == "CIFAR10":

@@ -43,7 +43,9 @@ backdoor_data = torch.load(os.path.join(config.exp_root_dir, "ATTACK", config.da
 backdoor_model = backdoor_data["backdoor_model"]
 poisoned_ids = backdoor_data["poisoned_ids"]
 poisoned_testset = backdoor_data["poisoned_testset"]
-clean_testset = backdoor_data["clean_testset"]
+poisoned_ids = backdoor_data["poisoned_ids"]
+poisoned_testset = backdoor_data["poisoned_testset"] # fixed
+
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset

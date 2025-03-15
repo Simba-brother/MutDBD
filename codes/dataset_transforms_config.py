@@ -1,6 +1,4 @@
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, RandomCrop, Resize,RandomRotation,Normalize
-from torchvision.datasets import DatasetFolder
-import cv2
 config = {
     "CIFAR10":{
         "BadNets":{

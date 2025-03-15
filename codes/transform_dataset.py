@@ -1,4 +1,7 @@
 
+'''
+所有数据集和攻击的transform
+'''
 import os
 import cv2
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, RandomCrop, Resize, RandomRotation, Normalize, RandomResizedCrop

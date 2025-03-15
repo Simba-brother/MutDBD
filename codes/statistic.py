@@ -1,3 +1,6 @@
+'''
+统计中毒数据的信息
+'''
 import os
 import torch
 import config

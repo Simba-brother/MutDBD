@@ -1,3 +1,6 @@
+'''
+对所有数据集，模型和攻击进行攻击测试。
+'''
 import os
 import torch
 from codes import config
@@ -19,7 +22,6 @@ from codes.poisoned_dataset.imagenet_sub.Refool.generator import gen_poisoned_da
 from codes.poisoned_dataset.imagenet_sub.WaNet.generator import gen_poisoned_dataset as imagenetsub_WaNet_gen_poisoned_dataset
 
 from codes.common.eval_model import EvalModel
-
 
 
 '''

@@ -1,3 +1,7 @@
+'''
+重要：
+变异模型评估过后生成EvalMutationToCSV目录下preLabel.csv中缺乏original backdoor model的预测标签，这里给补上。
+'''
 import os
 from codes import config
 import torch
