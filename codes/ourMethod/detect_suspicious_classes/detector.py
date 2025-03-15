@@ -384,6 +384,9 @@ def f(dataset_name,model_name:str,attack_name:str,class_num:int,mutated_rate,det
     print("save_path",save_path)
 
 def main():
+    '''
+
+    '''
     data = {}
     dataset_name_list = config.cur_dataset_name_list
     model_name_list = config.cur_model_name_list
@@ -400,8 +403,6 @@ def main():
             class_num = 10
         if dataset_name == "GTSRB":
             class_num = 43
-        if dataset_name == "ImageNet2012_subset":
-            class_num = 30
         for model_name in model_name_list:
             print(f"\tmodel_name:{model_name}")
             data[dataset_name][model_name] = {}
@@ -488,9 +489,11 @@ if __name__ == "__main__":
     "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"]
     '''
     detect_method = "Precision_mean"
-    f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
-    
-    # main()
+    if dataset_name in ["CIFAR10","GTSRB"]:
+        main()  
+    elif dataset_name == "ImageNet2012_subset":
+        f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
+        
     # look_res()
     
 
