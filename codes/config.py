@@ -41,7 +41,7 @@ dataset_name = "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
 # 数据集分类任务数量
 class_num = 30 #  CIFAR-10:10,GTSRB:43,ImageNet2012_subset:30
 # 当前实验设置的模型名字
-model_name = "DenseNet"
+model_name = "VGG19"
 # 当前实验设置的攻击
 attack_name = "BadNets"
 # GPU设备

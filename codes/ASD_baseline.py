@@ -90,28 +90,28 @@ elif config.dataset_name == "ImageNet2012_subset":
         clean_trainset, clean_testset = imagenet_WaNet()
 # 数据加载器
 poisoned_trainset_loader = DataLoader(
-            poisoned_trainset,
+            poisoned_trainset, # 新鲜
             batch_size=64,
             shuffle=True,
             num_workers=4,
             pin_memory=True)
 
 poisoned_evalset_loader = DataLoader(
-            poisoned_trainset,
+            poisoned_trainset, # 新鲜
             batch_size=64,
             shuffle=False,
             num_workers=4,
             pin_memory=True)
 
 clean_testset_loader = DataLoader(
-            clean_testset,
+            clean_testset, # 新鲜
             batch_size=64, 
             shuffle=False,
             num_workers=4,
             pin_memory=True)
 
 poisoned_testset_loader = DataLoader(
-            poisoned_testset,
+            poisoned_testset, # 预制
             batch_size=64,
             shuffle=False,
             num_workers=4,
