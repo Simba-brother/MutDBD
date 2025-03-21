@@ -37,6 +37,7 @@ def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_l
         label_prob_map (dict):样本标签到采样概率的映射
         label_list（1dArray）:样本标签array
     '''
+    # 选择的是clean sample
     choice_indice = []
     while len(choice_indice) < samples_num:
         for sample_idx in ranked_sample_idx_array:
@@ -103,7 +104,7 @@ def defence_train(
     # 选出的clean seed idx
     choice_clean_indice = []
     for class_idx, idx_list in clean_data_info.items():
-        # 从每个class_idx中选择10个sample idx
+        # 从每个class_idx中选择10个sample idx,replace表示无放回抽样
         choice_list = np.random.choice(idx_list, replace=False, size=10).tolist()
         choice_clean_indice.extend(choice_list)
         # 从all_data_info中剔除选择出的clean seed sample index
@@ -115,27 +116,28 @@ def defence_train(
     best_epoch = -1
     # 总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
-    for epoch in range(total_epoch):
+    for epoch in range(total_epoch): # range(60,90)
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
-        if epoch < 60:
+        if epoch < 60: # epoch:[0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
             if epoch % 5 == 0 and epoch != 0:
                 # 每五个epoch 每个class中选择数量就多加10个
                 choice_num += 10
             print("Mining clean data by class-aware loss-guided split...")
+            # all_data_info = {class_id:indice（剔除了干净种子）}
             # 0表示在污染池,1表示在clean pool
             split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
-        elif epoch < 90:
+        elif epoch < 90: # epoch:[60,89]
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=class_prob_map)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
-        elif epoch < total_epoch:
+        elif epoch < total_epoch: # epoch:[90,120]
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             meta_virtual_model = deepcopy(model)
@@ -269,6 +271,7 @@ def defence_train(
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "best_acc": best_acc, # clean testset上的acc
+            "asr":poison_test_result["acc"],
             "best_epoch": best_epoch,
         }
         print("Best test accuaracy {} in epoch {}".format(best_acc, best_epoch))
@@ -284,8 +287,19 @@ def defence_train(
         latest_ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
         torch.save(saved_dict, latest_ckpt_path)
         print("Save the latest model to {}".format(latest_ckpt_path))
-    
-    print("asd_train() End")
+
+        # 保存第59个epoch(eg.stage1（class aware训练结束点）)
+        if epoch == 59:
+            latest_ckpt_path = os.path.join(ckpt_dir, "epoch59.pt")
+            torch.save(saved_dict, latest_ckpt_path)
+            print("Save the latest model to {}".format(latest_ckpt_path))
+        # 保存第60个epoch(eg.stage1（class agnostic首个保存点）)
+        if epoch == 60:
+            latest_ckpt_path = os.path.join(ckpt_dir, "epoch60.pt")
+            torch.save(saved_dict, latest_ckpt_path)
+            print("Save the latest model to {}".format(latest_ckpt_path))
+            
+    print("OurMethod_train() End")
     return best_ckpt_path,latest_ckpt_path
 
 def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_indice):
@@ -298,6 +312,7 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
     # 存总共选择的clean 的idx,包括seed和loss最低的的sample idx
     total_indice = choice_clean_indice.tolist() # choice_clean_indice装的seed
     for class_idx, sample_indice in all_data_info.items():
+        # 这里的sample_indice是剔除了干净seed
         # 遍历每个class_idx
         sample_indice = np.array(sample_indice)
         loss_class = loss[sample_indice]

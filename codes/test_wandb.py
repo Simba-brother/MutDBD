@@ -22,7 +22,9 @@ wandb.init(
 epochs = 10
 offset = random.random() / 5
 for epoch in range(2, epochs):
+    # 每个epoch的acc
     acc = 1 - 2 ** -epoch - random.random() / epoch - offset
+    # 每个epoch的loss
     loss = 2 ** -epoch + random.random() / epoch + offset
 
     # log metrics to wandb

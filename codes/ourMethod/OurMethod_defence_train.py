@@ -44,17 +44,23 @@ setproctitle.setproctitle(proctitle)
 print(proctitle)
 
 # 加载后门攻击配套数据
-
-backdoor_data = torch.load(os.path.join(config.exp_root_dir, "ATTACK", config.dataset_name, config.model_name, config.attack_name, "backdoor_data.pth"), map_location="cpu")
+backdoor_data_path = os.path.join(config.exp_root_dir, 
+                                        "ATTACK", 
+                                        config.dataset_name, 
+                                        config.model_name, 
+                                        config.attack_name, 
+                                        "backdoor_data.pth")
+backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
 backdoor_model = backdoor_data["backdoor_model"]
 poisoned_ids = backdoor_data["poisoned_ids"]
-poisoned_ids = backdoor_data["poisoned_ids"]
-poisoned_testset = backdoor_data["poisoned_testset"] # fixed
-
+poisoned_testset = backdoor_data["poisoned_testset"] # 预制的poisoned_testset
+# 得到一个raw model
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
+# 加载stage1后(epoch=60)的模型权重
+# 权重路径
+stage_weight_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/ResNet18/BadNets/2025-03-21_12:28:35/ckpt/epoch60.pt"
 
-# 根据poisoned_ids得到非预制菜poisoneds_trainset
-# 根据poisoned_ids得到非预制菜poisoneds_trainset
+# 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
 if config.dataset_name == "CIFAR10":
     if config.attack_name == "BadNets":
         poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
@@ -97,28 +103,28 @@ elif config.dataset_name == "ImageNet2012_subset":
 
 # 数据加载器
 poisoned_trainset_loader = DataLoader(
-            poisoned_trainset,
+            poisoned_trainset, # 非预制
             batch_size=64,
             shuffle=True,
             num_workers=4,
             pin_memory=True)
 
 poisoned_evalset_loader = DataLoader(
-            poisoned_trainset,
+            poisoned_trainset, # 非预制
             batch_size=64,
             shuffle=False,
             num_workers=4,
             pin_memory=True)
 
 clean_testset_loader = DataLoader(
-            clean_testset,
+            clean_testset, # 非预制
             batch_size=64, 
             shuffle=False,
             num_workers=4,
             pin_memory=True)
 
 poisoned_testset_loader = DataLoader(
-            poisoned_testset,
+            poisoned_testset,# 预制
             batch_size=64,
             shuffle=False,
             num_workers=4,
@@ -126,9 +132,10 @@ poisoned_testset_loader = DataLoader(
 # 获得设备
 device = torch.device(f"cuda:{config.gpu_id}")
 
-
-
-def get_class_sampled_prob_map(classes_rank):
+def get_class_sampled_prob_map(classes_rank:list):
+    '''
+    根据类别排序（即，从左往右类别的可疑程度逐渐减轻）得到类别对应的采样概率。
+    '''
     classes_num = len(classes_rank)
     class_map = {}
     intervals = []
@@ -150,23 +157,23 @@ def get_class_sampled_prob_map(classes_rank):
             prob = 1
         class_map[cls] = prob
     return class_map
-
-# list1 = []
-# for i in range(len(poisoned_trainset)):
-#     s,l,p = poisoned_trainset[i]
-#     list1.append(l)
-# list2 = []
-# for _, batch in enumerate(poisoned_evalset_loader):
-#     data = batch[0]
-#     target = batch[1]
-#     list2.extend(target.tolist())
-# print("f")
+'''
+list1 = []
+for i in range(len(poisoned_trainset)):
+    s,l,p = poisoned_trainset[i]
+    list1.append(l)
+list2 = []
+for _, batch in enumerate(poisoned_evalset_loader):
+    data = batch[0]
+    target = batch[1]
+    list2.extend(target.tolist())
+print("f")
+'''
 
 # 获得类别排序
-
 mutated_rate = 0.01
 measure_name = "Precision_mean"
-if config.dataset_name in ["CIFAR10,GTSRB"]:
+if config.dataset_name in ["CIFAR10","GTSRB"]:
     grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
     classes_rank = grid[config.dataset_name][config.model_name][config.attack_name][mutated_rate][measure_name]["class_rank"]
 elif config.dataset_name == "ImageNet2012_subset":
