@@ -6,7 +6,6 @@ import os
 import time
 import joblib
 import torch
-import torch.nn as nn
 import setproctitle
 from torch.utils.data import DataLoader
 from codes import config

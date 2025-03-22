@@ -83,8 +83,13 @@ def test15():
     print(data)
 
 
+
+def test17():
+    dic = {9:"a",8:"b",0:"c"}
+    print(dic.keys())
+
 if __name__ == "__main__":
-    test15()
+    test17()
 
 
 
