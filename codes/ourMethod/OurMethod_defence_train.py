@@ -56,9 +56,12 @@ poisoned_ids = backdoor_data["poisoned_ids"]
 poisoned_testset = backdoor_data["poisoned_testset"] # 预制的poisoned_testset
 # 得到一个raw model
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
-# 加载stage1后(epoch=60)的模型权重
+# 加载stage1后(epoch=59完成后)的模型权重
 # 权重路径
-stage_weight_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/ResNet18/BadNets/2025-03-21_12:28:35/ckpt/epoch60.pt"
+dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/ResNet18/BadNets/2025-03-21_17:40:40/ckpt/epoch59.pt"
+dict_data = torch.load(dict_path,map_location="cpu")
+# 权重load到模型中
+victim_model.load_state_dict(dict_data["model_state_dict"])
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
 if config.dataset_name == "CIFAR10":

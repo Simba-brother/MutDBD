@@ -4,29 +4,143 @@
 '''
 
 import joblib
-import setproctitle
 import random
 import os
+import pandas as pd
 from copy import deepcopy
-import cv2
+
 import numpy as np
 import torch
 import torch.nn as nn
-
 from torch.utils.data import DataLoader # 用于批量加载训练集的
 
-from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomCrop
-from torchvision.datasets import DatasetFolder
+import matplotlib.pyplot as plt
+
 from codes import config
-from codes.core.attacks import BadNets
-from codes.core.models.resnet import ResNet
 from codes.asd.loss import SCELoss, MixMatchLoss
 from codes.asd.semi import poison_linear_record, mixmatch_train,linear_test
 from codes.asd.dataset import MixMatchDataset
 
 from codes.utils import create_dir
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 
+
+def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
+    '''
+    对采样数据进行分析和可视化
+    Args
+    ----------
+    loss_array:ndarray
+        每个样本在模型上的loss值。例如，loss_array[idx]即可获得样本idx的loss值。
+    poisoned_ids:list
+        中毒样本的idx。
+    sample_idx_array:ndarray
+        被采样的样本idx即准备到clean pool中的样本idx
+    gt_label_array:ndarray
+        每个样本的真实分类标签，例如，gt_label_array[idx]即可获得样本idx的真实分类标签。
+    '''
+    '''
+    分析1：分析下按照loss值排序的中毒样本的累计增长趋势，看看符不符合中毒样本大概率集中在loss值大的样本
+    '''
+    # 根据loss值从小到大排序样本idx
+    ranked_sample_idx_array =  loss_array.argsort()
+    # 基于ranked_sample_idx_array和poisoned_ids构建对应的ispoisoned_list
+    ispoisoned_list = []
+    for sample_idx in ranked_sample_idx_array:
+        if sample_idx in poisoned_ids:
+            ispoisoned_list.append(1) # 1 代表污染
+        else:
+            ispoisoned_list.append(0)
+    cumulative_count_list = []
+    count = 0
+    for loc in range(len(ispoisoned_list)):
+        count += ispoisoned_list[loc]
+        cumulative_count_list.append(count)
+    # 计算累积百分比（相对于总样本数）
+    total_samples = len(ispoisoned_list)
+    cumulative_percent_list = [count / total_samples for count in cumulative_count_list]
+
+    # 绘制曲线
+    # 设置画布大小
+    plt.figure(figsize=(10, 6))
+    # 绘制累积数量曲线
+    plt.plot(range(1, len(ispoisoned_list)+1), cumulative_percent_list, label='Cumulative number of poisoned data', marker='o')
+
+    # 添加图表元素
+    plt.xlabel('Sorting position (1st to {}th)'.format(len(ispoisoned_list)))
+    plt.ylabel('Cumulative number')
+    plt.title('Growth curve of poisoned data after sorting')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("imgs/1.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.close()
+    '''
+    分析2：分析下采样出的样本排名分布，因为ASD是直接基于排名进行采样的，即直接采样排名前50%的样本，
+    而我们是根据样本的gt_label为每个样本设置了采样概率，所以需要观察一下我们采样的样本的排名，因为
+    根据分析1发现越靠后越可能为中毒样本。
+    '''
+    # 记录排名分布，1表示对应该排名位置的样本被采样了，反之不然。例如，如果rank_distribution[0]=1则说明排名第一的样本被采样了。
+    rank_distribution = [0]*len(ranked_sample_idx_array)
+    # 遍历每个位次
+    for rank in range(len(ranked_sample_idx_array)):
+        # 当前位次的样本索引（item）
+        item = ranked_sample_idx_array[rank]
+        # 判断当前位次样本在不在采样list中
+        if item in sample_idx_array:
+            # 如果该位次的样本被采样了
+            rank_distribution[rank] = 1
+    # 绘制热力图
+    plt.imshow([rank_distribution], aspect='auto', cmap='Reds', interpolation='nearest')
+    plt.title('Heat map distribution of poisoned samples')
+    plt.xlabel('Position Index')
+    plt.colorbar()
+    plt.yticks([])
+    plt.savefig("imgs/2.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.close()
+    '''
+    分析2：分析下采样出的样本的类别统计分布。因为，我们的方法考虑了样本的标签，不同的标签具有不同的采样概率，因此需要
+    统计一下类别统计分布，看看target class的样本占比。
+    '''
+    # 用于存储被采样样本的gt_label
+    label_list = []
+    for sample_idx in sample_idx_array:
+        label = gt_label_array[sample_idx]
+        label_list.append(label)
+    # 统计每个类别绝对数量
+    label_counts = pd.Series(label_list).value_counts()  
+    # 统计每个类别百分比
+    label_percent = pd.Series(label_list).value_counts(normalize=True).sort_index()
+    # ====== 绘制柱状图 ======
+    plt.figure(figsize=(10, 6))
+    sorted_labels = label_percent.index  # 确保标签顺序正确
+
+    # 绘制柱状图并添加百分比标签
+    bars = plt.bar(
+        x=sorted_labels,
+        height=label_percent.values,
+        color='skyblue',
+        edgecolor='black'
+    )
+
+    # 在柱顶显示百分比（保留1位小数）
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width()/2.,  # 横坐标居中
+            height + 0.02,  # 纵坐标偏移（根据比例调整）
+            f'{height:.1%}',  # 显示百分比格式
+            ha='center', va='bottom',  # 水平居中，底部对齐
+            fontsize=9
+        )
+
+    plt.title('Label distribution (proportion)', fontsize=14)
+    plt.xlabel('Label', fontsize=12)
+    plt.ylabel('Proportion', fontsize=12)
+    plt.xticks(ticks=sorted_labels)  # 显式指定坐标轴刻度
+    plt.ylim(0, 1.2 * max(label_percent))  # 扩大Y轴范围避免文字溢出
+    plt.grid(axis='y', linestyle='--', alpha=0.6)
+    plt.tight_layout()
+    plt.savefig("imgs/3.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.close()
 
 def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_list):
     '''
@@ -116,7 +230,7 @@ def defence_train(
     best_epoch = -1
     # 总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
-    for epoch in range(total_epoch): # range(60,90)
+    for epoch in range(60,90): # range(total_epoch): # range(60,90)
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
         if epoch < 60: # epoch:[0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
@@ -134,7 +248,8 @@ def defence_train(
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=class_prob_map)
+            # 将trainset对半划分为clean pool和poisoned pool
+            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -341,7 +456,6 @@ ranked_sample_idx_array =  loss.argsort()
 samples_num = int(len(ranked_sample_idx_array)*rate)
 choice_idx_list = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
 '''
-
 def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_prob_map=None):
     """
     Adaptively split the poisoned dataset by class-agnostic loss-guided split.
@@ -351,10 +465,10 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_
     loss = record_list[keys.index("loss")].data.numpy()
     # 得到样本对应的ground truth label
     gt_label_array = record_list[keys.index("target")].data.numpy()
-    # 申请出一个池子，1为干净，0为污
+    # 申请出一个flag array，1为干净，0为污
     clean_pool_flag = np.zeros(len(loss))
     if class_prob_map is not None:
-        # 按照loss值对样本idx进行排序
+        # 按照loss值对样本idx进行排序，loss保持不变
         ranked_sample_idx_array =  loss.argsort()
         # 计算采样数
         samples_num = int(len(ranked_sample_idx_array)*ratio)
@@ -370,6 +484,13 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_
         "{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice))
     )
     clean_pool_flag[total_indice] = 1
+    # 额外分析与可视化
+    sampling_analyse(
+        loss_array = loss,
+        poisoned_ids = poisoned_indice,
+        sample_idx_array = total_indice,
+        gt_label_array = gt_label_array
+        )
     return clean_pool_flag
 
 def meta_split(record_list, meta_record_list, ratio, poisoned_indice, class_prob_map=None):

@@ -60,8 +60,31 @@ def test11():
     data.insert(-4,1)
     print(data)
 
+def test12():
+    data = np.array([3,5,1,0,9,8])
+    rank = data.argsort()
+    print(rank)
+
+def test13():
+    # import matplotlib as mpl
+    # print(mpl.get_cachedir())
+    import matplotlib
+    from matplotlib import font_manager
+    font_list=sorted([f.name for f in font_manager.fontManager.ttflist])
+    for i in font_list:
+        print(i)
+
+def test14():
+    data = np.array([3,5,1,0,9,8])
+    print(3.0 in data)
+
+def test15():
+    data = [9]*4
+    print(data)
+
+
 if __name__ == "__main__":
-    test11()
+    test15()
 
 
 
