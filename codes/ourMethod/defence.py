@@ -142,6 +142,32 @@ def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
     plt.savefig("imgs/3.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
+def get_class_sampled_prob_map(classes_rank:list):
+    '''
+    根据类别排序（即，从左往右类别的可疑程度逐渐减轻）得到类别对应的采样概率。
+    '''
+    classes_num = len(classes_rank)
+    class_map = {}
+    intervals = []
+    for cut_rate in [0.25,0.5,0.75]:
+        intervals.append(int(cut_rate*classes_num))
+    for i in range(classes_num):
+        cls = classes_rank[i]
+        if i <= intervals[0]:
+            # [0,25%]
+            prob = 0.25
+        elif i <= intervals[1]:
+            # (25%,50%]
+            prob = 0.5
+        elif i <= intervals[2]:
+            # (50%,75%]
+            prob = 0.75
+        else:
+            # (75%,100%]
+            prob = 1
+        class_map[cls] = prob
+    return class_map
+
 def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_list):
     '''
     采样
@@ -167,6 +193,53 @@ def sampling(samples_num:int,ranked_sample_idx_array,label_prob_map:dict,label_l
     assert len(choice_indice) == samples_num, "数量不对"
     return choice_indice
 
+def sampling_2(samples_num:int,ranked_sample_idx_array, cls_rank, label_list) -> list:
+    # 排名0-49999
+    loc_list = list(range(len(ranked_sample_idx_array)))
+    # 位次对应的标签
+    loc_label_list = []
+    for loc in loc_list:
+        # 该位次样本id
+        sample_id = ranked_sample_idx_array[loc]
+        # 该位次样本label
+        loc_label_list.append(label_list[sample_id])
+    
+    def calculate_weight(idx, label, priority_order):
+        """计算归一化权重"""
+        max_index = 49999
+        max_coeff = 10.0
+        
+        # 各类别系数分配（优先级越高的类别系数越大）
+        coeff_dict = {}
+        for rank, cat in enumerate(priority_order):
+            coeff_dict[cat] = (10 - rank)/max_coeff  # 归一化到0-1
+        
+        # 索引归一化到0-1
+        index_norm = idx / max_index
+        
+        # 权重 = 系数 × 索引归一化值
+        weight = coeff_dict[label] * index_norm
+        return weight
+    def sample_low_risk(list1, labels, priority_order):
+        """按权重排序采样"""
+        samples = []
+        for idx, label in zip(list1, labels):
+            weight = calculate_weight(idx, label, priority_order)
+            samples.append( (weight, idx) )
+        
+        # 按权重从小到大排序，取前25000
+        samples.sort(key=lambda x: x[0])
+        selected_indices = [s[1] for s in samples[:25000]]
+        
+        return selected_indices
+    selected_loc_list = sample_low_risk(loc_list, loc_label_list, cls_rank)
+
+    seletcted_sample_id_list = []
+    for loc in selected_loc_list:
+       s_id = ranked_sample_idx_array[loc]
+       seletcted_sample_id_list.append(s_id)
+    return seletcted_sample_id_list
+
 
 def defence_train(
         model, # victim model
@@ -185,8 +258,11 @@ def defence_train(
     '''
     OurMethod防御训练方法
     '''
+    # 类别排序，越靠前类别越有可能为target class
+    classes_rank = kwargs["classes_rank"]
     #  各个类别采样概率
-    class_prob_map = kwargs["class_prob_map"]
+    class_prob_map = get_class_sampled_prob_map(classes_rank)
+    
     model.to(device)
     # 损失函数
     criterion = nn.CrossEntropyLoss()
@@ -230,7 +306,7 @@ def defence_train(
     best_epoch = -1
     # 总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
-    for epoch in range(60,90): # range(total_epoch): # range(60,90)
+    for epoch in range(total_epoch): # range(total_epoch): # range(60,90)
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
         if epoch < 60: # epoch:[0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
@@ -249,7 +325,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None) # class_prob_map=class_prob_map
+            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -456,9 +532,13 @@ ranked_sample_idx_array =  loss.argsort()
 samples_num = int(len(ranked_sample_idx_array)*rate)
 choice_idx_list = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
 '''
-def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_prob_map=None):
+def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_prob_map=None, classes_rank=None):
     """
     Adaptively split the poisoned dataset by class-agnostic loss-guided split.
+
+    Args:
+    ----
+    class_prob_map和classes_rank不同同时存在，因为代表了不同的采样
     """
     keys = [record.name for record in record_list]
     # 样本对应的loss值
@@ -473,6 +553,12 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_
         # 计算采样数
         samples_num = int(len(ranked_sample_idx_array)*ratio)
         total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
+    elif classes_rank is not None:
+        # 按照loss值对样本idx进行排序，loss保持不变
+        ranked_sample_idx_array =  loss.argsort()
+        # 计算采样数
+        samples_num = int(len(ranked_sample_idx_array)*ratio)
+        total_indice = sampling_2(samples_num,ranked_sample_idx_array,classes_rank,gt_label_array)
     else:
         total_indice = loss.argsort()[: int(len(loss) * ratio)]
     # 统计构建出的clean pool 中还混有污染样本的数量

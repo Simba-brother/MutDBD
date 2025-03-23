@@ -73,8 +73,9 @@ def main():
     seed_dict,other_dict = sampling_seed(id_list, poisoned_ids, gt_label_list, num=10)
     seed_acc_dic = get_acc_dic(seed_dict)
     other_acc_dict = get_acc_dic(other_dict)
-
-    # 绘制各个类别上箱线图
+    '''
+    # 绘制各个类别上acc_list箱线图
+    '''
     seeds = []
     others = [] 
     cls_list = sorted(seed_acc_dic.keys())
@@ -92,14 +93,14 @@ def main():
     positions_others = [i + 0.2 for i in categories]
 
     # 创建图形
-    fig, ax = plt.subplots(figsize=(16, 10))
+    fig, ax = plt.subplots(figsize=(30, 10))
 
     # 绘制箱线图
     # 绘制箱线图（保留之前的优化设置）
     box1 = ax.boxplot(
         seeds,
         positions=positions_seeds,
-        widths=0.4,
+        widths=0.3,
         patch_artist=True,
         showfliers=True,
         boxprops=dict(linewidth=2),
@@ -109,7 +110,7 @@ def main():
     box2 = ax.boxplot(
         others,
         positions=positions_others,
-        widths=0.4,
+        widths=0.3,
         patch_artist=True,
         showfliers=True,
         boxprops=dict(linewidth=2),
@@ -199,7 +200,7 @@ if __name__ == "__main__":
     # 污染样本
     poisoned_ids = backdoor_data["poisoned_ids"]
     # 加载pre_label_csv
-    mutation_rate = 0.05
+    mutation_rate = 0.01
     pre_label_df = pd.read_csv(
         os.path.join(
             config.exp_root_dir,

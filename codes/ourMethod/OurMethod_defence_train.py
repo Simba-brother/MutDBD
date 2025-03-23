@@ -55,13 +55,14 @@ poisoned_ids = backdoor_data["poisoned_ids"]
 poisoned_testset = backdoor_data["poisoned_testset"] # 预制的poisoned_testset
 # 得到一个raw model
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
+'''
 # 加载stage1后(epoch=59完成后)的模型权重
 # 权重路径
 dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/ResNet18/BadNets/2025-03-21_17:40:40/ckpt/epoch59.pt"
 dict_data = torch.load(dict_path,map_location="cpu")
 # 权重load到模型中
 victim_model.load_state_dict(dict_data["model_state_dict"])
-
+'''
 # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
 if config.dataset_name == "CIFAR10":
     if config.attack_name == "BadNets":
@@ -134,31 +135,6 @@ poisoned_testset_loader = DataLoader(
 # 获得设备
 device = torch.device(f"cuda:{config.gpu_id}")
 
-def get_class_sampled_prob_map(classes_rank:list):
-    '''
-    根据类别排序（即，从左往右类别的可疑程度逐渐减轻）得到类别对应的采样概率。
-    '''
-    classes_num = len(classes_rank)
-    class_map = {}
-    intervals = []
-    for cut_rate in [0.25,0.5,0.75]:
-        intervals.append(int(cut_rate*classes_num))
-    for i in range(classes_num):
-        cls = classes_rank[i]
-        if i <= intervals[0]:
-            # [0,25%]
-            prob = 0.25
-        elif i <= intervals[1]:
-            # (25%,50%]
-            prob = 0.5
-        elif i <= intervals[2]:
-            # (50%,75%]
-            prob = 0.75
-        else:
-            # (75%,100%]
-            prob = 1
-        class_map[cls] = prob
-    return class_map
 '''
 list1 = []
 for i in range(len(poisoned_trainset)):
@@ -192,7 +168,6 @@ elif config.dataset_name == "ImageNet2012_subset":
     classes_rank =classRank_data["class_rank"]
 else:
     raise Exception("数据集名称错误")
-class_prob_map = get_class_sampled_prob_map(classes_rank)
 
 # 开始防御式训练
 print("开始OurMethod防御式训练")
@@ -218,7 +193,7 @@ best_ckpt_path, latest_ckpt_path = defence_train(
         # **kwargs
         dataset_name = config.dataset_name,
         model_name = config.model_name,
-        class_prob_map = class_prob_map
+        classes_rank = classes_rank # 类别排序，eg. [3,7,4,0,9,2,1,6,5,8]
         )
 time_2 = time.perf_counter()
 print(f"防御式训练完成，共耗时{time_2-time_1}秒")
