@@ -325,7 +325,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
+            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -391,7 +391,7 @@ def defence_train(
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, class_prob_map=class_prob_map)
+            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = classes_rank)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
@@ -579,7 +579,7 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_
         )
     return clean_pool_flag
 
-def meta_split(record_list, meta_record_list, ratio, poisoned_indice, class_prob_map=None):
+def meta_split(record_list, meta_record_list, ratio, poisoned_indice, class_prob_map=None, classes_rank=None):
     """
     Adaptively split the poisoned dataset by meta-split.
     """
@@ -598,6 +598,12 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice, class_prob
         # 计算采样数
         samples_num = int(len(ranked_sample_idx_array)*ratio)
         total_indice = sampling(samples_num,ranked_sample_idx_array,class_prob_map,gt_label_array)
+    elif classes_rank is not None:
+        # 按照loss值对样本idx进行排序，loss保持不变
+        ranked_sample_idx_array =  loss.argsort()
+        # 计算采样数
+        samples_num = int(len(ranked_sample_idx_array)*ratio)
+        total_indice = sampling_2(samples_num,ranked_sample_idx_array,classes_rank,gt_label_array)
     else:
         total_indice = loss.argsort()[: int(len(loss) * ratio)]
     poisoned_count = 0
