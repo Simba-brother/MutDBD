@@ -325,7 +325,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = None) # class_prob_map=class_prob_map
+            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -570,6 +570,7 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_
         "{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice))
     )
     clean_pool_flag[total_indice] = 1
+    '''
     # 额外分析与可视化
     sampling_analyse(
         loss_array = loss,
@@ -577,6 +578,7 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, class_
         sample_idx_array = total_indice,
         gt_label_array = gt_label_array
         )
+    '''
     return clean_pool_flag
 
 def meta_split(record_list, meta_record_list, ratio, poisoned_indice, class_prob_map=None, classes_rank=None):
