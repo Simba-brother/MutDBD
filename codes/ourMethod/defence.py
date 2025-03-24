@@ -71,7 +71,7 @@ def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
     plt.title('Growth curve of poisoned data after sorting')
     plt.legend()
     plt.grid(True)
-    plt.savefig("imgs/1.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig("imgs/ASD_1.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
     '''
     分析2：分析下采样出的样本排名分布，因为ASD是直接基于排名进行采样的，即直接采样排名前50%的样本，
@@ -94,7 +94,7 @@ def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
     plt.xlabel('Position Index')
     plt.colorbar()
     plt.yticks([])
-    plt.savefig("imgs/2.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig("imgs/ASD_2.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
     '''
     分析2：分析下采样出的样本的类别统计分布。因为，我们的方法考虑了样本的标签，不同的标签具有不同的采样概率，因此需要
@@ -139,7 +139,7 @@ def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
     plt.ylim(0, 1.2 * max(label_percent))  # 扩大Y轴范围避免文字溢出
     plt.grid(axis='y', linestyle='--', alpha=0.6)
     plt.tight_layout()
-    plt.savefig("imgs/3.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig("imgs/ASD_3.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
 def get_class_sampled_prob_map(classes_rank:list):
@@ -325,7 +325,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
+            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, class_prob_map=None, classes_rank = None) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
