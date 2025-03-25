@@ -82,14 +82,17 @@ def test15():
     data = [9]*4
     print(data)
 
-
-
 def test17():
     dic = {9:"a",8:"b",0:"c"}
     print(dic.keys())
 
+def test18():
+    a= (10.0-2)/10.0
+    b = (10-2)/10
+    print(a,b)
+
 if __name__ == "__main__":
-    test17()
+    test18()
 
 
 
