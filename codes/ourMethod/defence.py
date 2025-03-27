@@ -417,7 +417,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, sampling_method="method_4", class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
+            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, sampling_method="method_3", class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -483,7 +483,7 @@ def defence_train(
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, sampling_method="method_4", class_prob_map=None, classes_rank = classes_rank)
+            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, sampling_method="method_3", class_prob_map=None, classes_rank = classes_rank)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
