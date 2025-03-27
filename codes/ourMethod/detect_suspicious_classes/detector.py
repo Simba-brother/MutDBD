@@ -234,11 +234,13 @@ def detect_by_precision(df:pd.DataFrame,class_num:int,mutated_model_global_id_li
             stat_measure = round(np.var(measure_list),4)
         item = (stat_measure,class_i)
         priority_queue.put(item)
-    # 获得类别排名
+    # 获得类别排名,值越小优先级越大（小根堆）
     priority_list = priorityQueue_2_list(priority_queue)
     classes_rank = [class_i for priority,class_i in priority_list]
+    classes_priority = [priority for priority,class_i in priority_list]
     target_class_ranking_percent = round((classes_rank.index(config.target_class_idx)+1)/len(classes_rank),3)
-    return classes_rank,target_class_ranking_percent
+
+    return classes_rank, target_class_ranking_percent
 
 def detect_by_recall(df:pd.DataFrame,class_num:int,mutated_model_global_id_list:list[int],stat_name="mean"):
     '''

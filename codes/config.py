@@ -41,10 +41,10 @@ dataset_name = "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
 # 数据集分类任务数量
 class_num = 10 #  CIFAR-10:10,GTSRB:43,ImageNet2012_subset:30
 # 当前实验设置的模型名字
-model_name = "ResNet18"
+model_name = "ResNet18" # ResNet18, VGG19, DenseNet
 # 当前实验设置的攻击
-attack_name = "BadNets"
-# GPU设备
+attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
+# GPU设备 
 gpu_id = 1
 
 
@@ -53,7 +53,7 @@ asd_config = {
     "CIFAR10":{
         "epoch":120
     },
-    "GTSRB":{
+    "GTSRB":{ 
         "epoch":100
     },
     "ImageNet2012_subset":{

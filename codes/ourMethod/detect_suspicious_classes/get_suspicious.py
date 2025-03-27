@@ -51,8 +51,8 @@ def get_suspicious_classes_by_ScottKnottESD(data_dict):
 
 if __name__ == "__main__":
     data_dict = {
-        0:[4,4,4,4],
-        1:[4,4,4,4],
+        "col_0":[3,3,3,3],
+        "col_1":[4,4,4,4],
     }
     get_suspicious_classes_by_ScottKnottESD(data_dict)
     # result = sp.posthoc_ske(data_dict)

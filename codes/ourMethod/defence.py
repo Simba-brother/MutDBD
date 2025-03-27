@@ -316,6 +316,23 @@ def sampling_3(samples_num:int,ranked_sample_idx_array, cls_rank:list, label_lis
        seletcted_sample_id_list.append(s_id)
     return seletcted_sample_id_list
 
+def sampling_4(samples_num:int, loss_list:list, label_list:list, cls_rank:list) -> list:
+    # 得到label的权重系数，越大越可疑
+    coeff_dict = get_class_risk_coef(cls_rank)
+    weigth_list = []
+    for sample_id in range(len(loss_list)):
+        # loss越大越可疑
+        loss_value = loss_list[sample_id]
+        label_value = label_list[sample_id]
+        label_coeff = coeff_dict[label_value]
+        weight = loss_value * label_coeff
+        weigth_list.append(weight)
+    ranked_sample_id_list =  np.array(weigth_list).argsort().tolist()
+    seletcted_sample_id_list = ranked_sample_id_list[:samples_num]
+    return seletcted_sample_id_list
+
+
+
 def defence_train(
         model, # victim model
         class_num, # 分类数量
@@ -400,7 +417,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, sampling_method="method_3", class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
+            split_indice =  class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, sampling_method="method_4", class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -466,7 +483,7 @@ def defence_train(
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, sampling_method="method_3", class_prob_map=None, classes_rank = classes_rank)
+            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, sampling_method="method_4", class_prob_map=None, classes_rank = classes_rank)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
@@ -644,6 +661,12 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, sampli
         # 计算采样数
         samples_num = int(len(ranked_sample_idx_array)*ratio)
         total_indice = sampling_3(samples_num,ranked_sample_idx_array,classes_rank,gt_label_array)
+    elif sampling_method == "method_4":
+        assert classes_rank is not None, "参数不匹配"
+        loss_list = loss.tolist()
+        label_list = gt_label_array.tolist()
+        samples_num = int(len(loss_list)*ratio)
+        total_indice = sampling_4(samples_num, loss_list, label_list, classes_rank)
     else:
         total_indice = loss.argsort()[: int(len(loss) * ratio)]
     # 统计构建出的clean pool 中还混有污染样本的数量
@@ -655,7 +678,7 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, sampli
         "{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice))
     )
     clean_pool_flag[total_indice] = 1
-    
+    '''
     # 额外分析与可视化
     sampling_analyse(
         loss_array = loss,
@@ -663,6 +686,7 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, sampli
         sample_idx_array = total_indice,
         gt_label_array = gt_label_array
         )
+    '''
     
     return clean_pool_flag
 
@@ -700,6 +724,12 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice, sampling_m
         # 计算采样数
         samples_num = int(len(ranked_sample_idx_array)*ratio)
         total_indice = sampling_3(samples_num,ranked_sample_idx_array,classes_rank,gt_label_array)
+    elif sampling_method == "method_4":
+        assert classes_rank is not None, "参数不匹配"
+        loss_list = loss.tolist()
+        label_list = gt_label_array.tolist()
+        samples_num = int(len(loss_list)*ratio)
+        total_indice = sampling_4(samples_num, loss_list, label_list, classes_rank)
     else:
         total_indice = loss.argsort()[: int(len(loss) * ratio)]
     poisoned_count = 0

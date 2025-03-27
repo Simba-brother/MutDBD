@@ -55,6 +55,7 @@ poisoned_ids = backdoor_data["poisoned_ids"]
 poisoned_testset = backdoor_data["poisoned_testset"] # 预制的poisoned_testset
 # 得到一个raw model
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
+
 '''
 # 加载stage1后(epoch=59完成后)的模型权重
 # 权重路径

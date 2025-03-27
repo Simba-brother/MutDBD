@@ -91,8 +91,20 @@ def test18():
     b = (10-2)/10
     print(a,b)
 
+def test19():
+    a = np.array([3,1,5])
+    a.argsort()
+    print(a)
+    np.argsort(a)
+    print(a)
+    np.sort(a) # no replace
+    # a.sort() # replace
+    print(a)
+    a.tolist()
+    print(type(a))
+
 if __name__ == "__main__":
-    test18()
+    test19()
 
 
 
