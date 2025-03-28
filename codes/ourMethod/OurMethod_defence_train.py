@@ -59,7 +59,7 @@ victim_model = get_model(dataset_name=config.dataset_name, model_name=config.mod
 '''
 # 加载stage1后(epoch=59完成后)的模型权重
 # 权重路径
-dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/ResNet18/BadNets/2025-03-23_20:13:26/ckpt/epoch59.pt"
+dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/ResNet18/BadNets/2025-03-25_11:23:08/ckpt/epoch59.pt"
 dict_data = torch.load(dict_path,map_location="cpu")
 # 权重load到模型中
 victim_model.load_state_dict(dict_data["model_state_dict"])

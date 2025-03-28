@@ -41,9 +41,9 @@ dataset_name = "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
 # 数据集分类任务数量
 class_num = 10 #  CIFAR-10:10,GTSRB:43,ImageNet2012_subset:30
 # 当前实验设置的模型名字
-model_name = "VGG19" # ResNet18, VGG19, DenseNet
+model_name = "ResNet18" # ResNet18, VGG19, DenseNet
 # 当前实验设置的攻击
-attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
+attack_name = "BadNets" # BadNets, IAD, Refool, WaNet
 # GPU设备 
 gpu_id = 1
 

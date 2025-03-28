@@ -71,7 +71,7 @@ def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
     plt.title('Growth curve of poisoned data after sorting')
     plt.legend()
     plt.grid(True)
-    plt.savefig("imgs/OM3_1.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig("imgs/OM4_1.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
     '''
     分析2：分析下采样出的样本排名分布，因为ASD是直接基于排名进行采样的，即直接采样排名前50%的样本，
@@ -94,7 +94,7 @@ def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
     plt.xlabel('Position Index')
     plt.colorbar()
     plt.yticks([])
-    plt.savefig("imgs/OM3_2.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig("imgs/OM4_2.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
     '''
     分析2：分析下采样出的样本的类别统计分布。因为，我们的方法考虑了样本的标签，不同的标签具有不同的采样概率，因此需要
@@ -139,7 +139,7 @@ def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
     plt.ylim(0, 1.2 * max(label_percent))  # 扩大Y轴范围避免文字溢出
     plt.grid(axis='y', linestyle='--', alpha=0.6)
     plt.tight_layout()
-    plt.savefig("imgs/OM3_3.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig("imgs/OM4_3.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
 def get_class_sampled_prob_map(classes_rank:list):
@@ -398,7 +398,7 @@ def defence_train(
     best_epoch = -1
     # 总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
-    for epoch in range(total_epoch): # range(total_epoch): # range(60,90)
+    for epoch in range(60,90): # range(total_epoch): # range(60,90)
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
         if epoch < 60: # epoch:[0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
@@ -417,7 +417,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, sampling_method="method_3", class_prob_map=None, classes_rank = classes_rank) # class_prob_map=class_prob_map
+            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, sampling_method=None, class_prob_map=class_prob_map, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -483,7 +483,7 @@ def defence_train(
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, sampling_method="method_3", class_prob_map=None, classes_rank = classes_rank)
+            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, sampling_method=None, class_prob_map=class_prob_map, classes_rank = classes_rank)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
@@ -678,7 +678,7 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, sampli
         "{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice))
     )
     clean_pool_flag[total_indice] = 1
-    '''
+    
     # 额外分析与可视化
     sampling_analyse(
         loss_array = loss,
@@ -686,7 +686,7 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice, sampli
         sample_idx_array = total_indice,
         gt_label_array = gt_label_array
         )
-    '''
+    
     
     return clean_pool_flag
 
