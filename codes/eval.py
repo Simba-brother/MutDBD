@@ -31,7 +31,7 @@ model = get_model(dataset_name=config.dataset_name, model_name=config.model_name
 
 # 加载模型权重
 # 权重路径
-dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/VGG19/BadNets/2025-03-23_20:54:05/ckpt/latest_model.pt"
+dict_path = "/data/mml/backdoor_detect/experiments/ASD/CIFAR10/ResNet18/BadNets/2025-02-04_13:08:56/ckpt/latest_model.pt"
 dict_data = torch.load(dict_path,map_location="cpu")
 # 权重load到模型中
 model.load_state_dict(dict_data["model_state_dict"])
