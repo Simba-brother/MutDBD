@@ -1,13 +1,21 @@
 '''
-重要
-我们防御训练方法的主函数
+完成空白模型或后门模型的重训练
 '''
+
 import os
 import time
 import joblib
+import copy
+import numpy as np
+from collections import defaultdict
+from codes.ourMethod.loss import SCELoss
+import matplotlib.pyplot as plt
+from codes.asd.log import Record
 import torch
 import setproctitle
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader,Subset
+import torch.nn as nn
+import torch.optim as optim
 from codes import config
 from codes.ourMethod.defence import defence_train
 from codes.scripts.dataset_constructor import *
@@ -38,7 +46,7 @@ from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Ref
 
 
 # 进程名称
-proctitle = f"OurMethod|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
 setproctitle.setproctitle(proctitle)
 print(proctitle)
 
@@ -50,21 +58,13 @@ backdoor_data_path = os.path.join(config.exp_root_dir,
                                         config.attack_name, 
                                         "backdoor_data.pth")
 backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
+# 后门模型
 backdoor_model = backdoor_data["backdoor_model"]
 poisoned_ids = backdoor_data["poisoned_ids"]
-poisoned_testset = backdoor_data["poisoned_testset"] # 预制的poisoned_testset
-# 得到一个raw model
+# 预制的poisoned_testset
+poisoned_testset = backdoor_data["poisoned_testset"] 
+# 空白模型
 victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
-
-
-# 加载stage1后(epoch=59完成后)的模型权重
-# 权重路径
-dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/DenseNet/BadNets/2025-04-21_14:55:01/ckpt/epoch59.pt"
-dict_data = torch.load(dict_path,map_location="cpu")
-# 权重load到模型中
-victim_model.load_state_dict(dict_data["model_state_dict"])
-
-
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
 if config.dataset_name == "CIFAR10":
@@ -108,27 +108,28 @@ elif config.dataset_name == "ImageNet2012_subset":
         clean_trainset, clean_testset = imagenet_WaNet()
 
 # 数据加载器
+# 打乱
 poisoned_trainset_loader = DataLoader(
             poisoned_trainset, # 非预制
             batch_size=64,
-            shuffle=True,
+            shuffle=True, # 打乱
             num_workers=4,
             pin_memory=True)
-
+# 不打乱
 poisoned_evalset_loader = DataLoader(
             poisoned_trainset, # 非预制
             batch_size=64,
             shuffle=False,
             num_workers=4,
             pin_memory=True)
-
+# 不打乱
 clean_testset_loader = DataLoader(
             clean_testset, # 非预制
             batch_size=64, 
             shuffle=False,
             num_workers=4,
             pin_memory=True)
-
+# 不打乱
 poisoned_testset_loader = DataLoader(
             poisoned_testset,# 预制
             batch_size=64,
@@ -138,98 +139,140 @@ poisoned_testset_loader = DataLoader(
 # 获得设备
 device = torch.device(f"cuda:{config.gpu_id}")
 
+
 '''
-list1 = []
-for i in range(len(poisoned_trainset)):
-    s,l,p = poisoned_trainset[i]
-    list1.append(l)
-list2 = []
-for _, batch in enumerate(poisoned_evalset_loader):
-    data = batch[0]
-    target = batch[1]
-    list2.extend(target.tolist())
-print("f")
+看一下后门模型上损失情况
 '''
 
-# 获得类别排序
-mutated_rate = 0.01
-measure_name = "Precision_mean"
-if config.dataset_name in ["CIFAR10","GTSRB"]:
-    grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
-    classes_rank = grid[config.dataset_name][config.model_name][config.attack_name][mutated_rate][measure_name]["class_rank"]
-elif config.dataset_name == "ImageNet2012_subset":
-    classRank_data = joblib.load(os.path.join(
-        config.exp_root_dir,
-        "ClassRank",
-        config.dataset_name,
-        config.model_name,
-        config.attack_name,
-        str(mutated_rate),
-        measure_name,
-        "ClassRank.joblib"
-    ))
-    classes_rank =classRank_data["class_rank"]
-else:
-    raise Exception("数据集名称错误")
+model = backdoor_model
+'''
+model.to(device)
+dataset_loader = poisoned_evalset_loader # 不打乱
+# 损失函数
+# loss_fn = SCELoss(num_classes=10, reduction="none") # nn.CrossEntropyLoss()
+loss_fn = nn.CrossEntropyLoss()
+loss_record = Record("loss", len(dataset_loader.dataset)) # 记录每个样本的loss
+label_record = Record("label", len(dataset_loader.dataset))
+model.eval()
+# 判断模型是在CPU还是GPU上
+for _, batch in enumerate(dataset_loader): # 分批次遍历数据加载器
+    # 该批次数据
+    X = batch[0].to(device)
+    # 该批次标签
+    Y = batch[1].to(device)
+    with torch.no_grad():
+        P_Y = model(X)
+    loss_fn.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
+    loss = loss_fn(P_Y, Y)
+    loss_record.update(loss.cpu())
+    label_record.update(Y.cpu())
+# 基于loss排名
+loss_array = loss_record.data.numpy()
+# 基于loss的从小到大的样本本id排序数组
+based_loss_ranked_sample_id_array =  loss_array.argsort()
+# 获得对应的poisoned_flag
+poisoned_flag = []
+for sample_id in based_loss_ranked_sample_id_array:
+    if sample_id in poisoned_ids:
+        poisoned_flag.append(True)
+    else:
+        poisoned_flag.append(False)
+# 话图看一下中毒样本在序中的分布
+distribution = [1 if flag else 0 for flag in poisoned_flag]
+# 绘制热力图
+plt.imshow([distribution], aspect='auto', cmap='Reds', interpolation='nearest')
+plt.title('Heat map distribution of poisoned samples')
+plt.xlabel('ranking')
+plt.colorbar()
+plt.yticks([])
+plt.savefig("imgs/backdoor_SCEloss.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+plt.close()
+'''
 
-# 开始防御式训练
-print("开始OurMethod防御式训练")
-time_1 = time.perf_counter()
-best_ckpt_path, latest_ckpt_path = defence_train(
-        model = victim_model, # victim model
-        class_num = config.class_num, # 分类数量
-        poisoned_train_dataset = poisoned_trainset, # 有污染的训练集
-        poisoned_ids = poisoned_ids, # 被污染的样本id list
-        poisoned_eval_dataset_loader = poisoned_evalset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-        poisoned_train_dataset_loader = poisoned_trainset_loader, # 有污染的训练集加载器（打乱加载）
-        clean_test_dataset_loader = clean_testset_loader, # 干净的测试集加载器
-        poisoned_test_dataset_loader = poisoned_testset_loader, # 污染的测试集加载器
-        device=device, # GPU设备对象
-        # 实验结果存储目录
-        save_dir = os.path.join(config.exp_root_dir, 
-                "OurMethod", 
-                config.dataset_name, 
-                config.model_name, 
-                config.attack_name, 
-                time.strftime("%Y-%m-%d_%H:%M:%S")
-                ),
-        # **kwargs
-        dataset_name = config.dataset_name,
-        model_name = config.model_name,
-        classes_rank = classes_rank # 类别排序，eg. [3,7,4,0,9,2,1,6,5,8]
-        )
-time_2 = time.perf_counter()
-print(f"防御式训练完成，共耗时{time_2-time_1}秒")
-# 评估防御结果
-print("开始评估防御结果")
-time_3 = time.perf_counter()
-best_model_ckpt = torch.load(best_ckpt_path, map_location="cpu")
-victim_model.load_state_dict(best_model_ckpt["model_state_dict"])
-new_model = victim_model
-# (1) 评估新模型在clean testset上的acc
-em = EvalModel(new_model,clean_testset,torch.device(f"cuda:{config.gpu_id}"),)
-clean_test_acc = em.eval_acc()
-'''
-clean_test_acc = model_train_test.test(
-    model = new_model,
-    testset = clean_testset,
-    batch_size = 128,
-    device = torch.device(f"cuda:{config.gpu_id}"),
+def module_1(model):
+    model.to(device)
+    dataset_loader = poisoned_evalset_loader # 不打乱
+    # 损失函数
+    # loss_fn = SCELoss(num_classes=10, reduction="none") # nn.CrossEntropyLoss()
     loss_fn = nn.CrossEntropyLoss()
-    )
+    loss_record = Record("loss", len(dataset_loader.dataset)) # 记录每个样本的loss
+    label_record = Record("label", len(dataset_loader.dataset))
+    model.eval()
+    # 判断模型是在CPU还是GPU上
+    for _, batch in enumerate(dataset_loader): # 分批次遍历数据加载器
+        # 该批次数据
+        X = batch[0].to(device)
+        # 该批次标签
+        Y = batch[1].to(device)
+        with torch.no_grad():
+            P_Y = model(X)
+        loss_fn.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
+        loss = loss_fn(P_Y, Y)
+        loss_record.update(loss.cpu())
+        label_record.update(Y.cpu())
+    # 基于loss排名
+    loss_array = loss_record.data.numpy()
+    # 基于loss的从小到大的样本本id排序数组
+    based_loss_ranked_sample_id_array =  loss_array.argsort()
+    # 获得对应的poisoned_flag
+    poisoned_flag = []
+    for sample_id in based_loss_ranked_sample_id_array:
+        if sample_id in poisoned_ids:
+            poisoned_flag.append(True)
+        else:
+            poisoned_flag.append(False)
+    # 话图看一下中毒样本在序中的分布
+    distribution = [1 if flag else 0 for flag in poisoned_flag]
+    # 绘制热力图
+    plt.imshow([distribution], aspect='auto', cmap='Reds', interpolation='nearest')
+    plt.title('Heat map distribution of poisoned samples')
+    plt.xlabel('ranking')
+    plt.colorbar()
+    plt.yticks([])
+    plt.savefig("imgs/retrain_CEloss_1.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.close()
+
 '''
-# (2) 评估新模型在poisoned testset上的acc
-em = EvalModel(new_model,poisoned_testset,torch.device(f"cuda:{config.gpu_id}"),)
-poisoned_test_acc = em.eval_acc()
+重训练
 '''
-poisoned_test_acc = model_train_test.test(
-    model = new_model,
-    testset = poisoned_testset,
-    batch_size = 128,
-    device = torch.device(f"cuda:{config.gpu_id}"),
-    loss_fn = nn.CrossEntropyLoss()
-    )
-'''
-print({'clean_test_acc':clean_test_acc, 'poisoned_test_acc':poisoned_test_acc})
-time_4 = time.perf_counter()
-print(f"评估防御结果结束，共耗时{time_4-time_2}秒")
+# 获得种子
+# {class_id:[sample_id]}
+clean_sample_dict = defaultdict(list)
+for sample_id, item in enumerate(poisoned_trainset):
+    x = item[0]
+    y = item[1]
+    isPoisoned = item[2]
+    if isPoisoned is False:
+        clean_sample_dict[y].append(sample_id)
+seed_sample_id_list = []
+for class_id,sample_id_list in clean_sample_dict.items():
+    seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
+seedSet = Subset(poisoned_trainset,seed_sample_id_list)
+# 基于种子retrain 5轮
+def train(model,device,dataset):
+    model.train()
+    model.to(device)
+    num_epochs = 5
+    dataset_loader = DataLoader(
+            dataset, # 非预制
+            batch_size=64,
+            shuffle=True, # 打乱
+            num_workers=4)
+    optimizer = optim.Adam(model.parameters(),lr=0.0001)
+    loss_function = nn.CrossEntropyLoss()
+    for epoch in range(num_epochs):
+        for _, batch in enumerate(dataset_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+        print(f"epoch:{epoch},loss:{loss}")
+    return model
+model = train(model,device,seedSet)
+# 看看基于损失排序后中毒样本的分布
+module_1(model)
+
+

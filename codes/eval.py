@@ -1,3 +1,7 @@
+'''
+看看模型的简单评估
+'''
+
 import os
 
 
@@ -31,7 +35,7 @@ model = get_model(dataset_name=config.dataset_name, model_name=config.model_name
 
 # 加载模型权重
 # 权重路径
-dict_path = "/data/mml/backdoor_detect/experiments/ASD/CIFAR10/ResNet18/BadNets/2025-02-04_13:08:56/ckpt/latest_model.pt"
+dict_path = "/data/mml/backdoor_detect/experiments/ASD/CIFAR10/DenseNet/BadNets/2025-02-17_18:39:21/ckpt/latest_model.pt"
 dict_data = torch.load(dict_path,map_location="cpu")
 # 权重load到模型中
 model.load_state_dict(dict_data["model_state_dict"])
@@ -71,7 +75,7 @@ plt.xticks(ticks=label_list)  # 显式指定坐标轴刻度
 plt.ylim(0, 1.3)  # 扩大Y轴范围避免文字溢出
 plt.grid(axis='y', linestyle='--', alpha=0.6)
 plt.tight_layout()
-plt.savefig("imgs/4.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+plt.savefig("imgs/5.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
 plt.close()
 print("fjal")
 
