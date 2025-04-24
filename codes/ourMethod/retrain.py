@@ -6,6 +6,7 @@ import os
 import time
 import joblib
 import copy
+import queue
 import numpy as np
 from collections import defaultdict
 from codes.ourMethod.loss import SCELoss
@@ -45,10 +46,6 @@ from codes.transform_dataset import gtsrb_BadNets, gtsrb_IAD, gtsrb_Refool, gtsr
 from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Refool, imagenet_WaNet
 
 
-# 进程名称
-proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
-setproctitle.setproctitle(proctitle)
-print(proctitle)
 
 # 加载后门攻击配套数据
 backdoor_data_path = os.path.join(config.exp_root_dir, 
@@ -136,60 +133,48 @@ poisoned_testset_loader = DataLoader(
             shuffle=False,
             num_workers=4,
             pin_memory=True)
+
+# 获得种子
+# {class_id:[sample_id]}
+clean_sample_dict = defaultdict(list)
+for sample_id, item in enumerate(poisoned_trainset):
+    x = item[0]
+    y = item[1]
+    isPoisoned = item[2]
+    if isPoisoned is False:
+        clean_sample_dict[y].append(sample_id)
+seed_sample_id_list = []
+for class_id,sample_id_list in clean_sample_dict.items():
+    seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
+seedSet = Subset(poisoned_trainset,seed_sample_id_list)
 # 获得设备
 device = torch.device(f"cuda:{config.gpu_id}")
 
 
-'''
-看一下后门模型上损失情况
-'''
+def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
+        # 基于class_rank得到每个类别权重，原则是越可疑的类别（索引越小的类别），权（分）越大
+        cls_num = len(class_rank)
+        cls2score = {}
+        for idx, cls in enumerate(class_rank):
+            # rank:类别cat的位次
+            cls2score[cls] = (cls_num - idx)/cls_num 
 
-model = backdoor_model
-'''
-model.to(device)
-dataset_loader = poisoned_evalset_loader # 不打乱
-# 损失函数
-# loss_fn = SCELoss(num_classes=10, reduction="none") # nn.CrossEntropyLoss()
-loss_fn = nn.CrossEntropyLoss()
-loss_record = Record("loss", len(dataset_loader.dataset)) # 记录每个样本的loss
-label_record = Record("label", len(dataset_loader.dataset))
-model.eval()
-# 判断模型是在CPU还是GPU上
-for _, batch in enumerate(dataset_loader): # 分批次遍历数据加载器
-    # 该批次数据
-    X = batch[0].to(device)
-    # 该批次标签
-    Y = batch[1].to(device)
-    with torch.no_grad():
-        P_Y = model(X)
-    loss_fn.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
-    loss = loss_fn(P_Y, Y)
-    loss_record.update(loss.cpu())
-    label_record.update(Y.cpu())
-# 基于loss排名
-loss_array = loss_record.data.numpy()
-# 基于loss的从小到大的样本本id排序数组
-based_loss_ranked_sample_id_array =  loss_array.argsort()
-# 获得对应的poisoned_flag
-poisoned_flag = []
-for sample_id in based_loss_ranked_sample_id_array:
-    if sample_id in poisoned_ids:
-        poisoned_flag.append(True)
-    else:
-        poisoned_flag.append(False)
-# 话图看一下中毒样本在序中的分布
-distribution = [1 if flag else 0 for flag in poisoned_flag]
-# 绘制热力图
-plt.imshow([distribution], aspect='auto', cmap='Reds', interpolation='nearest')
-plt.title('Heat map distribution of poisoned samples')
-plt.xlabel('ranking')
-plt.colorbar()
-plt.yticks([])
-plt.savefig("imgs/backdoor_SCEloss.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
-plt.close()
-'''
+        sample_num = len(ranked_sample_id_list)
+        # 一个优先级队列
+        q = queue.PriorityQueue()
+        for idx, sample_id in enumerate(ranked_sample_id_list):
+            sample_rank = idx+1
+            sample_label = label_list[sample_id]
+            cls_score = cls2score[sample_label]
+            score = (sample_rank/sample_num)*cls_score
+            q.put((score,sample_id)) # 越小优先级越高，越干净
+        resort_sample_id_list = []
+        while not q.empty():
+            resort_sample_id_list.append(q.get()[1])
+        return resort_sample_id_list
 
-def module_1(model):
+def module_1(model,class_rank=None):
+    '''基于模型损失值或class_rank对样本进行可疑程度排序'''
     model.to(device)
     dataset_loader = poisoned_evalset_loader # 不打乱
     # 损失函数
@@ -213,54 +198,46 @@ def module_1(model):
     # 基于loss排名
     loss_array = loss_record.data.numpy()
     # 基于loss的从小到大的样本本id排序数组
-    based_loss_ranked_sample_id_array =  loss_array.argsort()
+    based_loss_ranked_sample_id_list =  loss_array.argsort().tolist()
+    
+    if class_rank is None:
+        ranked_sample_id_list = based_loss_ranked_sample_id_list
+    else:
+        label_list = label_record.data.numpy().tolist()
+        ranked_sample_id_list  = resort(based_loss_ranked_sample_id_list,label_list,class_rank)
     # 获得对应的poisoned_flag
-    poisoned_flag = []
-    for sample_id in based_loss_ranked_sample_id_array:
+    isPoisoned_list = []
+    for sample_id in ranked_sample_id_list:
         if sample_id in poisoned_ids:
-            poisoned_flag.append(True)
+            isPoisoned_list.append(True)
         else:
-            poisoned_flag.append(False)
+            isPoisoned_list.append(False)
+    return ranked_sample_id_list, isPoisoned_list
+
+def draw(isPoisoned_list,file_name):
     # 话图看一下中毒样本在序中的分布
-    distribution = [1 if flag else 0 for flag in poisoned_flag]
+    distribution = [1 if flag else 0 for flag in isPoisoned_list]
     # 绘制热力图
     plt.imshow([distribution], aspect='auto', cmap='Reds', interpolation='nearest')
     plt.title('Heat map distribution of poisoned samples')
     plt.xlabel('ranking')
     plt.colorbar()
     plt.yticks([])
-    plt.savefig("imgs/retrain_CEloss_1.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig(f"imgs/{file_name}", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
-'''
-重训练
-'''
-# 获得种子
-# {class_id:[sample_id]}
-clean_sample_dict = defaultdict(list)
-for sample_id, item in enumerate(poisoned_trainset):
-    x = item[0]
-    y = item[1]
-    isPoisoned = item[2]
-    if isPoisoned is False:
-        clean_sample_dict[y].append(sample_id)
-seed_sample_id_list = []
-for class_id,sample_id_list in clean_sample_dict.items():
-    seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
-seedSet = Subset(poisoned_trainset,seed_sample_id_list)
-# 基于种子retrain 5轮
-def train(model,device,dataset):
+def train(model,device,dataset,num_epoch=10,lr=1e-5):
     model.train()
     model.to(device)
-    num_epochs = 5
     dataset_loader = DataLoader(
             dataset, # 非预制
             batch_size=64,
             shuffle=True, # 打乱
             num_workers=4)
-    optimizer = optim.Adam(model.parameters(),lr=0.0001)
+    optimizer = optim.Adam(model.parameters(),lr=lr)
     loss_function = nn.CrossEntropyLoss()
-    for epoch in range(num_epochs):
+    for epoch in range(num_epoch):
+        step_loss_list = []
         for _, batch in enumerate(dataset_loader):
             optimizer.zero_grad()
             X = batch[0].to(device)
@@ -269,10 +246,115 @@ def train(model,device,dataset):
             loss = loss_function(P_Y, Y)
             loss.backward()
             optimizer.step()
-        print(f"epoch:{epoch},loss:{loss}")
+            step_loss_list.append(loss.item())
+        epoch_loss = sum(step_loss_list) / len(step_loss_list)
+        print(f"epoch:{epoch},loss:{epoch_loss}")
     return model
-model = train(model,device,seedSet)
-# 看看基于损失排序后中毒样本的分布
-module_1(model)
 
+def get_classes_rank()->list:
+    '''获得类别排序'''
+    dataset_name = config.dataset_name
+    model_name = config.model_name
+    attack_name = config.attack_name
+    exp_root_dir = config.exp_root_dir
+    mutated_rate = 0.01
+    measure_name = "Precision_mean"
+    if dataset_name in ["CIFAR10","GTSRB"]:
+        grid = joblib.load(os.path.join(exp_root_dir,"grid.joblib"))
+        classes_rank = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["class_rank"]
+    elif config.dataset_name == "ImageNet2012_subset":
+        classRank_data = joblib.load(os.path.join(
+            exp_root_dir,
+            "ClassRank",
+            dataset_name,
+            model_name,
+            attack_name,
+            str(mutated_rate),
+            measure_name,
+            "ClassRank.joblib"
+        ))
+        classes_rank =classRank_data["class_rank"]
+    else:
+        raise Exception("数据集名称错误")
+    return classes_rank
 
+def freeze_model(model,dataset_name,model_name):
+    if dataset_name == "CIFAR10" or dataset_name == "GTSRB":
+        if model_name == "ResNet18":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'features.5' in name or 'features.4' in name or 'features.3' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'dense4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    elif dataset_name == "ImageNet2012_subset":
+        if model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name,param in model.named_parameters():
+                if 'classifier' in name or 'features.denseblock4' in name or 'features.denseblock3' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "ResNet18":
+            for name,param in model.named_parameters():
+                if 'fc' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    else:
+        raise Exception("模型不存在")
+    return model
+
+if __name__ == "__main__":
+
+    # 进程名称
+    proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    setproctitle.setproctitle(proctitle)
+    print(proctitle)
+    model = backdoor_model
+    # FT前模型评估
+    e = EvalModel(model,poisoned_testset,device)
+    asr = e.eval_acc()
+    print("backdoor_ASR:",asr)
+    e = EvalModel(model,clean_testset,device)
+    acc = e.eval_acc()
+    print("backdoor_acc:",acc)
+    ranked_sample_id_list, isPoisoned_list = module_1(model)
+    draw(isPoisoned_list,file_name="backdoor_loss.png")
+    # 冻结
+    freeze_model(model,dataset_name=config.dataset_name,model_name=config.model_name)
+    # 获得class_rank
+    class_rank = get_classes_rank()
+    # 基于种子集和后门模型微调10轮次
+    model = train(model,device,seedSet,lr=1e-3)
+    e = EvalModel(model,poisoned_testset,device)
+    asr = e.eval_acc()
+    print("FT_ASR:",asr)
+    e = EvalModel(model,clean_testset,device)
+    acc = e.eval_acc()
+    print("FT_acc:",acc)
+    ranked_sample_id_list, isPoisoned_list = module_1(model)
+    draw(isPoisoned_list,file_name="retrain10epoch_loss.png")
+    ranked_sample_id_list, isPoisoned_list = module_1(model,class_rank)
+    draw(isPoisoned_list,file_name="retrain10epoch_lossAndClassRank.png")
+    print("End")

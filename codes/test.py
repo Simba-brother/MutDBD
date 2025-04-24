@@ -103,8 +103,14 @@ def test19():
     a.tolist()
     print(type(a))
 
+def test20():
+    a = np.array([1,2,3])
+    print(len(a))
+    for i,d in enumerate(a):
+        print(i,d)
+
 if __name__ == "__main__":
-    test19()
+    test20()
 
 
 
