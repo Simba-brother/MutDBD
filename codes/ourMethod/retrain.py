@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from codes.asd.log import Record
 import torch
 import setproctitle
-from torch.utils.data import DataLoader,Subset
+from torch.utils.data import DataLoader,Subset,ConcatDataset
 import torch.nn as nn
 import torch.optim as optim
 from codes import config
@@ -137,12 +137,26 @@ poisoned_testset_loader = DataLoader(
 # 获得种子
 # {class_id:[sample_id]}
 clean_sample_dict = defaultdict(list)
+label_list = []
+for _, batch in enumerate(poisoned_evalset_loader):
+    Y = batch[1]
+    label_list.extend(Y.tolist())
+
+for sample_id in range(len(poisoned_trainset)):
+    if sample_id not in poisoned_ids:
+        label = label_list[sample_id]
+        clean_sample_dict[label].append(sample_id)
+'''
 for sample_id, item in enumerate(poisoned_trainset):
+    print(sample_id)
     x = item[0]
     y = item[1]
     isPoisoned = item[2]
+    # if sample_id not in poisoned_ids
     if isPoisoned is False:
         clean_sample_dict[y].append(sample_id)
+'''
+
 seed_sample_id_list = []
 for class_id,sample_id_list in clean_sample_dict.items():
     seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
@@ -156,9 +170,7 @@ def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
         cls_num = len(class_rank)
         cls2score = {}
         for idx, cls in enumerate(class_rank):
-            # rank:类别cat的位次
             cls2score[cls] = (cls_num - idx)/cls_num 
-
         sample_num = len(ranked_sample_id_list)
         # 一个优先级队列
         q = queue.PriorityQueue()
@@ -173,7 +185,7 @@ def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
             resort_sample_id_list.append(q.get()[1])
         return resort_sample_id_list
 
-def module_1(model,class_rank=None):
+def sort_sample_id(model,class_rank=None):
     '''基于模型损失值或class_rank对样本进行可疑程度排序'''
     model.to(device)
     dataset_loader = poisoned_evalset_loader # 不打乱
@@ -226,7 +238,7 @@ def draw(isPoisoned_list,file_name):
     plt.savefig(f"imgs/{file_name}", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
-def train(model,device,dataset,num_epoch=10,lr=1e-5):
+def train(model,device,dataset,num_epoch=10,lr=1e-3):
     model.train()
     model.to(device)
     dataset_loader = DataLoader(
@@ -325,13 +337,9 @@ def freeze_model(model,dataset_name,model_name):
         raise Exception("模型不存在")
     return model
 
-if __name__ == "__main__":
 
-    # 进程名称
-    proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
-    setproctitle.setproctitle(proctitle)
-    print(proctitle)
-    model = backdoor_model
+
+def seed_ft(model):
     # FT前模型评估
     e = EvalModel(model,poisoned_testset,device)
     asr = e.eval_acc()
@@ -339,7 +347,7 @@ if __name__ == "__main__":
     e = EvalModel(model,clean_testset,device)
     acc = e.eval_acc()
     print("backdoor_acc:",acc)
-    ranked_sample_id_list, isPoisoned_list = module_1(model)
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model)
     draw(isPoisoned_list,file_name="backdoor_loss.png")
     # 冻结
     freeze_model(model,dataset_name=config.dataset_name,model_name=config.model_name)
@@ -353,8 +361,65 @@ if __name__ == "__main__":
     e = EvalModel(model,clean_testset,device)
     acc = e.eval_acc()
     print("FT_acc:",acc)
-    ranked_sample_id_list, isPoisoned_list = module_1(model)
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model)
     draw(isPoisoned_list,file_name="retrain10epoch_loss.png")
-    ranked_sample_id_list, isPoisoned_list = module_1(model,class_rank)
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model,class_rank)
     draw(isPoisoned_list,file_name="retrain10epoch_lossAndClassRank.png")
-    print("End")
+    
+
+def our_ft(model):
+    '''0: 先评估一下后门模型的ASR和ACC'''
+    e = EvalModel(model,poisoned_testset,device)
+    asr = e.eval_acc()
+    print("Backdoor_ASR:",asr)
+    e = EvalModel(model,clean_testset,device)
+    acc = e.eval_acc()
+    print("Backdoor_acc:",acc)
+    
+    '''1:先seed微调一下model'''
+    freeze_model(model,dataset_name=config.dataset_name,model_name=config.model_name)
+    model = train(model,device,seedSet,num_epoch=20, lr=1e-3)
+
+    '''2:评估一下种子微调后的ASR和ACC'''
+    e = EvalModel(model,poisoned_testset,device)
+    asr = e.eval_acc()
+    print("seedFT_ASR:",asr)
+    e = EvalModel(model,clean_testset,device)
+    acc = e.eval_acc()
+    print("seedFT_acc:",acc)
+
+    '''3:对样本进行排序，并选择出数据集'''
+    # seed微调后排序一下样本
+    class_rank = get_classes_rank()
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model,class_rank)
+    num = int(len(ranked_sample_id_list)*0.5)
+    choiced_sample_id_list = ranked_sample_id_list[:num]
+    # 统计一下污染的含量
+    choiced_num = len(choiced_sample_id_list)
+    count = 0
+    for choiced_sample_id in choiced_sample_id_list:
+        if choiced_sample_id in poisoned_ids:
+            count += 1
+    print(f"污染样本含量:{count}/{choiced_num}")
+    
+    choicedSet = Subset(poisoned_trainset,choiced_sample_id_list)
+    '''4:基于种子集和选择的集再微调后门模型微调10轮次'''
+    # 合并种子集和选择集
+    availableSet = ConcatDataset([seedSet,choicedSet])
+    model = train(model,device,availableSet,lr=1e-3)
+
+    '''5:评估微调后的ASR和ACC'''
+    e = EvalModel(model,poisoned_testset,device)
+    asr = e.eval_acc()
+    print("OurFT_ASR:",asr)
+    e = EvalModel(model,clean_testset,device)
+    acc = e.eval_acc()
+    print("OurFT_acc:",acc)
+
+if __name__ == "__main__":
+    # 进程名称
+    proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    setproctitle.setproctitle(proctitle)
+    print(proctitle)
+    model = backdoor_model
+    our_ft(model)
