@@ -61,7 +61,7 @@ poisoned_ids = backdoor_data["poisoned_ids"]
 # 预制的poisoned_testset
 poisoned_testset = backdoor_data["poisoned_testset"] 
 # 空白模型
-victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
+blank_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
 if config.dataset_name == "CIFAR10":
@@ -238,7 +238,7 @@ def draw(isPoisoned_list,file_name):
     plt.savefig(f"imgs/{file_name}", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
-def train(model,device,dataset,num_epoch=10,lr=1e-3):
+def train(model,device, dataset, seedSet=None, num_epoch=10,lr=1e-3):
     model.train()
     model.to(device)
     dataset_loader = DataLoader(
@@ -248,6 +248,9 @@ def train(model,device,dataset,num_epoch=10,lr=1e-3):
             num_workers=4)
     optimizer = optim.Adam(model.parameters(),lr=lr)
     loss_function = nn.CrossEntropyLoss()
+    # optimal_clean_acc = -1
+    optimal_loss = float('inf')
+    best_model = None
     for epoch in range(num_epoch):
         step_loss_list = []
         for _, batch in enumerate(dataset_loader):
@@ -260,8 +263,19 @@ def train(model,device,dataset,num_epoch=10,lr=1e-3):
             optimizer.step()
             step_loss_list.append(loss.item())
         epoch_loss = sum(step_loss_list) / len(step_loss_list)
+        '''
+        if seedSet:
+            e = EvalModel(model,seedSet,device,batch_size=8)
+            acc = e.eval_acc()
+            if acc > optimal_clean_acc:
+                best_model = model
+                optimal_clean_acc = acc
+        '''
+        if epoch_loss < optimal_loss:
+            optimal_loss = epoch_loss
+            best_model = model
         print(f"epoch:{epoch},loss:{epoch_loss}")
-    return model
+    return model,best_model
 
 def get_classes_rank()->list:
     '''获得类别排序'''
@@ -367,32 +381,33 @@ def seed_ft(model):
     draw(isPoisoned_list,file_name="retrain10epoch_lossAndClassRank.png")
     
 
-def our_ft(model):
+def our_ft(backdoor_model,blank_model=None):
     '''0: 先评估一下后门模型的ASR和ACC'''
-    e = EvalModel(model,poisoned_testset,device)
+    e = EvalModel(backdoor_model,poisoned_testset,device)
     asr = e.eval_acc()
     print("Backdoor_ASR:",asr)
-    e = EvalModel(model,clean_testset,device)
+    e = EvalModel(backdoor_model,clean_testset,device)
     acc = e.eval_acc()
     print("Backdoor_acc:",acc)
     
-    '''1:先seed微调一下model'''
-    freeze_model(model,dataset_name=config.dataset_name,model_name=config.model_name)
-    model = train(model,device,seedSet,num_epoch=20, lr=1e-3)
+    # '''1:先seed微调一下model'''
+    freeze_model(backdoor_model,dataset_name=config.dataset_name,model_name=config.model_name)
+    '''1:先seed微调一下blank model'''
+    last_BD_model,best_BD_model = train(backdoor_model,device,dataset=seedSet,num_epoch=30,lr=1e-3)
 
     '''2:评估一下种子微调后的ASR和ACC'''
-    e = EvalModel(model,poisoned_testset,device)
+    e = EvalModel(best_BD_model,poisoned_testset,device)
     asr = e.eval_acc()
     print("seedFT_ASR:",asr)
-    e = EvalModel(model,clean_testset,device)
+    e = EvalModel(best_BD_model,clean_testset,device)
     acc = e.eval_acc()
     print("seedFT_acc:",acc)
 
     '''3:对样本进行排序，并选择出数据集'''
     # seed微调后排序一下样本
     class_rank = get_classes_rank()
-    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model,class_rank)
-    num = int(len(ranked_sample_id_list)*0.5)
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(best_BD_model,class_rank)
+    num = int(len(ranked_sample_id_list)*0.6)
     choiced_sample_id_list = ranked_sample_id_list[:num]
     # 统计一下污染的含量
     choiced_num = len(choiced_sample_id_list)
@@ -401,18 +416,19 @@ def our_ft(model):
         if choiced_sample_id in poisoned_ids:
             count += 1
     print(f"污染样本含量:{count}/{choiced_num}")
-    
     choicedSet = Subset(poisoned_trainset,choiced_sample_id_list)
+
     '''4:基于种子集和选择的集再微调后门模型微调10轮次'''
     # 合并种子集和选择集
     availableSet = ConcatDataset([seedSet,choicedSet])
-    model = train(model,device,availableSet,lr=1e-3)
+    # 微调后门模型
+    last_ft_model, best_ft_model = train(best_BD_model,device,dataset=availableSet,num_epoch=30,lr=1e-3)
 
     '''5:评估微调后的ASR和ACC'''
-    e = EvalModel(model,poisoned_testset,device)
+    e = EvalModel(best_ft_model,poisoned_testset,device)
     asr = e.eval_acc()
     print("OurFT_ASR:",asr)
-    e = EvalModel(model,clean_testset,device)
+    e = EvalModel(best_ft_model,clean_testset,device)
     acc = e.eval_acc()
     print("OurFT_acc:",acc)
 
@@ -421,5 +437,4 @@ if __name__ == "__main__":
     proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     print(proctitle)
-    model = backdoor_model
-    our_ft(model)
+    our_ft(backdoor_model,blank_model)
