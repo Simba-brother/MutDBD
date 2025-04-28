@@ -67,42 +67,58 @@ blank_model = get_model(dataset_name=config.dataset_name, model_name=config.mode
 if config.dataset_name == "CIFAR10":
     if config.attack_name == "BadNets":
         poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        # poisoned_testset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"test")
         clean_trainset, clean_testset = cifar10_BadNets()
+
     elif config.attack_name == "IAD":
         poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+        # poisoned_testset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"test")
         clean_trainset, _, clean_testset, _ = cifar10_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        # poisoned_testset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"test")
         clean_trainset, clean_testset = cifar10_Refool()
     elif config.attack_name == "WaNet":
         poisoned_trainset = cifar10_WaNet_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        # poisoned_testset = cifar10_WaNet_gen_poisoned_dataset(config.model_name,poisoned_ids,"test")
         clean_trainset, clean_testset = cifar10_WaNet()
 elif config.dataset_name == "GTSRB":
     if config.attack_name == "BadNets":
         poisoned_trainset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        # poisoned_testset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"test")
         clean_trainset, clean_testset = gtsrb_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        # poisoned_testset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"test")
         clean_trainset, _, clean_testset, _ = gtsrb_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        # poisoned_testset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"test")
         clean_trainset, clean_testset = gtsrb_Refool()
     elif config.attack_name == "WaNet":
         poisoned_trainset = gtsrb_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+        # poisoned_testset = gtsrb_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"test")
         clean_trainset, clean_testset = gtsrb_WaNet()
 elif config.dataset_name == "ImageNet2012_subset":
     if config.attack_name == "BadNets":
         poisoned_trainset = imagenet_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+        # poisoned_testset = imagenet_badNets_gen_poisoned_dataset(poisoned_ids,"test")
         clean_trainset, clean_testset = imagenet_BadNets()
     elif config.attack_name == "IAD":
         poisoned_trainset = imagenet_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
+        # poisoned_testset = imagenet_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"test")
         clean_trainset, _, clean_testset, _ = imagenet_IAD()
     elif config.attack_name == "Refool":
         poisoned_trainset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+        # poisoned_testset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"test")
         clean_trainset, clean_testset = imagenet_Refool()
     elif config.attack_name == "WaNet":
         poisoned_trainset = imagenet_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
+        # poisoned_testset = imagenet_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"test")
         clean_trainset, clean_testset = imagenet_WaNet()
+
+
+
 
 # 数据加载器
 # 打乱
@@ -128,7 +144,7 @@ clean_testset_loader = DataLoader(
             pin_memory=True)
 # 不打乱
 poisoned_testset_loader = DataLoader(
-            poisoned_testset,# 预制
+        poisoned_testset,# 非预制
             batch_size=64,
             shuffle=False,
             num_workers=4,
@@ -146,6 +162,23 @@ for sample_id in range(len(poisoned_trainset)):
     if sample_id not in poisoned_ids:
         label = label_list[sample_id]
         clean_sample_dict[label].append(sample_id)
+
+
+# 从poisoned_testset中剔除原来就是target class的数据
+clean_testset_label_list = []
+for _, batch in enumerate(clean_testset_loader):
+    Y = batch[1]
+    clean_testset_label_list.extend(Y.tolist())
+filtered_ids = []
+for sample_id in range(len(clean_testset)):
+    sample_label = clean_testset_label_list[sample_id]
+    if sample_label != config.target_class_idx:
+        filtered_ids.append(sample_id)
+filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+print(f"poisoned_testset数据量：{len(poisoned_testset)}")
+print(f"filtered_poisoned_testset数据量：{len(filtered_poisoned_testset)}")
+
+
 '''
 for sample_id, item in enumerate(poisoned_trainset):
     print(sample_id)
@@ -355,7 +388,7 @@ def freeze_model(model,dataset_name,model_name):
 
 def seed_ft(model):
     # FT前模型评估
-    e = EvalModel(model,poisoned_testset,device)
+    e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
     print("backdoor_ASR:",asr)
     e = EvalModel(model,clean_testset,device)
@@ -369,7 +402,7 @@ def seed_ft(model):
     class_rank = get_classes_rank()
     # 基于种子集和后门模型微调10轮次
     model = train(model,device,seedSet,lr=1e-3)
-    e = EvalModel(model,poisoned_testset,device)
+    e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
     print("FT_ASR:",asr)
     e = EvalModel(model,clean_testset,device)
@@ -383,7 +416,7 @@ def seed_ft(model):
 
 def our_ft(backdoor_model,blank_model=None):
     '''0: 先评估一下后门模型的ASR和ACC'''
-    e = EvalModel(backdoor_model,poisoned_testset,device)
+    e = EvalModel(backdoor_model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
     print("Backdoor_ASR:",asr)
     e = EvalModel(backdoor_model,clean_testset,device)
@@ -396,7 +429,7 @@ def our_ft(backdoor_model,blank_model=None):
     last_BD_model,best_BD_model = train(backdoor_model,device,dataset=seedSet,num_epoch=30,lr=1e-3)
 
     '''2:评估一下种子微调后的ASR和ACC'''
-    e = EvalModel(best_BD_model,poisoned_testset,device)
+    e = EvalModel(best_BD_model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
     print("seedFT_ASR:",asr)
     e = EvalModel(best_BD_model,clean_testset,device)
@@ -425,7 +458,7 @@ def our_ft(backdoor_model,blank_model=None):
     last_ft_model, best_ft_model = train(best_BD_model,device,dataset=availableSet,num_epoch=30,lr=1e-3)
 
     '''5:评估微调后的ASR和ACC'''
-    e = EvalModel(best_ft_model,poisoned_testset,device)
+    e = EvalModel(best_ft_model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
     print("OurFT_ASR:",asr)
     e = EvalModel(best_ft_model,clean_testset,device)

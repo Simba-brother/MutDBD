@@ -8,6 +8,7 @@ from codes.transform_dataset import gtsrb_IAD
 from codes import config
 from codes.core.attacks.IAD import Generator
 from codes.scripts.dataset_constructor import Add_IAD_DatasetFolderTrigger,ModifyTarget
+from codes.poisoned_dataset.utils import filter_class
 
 class IADPoisonedDatasetFolder(DatasetFolder):
     def __init__(self,
@@ -140,8 +141,9 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
             modelM =modelM
         )
     elif trainOrtest == "test":
+        filtered_testset = filter_class(testset,config.target_class_idx)
         poisonedDatasetFolder =  IADPoisonedDatasetFolder(
-            benign_dataset = testset,
+            benign_dataset = filtered_testset,
             y_target = config.target_class_idx,
             poisoned_ids = poisoned_ids,
             modelG = modelG,

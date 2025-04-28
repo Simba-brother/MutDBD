@@ -11,6 +11,7 @@ from torchvision.datasets import DatasetFolder
 from codes.core.attacks.WaNet import AddDatasetFolderTrigger, ModifyTarget
 from codes.transform_dataset import cifar10_WaNet
 from codes import config
+from codes.poisoned_dataset.utils import filter_class
 
 
 def gen_grid(height, k):
@@ -156,7 +157,8 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     if trainOrtest == "train":
         poisonedDatasetFolder= PoisonedDatasetFolder(trainset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
     elif trainOrtest == "test":
-        poisonedDatasetFolder= PoisonedDatasetFolder(testset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
+        filtered_testset = filter_class(testset,config.target_class_idx) 
+        poisonedDatasetFolder= PoisonedDatasetFolder(filtered_testset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
     return poisonedDatasetFolder
 
 

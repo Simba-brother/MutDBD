@@ -13,6 +13,7 @@ from torchvision.transforms import Compose
 from codes import config
 from codes.transform_dataset import gtsrb_Refool
 from codes.core.attacks.Refool import AddDatasetFolderTriggerMixin,ModifyTarget
+from codes.poisoned_dataset.utils import filter_class
 
 
 class PoisonedDatasetFolder(DatasetFolder, AddDatasetFolderTriggerMixin):
@@ -160,8 +161,9 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
             reflection_cadidates=reflection_images,
             max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
     elif trainOrtest == "test":
+        filtered_testset = filter_class(testset,config.target_class_idx)
         poisonedDatasetFolder = PoisonedDatasetFolder(
-            testset, 
+            filtered_testset, 
             config.target_class_idx, 
             poisoned_ids, 
             poisoned_transform_index=0, 

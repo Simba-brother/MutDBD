@@ -10,6 +10,7 @@ from codes.core.attacks.BadNets import AddDatasetFolderTrigger, ModifyTarget
 from codes.transform_dataset import gtsrb_BadNets
 from torchvision.datasets import DatasetFolder
 from torchvision.transforms import Compose
+from codes.poisoned_dataset.utils import filter_class
 
 class PoisonedDatasetFolder(DatasetFolder):
     def __init__(self,
@@ -102,7 +103,8 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
         # 中毒的数据集
         poisonedDatasetFolder = PoisonedDatasetFolder(trainset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     elif trainOrtest == "test":
+        filtered_testset = filter_class(testset,config.target_class_idx)
         # 中毒的数据集
         # 在数据集转换组合transforms.Compose[]的最后一个元素(ToTensor)之前进行中毒植入
-        poisonedDatasetFolder = PoisonedDatasetFolder(testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
+        poisonedDatasetFolder = PoisonedDatasetFolder(filtered_testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     return poisonedDatasetFolder
