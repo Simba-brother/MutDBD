@@ -423,7 +423,17 @@ def our_ft(backdoor_model,blank_model=None):
     acc = e.eval_acc()
     print("Backdoor_acc:",acc)
     
-    # '''1:先seed微调一下model'''
+    '''1: 再评估一下ASD模型的ASR和ACC'''
+    state_dict = torch.load(config.asd_result[config.dataset_name][config.model_name][config.attack_name]["latest_model"], map_location='cpu')["model_state_dict"]
+    blank_model.load_state_dict(state_dict, strict=True)
+    e = EvalModel(blank_model,filtered_poisoned_testset,device)
+    asr = e.eval_acc()
+    print("ASD_ASR:",asr)
+    e = EvalModel(blank_model,clean_testset,device)
+    acc = e.eval_acc()
+    print("ASD_acc:",acc)
+    
+    '''1:先seed微调一下model'''
     freeze_model(backdoor_model,dataset_name=config.dataset_name,model_name=config.model_name)
     '''1:先seed微调一下blank model'''
     last_BD_model,best_BD_model = train(backdoor_model,device,dataset=seedSet,num_epoch=30,lr=1e-3)
