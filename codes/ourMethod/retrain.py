@@ -46,7 +46,7 @@ from codes.transform_dataset import gtsrb_BadNets, gtsrb_IAD, gtsrb_Refool, gtsr
 from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Refool, imagenet_WaNet
 
 
-
+np.random.seed(666)
 # 加载后门攻击配套数据
 backdoor_data_path = os.path.join(config.exp_root_dir, 
                                         "ATTACK", 
@@ -461,15 +461,15 @@ def our_ft(backdoor_model,blank_model=None):
     print(f"污染样本含量:{count}/{choiced_num}")
     choicedSet = Subset(poisoned_trainset,choiced_sample_id_list)
 
-    '''4:基于种子集和选择的集再微调后门模型微调10轮次'''
+    '''4:基于种子集和选择的集再微调后门模型微调10轮次'''   
     # 合并种子集和选择集
     availableSet = ConcatDataset([seedSet,choicedSet])
-    # 微调后门模型
+    # 微调后门模型 
     last_ft_model, best_ft_model = train(best_BD_model,device,dataset=availableSet,num_epoch=30,lr=1e-3)
 
     '''5:评估微调后的ASR和ACC'''
     e = EvalModel(best_ft_model,filtered_poisoned_testset,device)
-    asr = e.eval_acc()
+    asr = e.eval_acc()   
     print("OurFT_ASR:",asr)
     e = EvalModel(best_ft_model,clean_testset,device)
     acc = e.eval_acc()
@@ -480,4 +480,4 @@ if __name__ == "__main__":
     proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     print(proctitle)
-    our_ft(backdoor_model,blank_model)
+    our_ft(backdoor_model,blank_model) 
