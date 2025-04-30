@@ -13,6 +13,8 @@ import time
 import sys
 import queue
 import shutil
+import logging
+import sys
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
 begin_time = last_time
@@ -153,6 +155,12 @@ class Log:
         print(msg, end='\n')
         with open(self.log_path,'a') as f:
             f.write(msg)
+
+# 自定义异常钩子
+def my_excepthook(exctype, value, traceback):
+    logging.critical("Uncaught exception", exc_info=(exctype, value, traceback))
+    # 调用默认的异常钩子，以防程序意外退出
+    sys.__excepthook__(exctype, value, traceback)
 if __name__ == "__main__":
     pass
     # makdir("experiments/test")
