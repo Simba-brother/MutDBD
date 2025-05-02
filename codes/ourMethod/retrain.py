@@ -532,7 +532,7 @@ def our_ft(backdoor_model,blank_model=None):
 
 if __name__ == "__main__":
     # 进程名称
-    proctitle = f"OMretrain{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
     setproctitle.setproctitle(proctitle)
     log_dir = os.path.join("log/OurMethod/defence_train/retrain",config.dataset_name,config.model_name,config.attack_name)
     os.makedirs(log_dir,exist_ok=True)
