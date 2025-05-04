@@ -50,158 +50,6 @@ from codes.transform_dataset import cifar10_BadNets, cifar10_IAD, cifar10_Refool
 from codes.transform_dataset import gtsrb_BadNets, gtsrb_IAD, gtsrb_Refool, gtsrb_WaNet
 from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Refool, imagenet_WaNet
 
-# 获得实验时间戳年月日时分秒
-_time = get_formattedDateTime()
-# 随机数种子
-r_seed = 666
-np.random.seed(r_seed)
-# 加载后门攻击配套数据
-backdoor_data_path = os.path.join(config.exp_root_dir, 
-                                        "ATTACK", 
-                                        config.dataset_name, 
-                                        config.model_name, 
-                                        config.attack_name, 
-                                        "backdoor_data.pth")
-backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
-# 后门模型
-backdoor_model = backdoor_data["backdoor_model"]
-poisoned_ids = backdoor_data["poisoned_ids"]
-# 预制的poisoned_testset
-poisoned_testset = backdoor_data["poisoned_testset"] 
-# 空白模型
-blank_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
-
-# 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
-if config.dataset_name == "CIFAR10":
-    if config.attack_name == "BadNets":
-        poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
-        # poisoned_testset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"test")
-        clean_trainset, clean_testset = cifar10_BadNets()
-
-    elif config.attack_name == "IAD":
-        poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
-        # poisoned_testset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"test")
-        clean_trainset, _, clean_testset, _ = cifar10_IAD()
-    elif config.attack_name == "Refool":
-        poisoned_trainset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"train")
-        # poisoned_testset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"test")
-        clean_trainset, clean_testset = cifar10_Refool()
-    elif config.attack_name == "WaNet":
-        poisoned_trainset = cifar10_WaNet_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
-        # poisoned_testset = cifar10_WaNet_gen_poisoned_dataset(config.model_name,poisoned_ids,"test")
-        clean_trainset, clean_testset = cifar10_WaNet()
-elif config.dataset_name == "GTSRB":
-    if config.attack_name == "BadNets":
-        poisoned_trainset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"train")
-        # poisoned_testset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"test")
-        clean_trainset, clean_testset = gtsrb_BadNets()
-    elif config.attack_name == "IAD":
-        poisoned_trainset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
-        # poisoned_testset = gtsrb_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"test")
-        clean_trainset, _, clean_testset, _ = gtsrb_IAD()
-    elif config.attack_name == "Refool":
-        poisoned_trainset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"train")
-        # poisoned_testset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"test")
-        clean_trainset, clean_testset = gtsrb_Refool()
-    elif config.attack_name == "WaNet":
-        poisoned_trainset = gtsrb_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
-        # poisoned_testset = gtsrb_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"test")
-        clean_trainset, clean_testset = gtsrb_WaNet()
-elif config.dataset_name == "ImageNet2012_subset":
-    if config.attack_name == "BadNets":
-        poisoned_trainset = imagenet_badNets_gen_poisoned_dataset(poisoned_ids,"train")
-        # poisoned_testset = imagenet_badNets_gen_poisoned_dataset(poisoned_ids,"test")
-        clean_trainset, clean_testset = imagenet_BadNets()
-    elif config.attack_name == "IAD":
-        poisoned_trainset = imagenet_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"train")
-        # poisoned_testset = imagenet_IAD_gen_poisoned_dataset(config.model_name,poisoned_ids,"test")
-        clean_trainset, _, clean_testset, _ = imagenet_IAD()
-    elif config.attack_name == "Refool":
-        poisoned_trainset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"train")
-        # poisoned_testset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"test")
-        clean_trainset, clean_testset = imagenet_Refool()
-    elif config.attack_name == "WaNet":
-        poisoned_trainset = imagenet_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
-        # poisoned_testset = imagenet_WaNet_gen_poisoned_dataset(config.model_name, poisoned_ids,"test")
-        clean_trainset, clean_testset = imagenet_WaNet()
-
-# 数据加载器
-# 打乱
-poisoned_trainset_loader = DataLoader(
-            poisoned_trainset, # 非预制
-            batch_size=64,
-            shuffle=True, # 打乱
-            num_workers=4,
-            pin_memory=True)
-# 不打乱
-poisoned_evalset_loader = DataLoader(
-            poisoned_trainset, # 非预制
-            batch_size=64,
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True)
-# 不打乱
-clean_testset_loader = DataLoader(
-            clean_testset, # 非预制
-            batch_size=64, 
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True)
-# 不打乱
-poisoned_testset_loader = DataLoader(
-        poisoned_testset,# 非预制
-            batch_size=64,
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True)
-
-# 获得种子
-# {class_id:[sample_id]}
-clean_sample_dict = defaultdict(list)
-label_list = []
-for _, batch in enumerate(poisoned_evalset_loader):
-    Y = batch[1]
-    label_list.extend(Y.tolist())
-
-for sample_id in range(len(poisoned_trainset)):
-    if sample_id not in poisoned_ids:
-        label = label_list[sample_id]
-        clean_sample_dict[label].append(sample_id)
-
-
-# 从poisoned_testset中剔除原来就是target class的数据
-clean_testset_label_list = []
-for _, batch in enumerate(clean_testset_loader):
-    Y = batch[1]
-    clean_testset_label_list.extend(Y.tolist())
-filtered_ids = []
-for sample_id in range(len(clean_testset)):
-    sample_label = clean_testset_label_list[sample_id]
-    if sample_label != config.target_class_idx:
-        filtered_ids.append(sample_id)
-filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
-
-
-
-'''
-for sample_id, item in enumerate(poisoned_trainset):
-    print(sample_id)
-    x = item[0]
-    y = item[1]
-    isPoisoned = item[2]
-    # if sample_id not in poisoned_ids
-    if isPoisoned is False:
-        clean_sample_dict[y].append(sample_id)
-'''
-
-seed_sample_id_list = []
-for class_id,sample_id_list in clean_sample_dict.items():
-    seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
-seedSet = Subset(poisoned_trainset,seed_sample_id_list)
-# 获得设备
-device = torch.device(f"cuda:{config.gpu_id}")
-
-
 def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
         # 基于class_rank得到每个类别权重，原则是越可疑的类别（索引越小的类别），权（分）越大
         cls_num = len(class_rank)
@@ -222,7 +70,11 @@ def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
             resort_sample_id_list.append(q.get()[1])
         return resort_sample_id_list
 
-def sort_sample_id(model,class_rank=None):
+def sort_sample_id(model,
+                   device,
+                   poisoned_evalset_loader,
+                   poisoned_ids,
+                   class_rank=None):
     '''基于模型损失值或class_rank对样本进行可疑程度排序'''
     model.to(device)
     dataset_loader = poisoned_evalset_loader # 不打乱
@@ -314,18 +166,14 @@ def train(model,device, dataset, seedSet=None, num_epoch=10,lr=1e-3):
         logging.info(f"epoch:{epoch},loss:{epoch_loss}")
     return model,best_model
 
-def get_classes_rank()->list:
+def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
     '''获得类别排序'''
-    dataset_name = config.dataset_name
-    model_name = config.model_name
-    attack_name = config.attack_name
-    exp_root_dir = config.exp_root_dir
     mutated_rate = 0.01
     measure_name = "Precision_mean"
     if dataset_name in ["CIFAR10","GTSRB"]:
         grid = joblib.load(os.path.join(exp_root_dir,"grid.joblib"))
         classes_rank = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["class_rank"]
-    elif config.dataset_name == "ImageNet2012_subset":
+    elif dataset_name == "ImageNet2012_subset":
         classRank_data = joblib.load(os.path.join(
             exp_root_dir,
             "ClassRank",
@@ -390,7 +238,7 @@ def freeze_model(model,dataset_name,model_name):
 
 
 
-def seed_ft(model):
+def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device):
     # FT前模型评估
     e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
@@ -401,7 +249,7 @@ def seed_ft(model):
     ranked_sample_id_list, isPoisoned_list = sort_sample_id(model)
     draw(isPoisoned_list,file_name="backdoor_loss.png")
     # 冻结
-    freeze_model(model,dataset_name=config.dataset_name,model_name=config.model_name)
+    freeze_model(model,dataset_name=dataset_name,model_name=model_name)
     # 获得class_rank
     class_rank = get_classes_rank()
     # 基于种子集和后门模型微调10轮次
@@ -418,7 +266,17 @@ def seed_ft(model):
     draw(isPoisoned_list,file_name="retrain10epoch_lossAndClassRank.png")
     
 
-def our_ft(backdoor_model,blank_model=None):
+def our_ft(
+        backdoor_model,
+        poisoned_testset,
+        filtered_poisoned_testset, 
+        clean_testset,
+        seedSet,
+        exp_dir,
+        poisoned_ids,
+        poisoned_trainset,
+        poisoned_evalset_loader,
+        device):
     '''1: 先评估一下后门模型的ASR和ACC'''
     logging.info("="*50)
     logging.info("第1步: 先评估一下后门模型的ASR和ACC")
@@ -447,7 +305,7 @@ def our_ft(backdoor_model,blank_model=None):
     logging.info("第2步: 先用seed微调一下后门模型")
     logging.info("种子集是由每个类别中选择10个干净样本组成的")
     logging.info("="*50)
-    freeze_model(backdoor_model,dataset_name=config.dataset_name,model_name=config.model_name)
+    freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
     seed_num_epoch = 30
     seed_lr = 1e-3
     logging.info(f"种子微调的轮次为:{seed_num_epoch},学习率为:{seed_lr}")
@@ -481,8 +339,13 @@ def our_ft(backdoor_model,blank_model=None):
     logging.info("第4步: 对样本进行排序，并选择出重训练数据集")
     logging.info("="*50)
     # seed微调后排序一下样本
-    class_rank = get_classes_rank()
-    ranked_sample_id_list, isPoisoned_list = sort_sample_id(best_BD_model,class_rank)
+    class_rank = get_classes_rank(dataset_name, model_name, attack_name, config.exp_root_dir)
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(
+                                                best_BD_model,
+                                                device,
+                                                poisoned_evalset_loader,
+                                                poisoned_ids,
+                                                class_rank)
     choice_rate = 0.6
     num = int(len(ranked_sample_id_list)*choice_rate)
     logging.info(f"采样比例:{choice_rate},采样的数量:{num}")
@@ -528,20 +391,69 @@ def our_ft(backdoor_model,blank_model=None):
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_ft_model.state_dict(), save_file_path)
     logging.info(f"我们方法重训练后最后一轮次模型权重保存在:{save_file_path}")
-    
 
-if __name__ == "__main__":
-    # 进程名称
-    proctitle = f"OMretrain|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+def get_fresh_dataset(poisoned_ids):
+    if dataset_name == "CIFAR10":
+        if attack_name == "BadNets":
+            poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+            clean_trainset, clean_testset = cifar10_BadNets()
+
+        elif attack_name == "IAD":
+            poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(model_name, poisoned_ids,"train")
+            clean_trainset, _, clean_testset, _ = cifar10_IAD()
+        elif attack_name == "Refool":
+            poisoned_trainset = cifar10_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+            clean_trainset, clean_testset = cifar10_Refool()
+        elif attack_name == "WaNet":
+            poisoned_trainset = cifar10_WaNet_gen_poisoned_dataset(model_name,poisoned_ids,"train")
+            clean_trainset, clean_testset = cifar10_WaNet()
+    elif dataset_name == "GTSRB":
+        if attack_name == "BadNets":
+            poisoned_trainset = gtsrb_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+            clean_trainset, clean_testset = gtsrb_BadNets()
+        elif attack_name == "IAD":
+            poisoned_trainset = gtsrb_IAD_gen_poisoned_dataset(model_name,poisoned_ids,"train")
+            clean_trainset, _, clean_testset, _ = gtsrb_IAD()
+        elif attack_name == "Refool":
+            poisoned_trainset = gtsrb_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+            clean_trainset, clean_testset = gtsrb_Refool()
+        elif attack_name == "WaNet":
+            poisoned_trainset = gtsrb_WaNet_gen_poisoned_dataset(model_name, poisoned_ids,"train")
+            clean_trainset, clean_testset = gtsrb_WaNet()
+    elif dataset_name == "ImageNet2012_subset":
+        if attack_name == "BadNets":
+            poisoned_trainset = imagenet_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+            clean_trainset, clean_testset = imagenet_BadNets()
+        elif attack_name == "IAD":
+            poisoned_trainset = imagenet_IAD_gen_poisoned_dataset(model_name,poisoned_ids,"train")
+            clean_trainset, _, clean_testset, _ = imagenet_IAD()
+        elif attack_name == "Refool":
+            poisoned_trainset = imagenet_Refool_gen_poisoned_dataset(poisoned_ids,"train")
+            clean_trainset, clean_testset = imagenet_Refool()
+        elif attack_name == "WaNet":
+            poisoned_trainset = imagenet_WaNet_gen_poisoned_dataset(model_name, poisoned_ids,"train")
+            clean_trainset, clean_testset = imagenet_WaNet()
+    return poisoned_trainset, clean_trainset, clean_testset
+
+
+
+def scene_single(dataset_name, model_name, attack_name):
+    # 获得实验时间戳年月日时分秒
+    _time = get_formattedDateTime()
+    # 随机数种子
+    r_seed = 666
+    np.random.seed(r_seed)
+        # 进程名称
+    proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
-    log_dir = os.path.join("log/OurMethod/defence_train/retrain",config.dataset_name,config.model_name,config.attack_name)
+    log_dir = os.path.join("log/OurMethod/defence_train/retrain",dataset_name,model_name,attack_name)
     os.makedirs(log_dir,exist_ok=True)
     log_name = f"retrain_{_time}.log"
     log_path = os.path.join(log_dir,log_name)
     logging.basicConfig(level=logging.DEBUG, filename=log_path, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
     
     logging.info(proctitle)
-    exp_dir = os.path.join(config.exp_root_dir,"OurMethod","Retrain",config.dataset_name,config.model_name,config.attack_name,_time)
+    exp_dir = os.path.join(config.exp_root_dir,"OurMethod","Retrain",dataset_name,model_name,attack_name,_time)
     os.makedirs(exp_dir,exist_ok=True)
     logging.info(f"进程名称:{proctitle}")
     logging.info(f"实验目录:{exp_dir}")
@@ -552,5 +464,111 @@ if __name__ == "__main__":
     logging.info("="*50)
     logging.info(f"随机数种子：{r_seed}")
     logging.info("函数：our_ft()")
-    our_ft(backdoor_model,blank_model)
-    logging.info("实验结束")
+    # 加载后门攻击配套数据
+    backdoor_data_path = os.path.join(config.exp_root_dir, 
+                                    "ATTACK",
+                                    dataset_name,
+                                    model_name,
+                                    attack_name,
+                                    "backdoor_data.pth")
+    backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
+    # 后门模型
+    backdoor_model = backdoor_data["backdoor_model"]
+    # 训练数据集中中毒样本id
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # 预制的poisoned_testset
+    poisoned_testset = backdoor_data["poisoned_testset"] 
+    # 空白模型
+    blank_model = get_model(dataset_name, model_name)
+
+    # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
+    poisoned_trainset, clean_trainset, clean_testset = get_fresh_dataset(poisoned_ids)
+    # 数据加载器
+    # 打乱
+    poisoned_trainset_loader = DataLoader(
+                poisoned_trainset, # 非预制
+                batch_size=64,
+                shuffle=True, # 打乱
+                num_workers=4,
+                pin_memory=True)
+    # 不打乱
+    poisoned_evalset_loader = DataLoader(
+                poisoned_trainset, # 非预制
+                batch_size=64,
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    # 不打乱
+    clean_testset_loader = DataLoader(
+                clean_testset, # 非预制
+                batch_size=64, 
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    # 不打乱
+    poisoned_testset_loader = DataLoader(
+            poisoned_testset,# 非预制
+                batch_size=64,
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+
+    # 获得种子
+    # {class_id:[sample_id]}
+    clean_sample_dict = defaultdict(list)
+    label_list = []
+    for _, batch in enumerate(poisoned_evalset_loader):
+        Y = batch[1]
+        label_list.extend(Y.tolist())
+
+    for sample_id in range(len(poisoned_trainset)):
+        if sample_id not in poisoned_ids:
+            label = label_list[sample_id]
+            clean_sample_dict[label].append(sample_id)
+
+    # 获得种子数据集
+    seed_sample_id_list = []
+    for class_id,sample_id_list in clean_sample_dict.items():
+        seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
+    seedSet = Subset(poisoned_trainset,seed_sample_id_list)
+
+    # 从poisoned_testset中剔除原来就是target class的数据
+    clean_testset_label_list = []
+    for _, batch in enumerate(clean_testset_loader):
+        Y = batch[1]
+        clean_testset_label_list.extend(Y.tolist())
+    filtered_ids = []
+    for sample_id in range(len(clean_testset)):
+        sample_label = clean_testset_label_list[sample_id]
+        if sample_label != config.target_class_idx:
+            filtered_ids.append(sample_id)
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+
+
+    # 获得设备
+    device = torch.device(f"cuda:{gpu_id}")
+
+    # 实验脚本
+    our_ft(
+        backdoor_model,
+        poisoned_testset,
+        filtered_poisoned_testset, 
+        clean_testset,
+        seedSet,
+        exp_dir,
+        poisoned_ids,
+        poisoned_trainset,
+        poisoned_evalset_loader,
+        device)
+    logging.info("该实验场景结束")
+
+if __name__ == "__main__":
+
+    # dataset_name = config.dataset_name
+    # model_name = config.model_name
+    # attack_name = config.attack_name
+    gpu_id = 1
+    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
+    attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
+    scene_single(dataset_name, model_name, attack_name)
