@@ -45,7 +45,7 @@ model_name = "DenseNet" # ResNet18, VGG19, DenseNet
 # 当前实验设置的攻击
 attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
 # GPU设备
-gpu_id = 1
+gpu_id = 0
 # baseline ASD配置
 asd_config = {
     "CIFAR10":{
