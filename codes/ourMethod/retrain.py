@@ -441,7 +441,7 @@ def scene_single(dataset_name, model_name, attack_name):
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
     # 随机数种子
-    r_seed = 666
+    r_seed = 667
     np.random.seed(r_seed)
         # 进程名称
     proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}"
