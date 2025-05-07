@@ -437,13 +437,12 @@ def get_fresh_dataset(poisoned_ids):
 
 
 
-def scene_single(dataset_name, model_name, attack_name):
+def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
     # 随机数种子
-    r_seed = 667
     np.random.seed(r_seed)
-        # 进程名称
+    # 进程名称
     proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     log_dir = os.path.join("log/OurMethod/defence_train/retrain",dataset_name,model_name,attack_name)
@@ -567,8 +566,9 @@ if __name__ == "__main__":
     # dataset_name = config.dataset_name
     # model_name = config.model_name
     # attack_name = config.attack_name
-    gpu_id = 1
+    gpu_id = 0
+    r_seed = 668
     dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "DenseNet" # ResNet18, VGG19, DenseNet
     attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
-    scene_single(dataset_name, model_name, attack_name)
+    scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
