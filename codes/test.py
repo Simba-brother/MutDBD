@@ -108,9 +108,17 @@ def test20():
     print(len(a))
     for i,d in enumerate(a):
         print(i,d)
-
+def test21():
+    a = np.array([1,0,1,0])
+    x = np.nonzero(a==1)
+    print(x)
+def test22():
+    a = [1,2,3]
+    a.insert(-1,5)
+    a.insert(0,9)
+    print(a)
 if __name__ == "__main__":
-    test20()
+    test22()
 
 
 

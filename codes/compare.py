@@ -441,66 +441,71 @@ def get_fresh_dataset(poisoned_ids,dataset_name,attack_name):
             clean_trainset, clean_testset = imagenet_WaNet()
     return poisoned_trainset, clean_trainset, clean_testset
 
+def single_scence(dataset_name, model_name, attack_name):
+    # 加载后门攻击配套数据
+    backdoor_data_path = os.path.join(config.exp_root_dir, 
+                                    "ATTACK",
+                                    dataset_name,
+                                    model_name,
+                                    attack_name,
+                                    "backdoor_data.pth")
+    backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
+    # 后门模型
+    backdoor_model = backdoor_data["backdoor_model"]
+    backdoor_model.load_state_dict(torch.load(ASD[dataset_name][model_name][attack_name][exp_id],map_location="cpu")["model_state_dict"])
+    # 训练数据集中中毒样本id
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # 预制的poisoned_testset
+    poisoned_testset = backdoor_data["poisoned_testset"]
+    # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
+    poisoned_trainset, clean_trainset, clean_testset = get_fresh_dataset(poisoned_ids,dataset_name,attack_name)
+    # 从poisoned_testset中剔除原来就是target class的数据
+    # 不打乱
+    clean_testset_loader = DataLoader(
+                clean_testset, # 非预制
+                batch_size=64, 
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    clean_testset_label_list = []
+    for _, batch in enumerate(clean_testset_loader):
+        Y = batch[1]
+        clean_testset_label_list.extend(Y.tolist())
+    filtered_ids = []
+    for sample_id in range(len(clean_testset)):
+        sample_label = clean_testset_label_list[sample_id]
+        if sample_label != config.target_class_idx:
+            filtered_ids.append(sample_id)
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    # 获得设备
+    device = torch.device(f"cuda:{gpu_id}")
+    e = EvalModel(backdoor_model,filtered_poisoned_testset,device)
+    asr = e.eval_acc()
+    e = EvalModel(backdoor_model,clean_testset,device)
+    acc = e.eval_acc()
+    print("="*30)
+    print("结果")
+    print("="*30)
+    print(f"dataset_name:{dataset_name}")
+    print(f"model_name:{model_name}")
+    print(f"attack_name:{attack_name}")
+    print(f"exp_id:{exp_id}")
+    print(f"ASR:{asr}")
+    print(f"ACC:{acc}")
 
 
-
-
-dataset_name = "CIFAR10"
-model_name = "ResNet18"
-attack_name = "BadNets"
-exp_id = "exp_1"
+# dataset_name = "CIFAR10" # ["CIFAR10","GTSRB", "ImageNet2012_subset"]
+# model_name = "DenseNet" # ["ResNet18", "VGG19", "DenseNet"]
+# attack_name = "WaNet" # ["BadNets", "IAD", "Refool", "WaNet"]
+exp_id = "exp_2" # ["exp_1","exp_2","exp_3"]
 gpu_id = 0
 
 
-# 加载后门攻击配套数据
-backdoor_data_path = os.path.join(config.exp_root_dir, 
-                                "ATTACK",
-                                dataset_name,
-                                model_name,
-                                attack_name,
-                                "backdoor_data.pth")
-backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
-# 后门模型
-backdoor_model = backdoor_data["backdoor_model"]
-backdoor_model.load_state_dict(torch.load(ASD[dataset_name][model_name][attack_name][exp_id],map_location="cpu"))
-# 训练数据集中中毒样本id
-poisoned_ids = backdoor_data["poisoned_ids"]
-# 预制的poisoned_testset
-poisoned_testset = backdoor_data["poisoned_testset"]
-# 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
-poisoned_trainset, clean_trainset, clean_testset = get_fresh_dataset(poisoned_ids,dataset_name,attack_name)
-# 从poisoned_testset中剔除原来就是target class的数据
-# 不打乱
-clean_testset_loader = DataLoader(
-            clean_testset, # 非预制
-            batch_size=64, 
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True)
-clean_testset_label_list = []
-for _, batch in enumerate(clean_testset_loader):
-    Y = batch[1]
-    clean_testset_label_list.extend(Y.tolist())
-filtered_ids = []
-for sample_id in range(len(clean_testset)):
-    sample_label = clean_testset_label_list[sample_id]
-    if sample_label != config.target_class_idx:
-        filtered_ids.append(sample_id)
-filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
-# 获得设备
-device = torch.device(f"cuda:{gpu_id}")
-e = EvalModel(backdoor_model,filtered_poisoned_testset,device)
-asr = e.eval_acc()
-print("ASR:",asr)
-e = EvalModel(backdoor_model,clean_testset,device)
-acc = e.eval_acc()
-print("ACC:",acc)
-print("="*30)
-print("总结")
-print("="*30)
-print(f"dataset_name:{dataset_name}")
-print(f"model_name:{model_name}")
-print(f"attack_name:{attack_name}")
-print(f"exp_id:{exp_id}")
-print(f"ASR:{asr}")
-print(f"ACC:{acc}")
+
+for dataset_name in ["CIFAR10","GTSRB"]:
+    for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+        # if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+        #     continue
+        for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+            single_scence(dataset_name,model_name,attack_name)
+

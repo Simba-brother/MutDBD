@@ -19,8 +19,9 @@ class PoisonedDatasetFolder(DatasetFolder):
                  poisoned_ids,
                  pattern,
                  weight,
-                 poisoned_transform_index,
-                 poisoned_target_transform_index):
+                 poisoned_transform_index, # default:-1, 在正常transforms最后一个之前插入一个中毒transform
+                 poisoned_target_transform_index # default:0
+                 ):
         super(PoisonedDatasetFolder, self).__init__(
             # 数据集文件夹位置
             benign_dataset.root, # 数据集文件夹 /data/mml/backdoor_detect/dataset/cifar10/train
@@ -57,7 +58,7 @@ class PoisonedDatasetFolder(DatasetFolder):
         # DatasetFolder 必须要有迭代
         """
         Args:
-            index (int): Index
+            index (int): Index， sample_idx
 
         Returns:
             tuple: (sample, target) where target is class_index of the target class.
@@ -90,19 +91,20 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     weight[-3:, -3:] = 1.0
 
     '''
+    # 训练集transform    
     transform_train = Compose([
         # Convert a tensor or an ndarray to PIL Image
         ToPILImage(), 
         # img (PIL Image or Tensor): Image to be cropped.
-        RandomCrop(size=32,padding=4,padding_mode="reflect"), 
-        RandomHorizontalFlip(), 
+        RandomCrop(size=32,padding=4,padding_mode="reflect"), # 裁剪
+        RandomHorizontalFlip(), # 水平翻转
         # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
-        ToTensor()
+        ToTensor()  # 在这之前加入了毒
     ])
     # 测试集transform
     transform_test = Compose([
         ToPILImage(),
-        ToTensor()
+        ToTensor() # 在这之前加入了毒
     ])
     '''
     # 形成Dataset

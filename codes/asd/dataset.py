@@ -125,6 +125,10 @@ class MixMatchDataset(Dataset):
         super(MixMatchDataset, self).__init__()
         self.dataset = copy.deepcopy(dataset)
         if labeled:
+            # 有标签的情况，从semi_id array中找到对应的索引
+            # 比如arr = np.array([1,0,1,0])
+            # np.nonzero(arr==1)[0]就为np.array([0,2]),self.semi_indice,__len__类的魔术方法就使用这个
+            # np.nonzero(arr==0)[0]就为np.array([1,3])
             self.semi_indice = np.nonzero(semi_idx == 1)[0]
         else:
             self.semi_indice = np.nonzero(semi_idx == 0)[0]
@@ -135,7 +139,7 @@ class MixMatchDataset(Dataset):
 
     def __getitem__(self, index):
         if self.labeled:
-            item1 = self.dataset[self.semi_indice[index]]
+            item1 = self.dataset[self.semi_indice[index]] # self.semi_indice[index] = sampl_id(datset)
             img = item1[0]
             target = item1[1]
             item = {}
@@ -155,4 +159,5 @@ class MixMatchDataset(Dataset):
         return item
 
     def __len__(self):
+        # 这里的semi_indice其实就时选择出的带标签或不带标签的样本索引array
         return len(self.semi_indice)

@@ -50,10 +50,10 @@ victim_model = get_model(dataset_name=config.dataset_name, model_name=config.mod
 
 # 根据poisoned_ids得到非预制菜poisoneds_trainset
 if config.dataset_name == "CIFAR10":
-    if config.attack_name == "BadNets":
+    if config.attack_name == "BadNets": # BadNets中毒操作比较快
         poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
         clean_trainset, clean_testset = cifar10_BadNets()
-    elif config.attack_name == "IAD":
+    elif config.attack_name == "IAD": # 中毒操作较慢，而且中毒后没有数据处理步骤了
         poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(config.model_name, poisoned_ids,"train")
         clean_trainset, _, clean_testset, _ = cifar10_IAD()
     elif config.attack_name == "Refool":
@@ -127,10 +127,10 @@ best_ckpt_path, latest_ckpt_path = defence_train(
         class_num = config.class_num, # 分类数量
         poisoned_train_dataset = poisoned_trainset, # 有污染的训练集
         poisoned_ids = poisoned_ids, # 被污染的样本id list
-        poisoned_eval_dataset_loader = poisoned_evalset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-        poisoned_train_dataset_loader = poisoned_trainset_loader, # 有污染的训练集加载器（打乱加载）
+        poisoned_eval_dataset_loader = poisoned_evalset_loader, # （新鲜）有污染的验证集加载器（可以是有污染的训练集不打乱加载）
+        poisoned_train_dataset_loader = poisoned_trainset_loader, # （新鲜）有污染的训练集加载器（打乱加载）
         clean_test_dataset_loader = clean_testset_loader, # 干净的测试集加载器
-        poisoned_test_dataset_loader = poisoned_testset_loader, # 污染的测试集加载器
+        poisoned_test_dataset_loader = poisoned_testset_loader, # 污染的测试集加载器（预制）
         device=device, # GPU设备对象
         # 实验结果存储目录
         save_dir = os.path.join(config.exp_root_dir, 

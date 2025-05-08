@@ -262,6 +262,7 @@ def defence_train(
     '''
     ASD防御训练方法
     '''
+    # 模型放gpu上
     model.to(device)
     # 损失函数
     criterion = nn.CrossEntropyLoss()
@@ -276,21 +277,22 @@ def defence_train(
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     # 模型参数的优化器
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.002)
+    lr = 0.002
+    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     # 先选择clean seed
-    # clean seed samples
-    clean_data_info = {}
-    all_data_info = {}
+    clean_data_info = {} # {cls_id:[sample_id],}
+    all_data_info = {} # {cls_id:[sample_id],}
     for class_idx in range(class_num):
         clean_data_info[class_idx] = []
         all_data_info[class_idx] = []
+    # 遍历poisoned_trainset(新鲜的)
     for idx, item in enumerate(poisoned_train_dataset):
         sample = item[0]
         label = item[1]
         if idx not in poisoned_ids:
             clean_data_info[label].append(idx)
         all_data_info[label].append(idx)
-    # 选出的clean seed idx
+    # 选出的clean seed idx，每个类别选10个样本
     choice_clean_indice = []
     for class_idx, idx_list in clean_data_info.items():
         # 从每个class_idx中选择10个sample idx
@@ -298,17 +300,19 @@ def defence_train(
         choice_clean_indice.extend(choice_list)
         # 从all_data_info中剔除选择出的clean seed sample index
         all_data_info[class_idx] = [x for x in all_data_info[class_idx] if x not in choice_list]
+    # 存储所有选择的种子样本id
     choice_clean_indice = np.array(choice_clean_indice)
 
-    choice_num = 0
-    best_acc = -1
-    best_epoch = -1
-    # 总共的训练轮次
+    choice_num = 0 # 每个轮次选择的数量
+    best_acc = -1 # 干净测试集上的最好性能
+    best_epoch = -1 # 记录下最好的epoch_id
+    # 从配置文件中读取总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
-        if epoch < 60:
+        if epoch < 60: # [0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
+            # 对全体数据集进行评估（耗时）
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
             if epoch % 5 == 0 and epoch != 0:
                 # 每五个epoch 每个class中选择数量就多加10个
@@ -318,7 +322,7 @@ def defence_train(
             split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
-        elif epoch < 90:
+        elif epoch < 90: # []
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
@@ -392,7 +396,7 @@ def defence_train(
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
-
+        # 开始半监督训练
         # 开始clean pool进行监督学习,poisoned pool进行半监督学习    
         xloader = DataLoader(xdata,batch_size=64, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
         uloader = DataLoader(udata,batch_size=64, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
@@ -429,9 +433,9 @@ def defence_train(
         # Save result and checkpoint.
         # 保存结果
         result = {
-            "poison_train": poison_train_result,
-            "clean_test": clean_test_result,
-            "poison_test": poison_test_result,
+            "poison_train": poison_train_result, # 训练集上结果
+            "clean_test": clean_test_result, # 干净测试集上结果
+            "poison_test": poison_test_result, # 中毒测试集上结果
         }
         
         result_epochs_dir = os.path.join(save_dir, "result_epochs")

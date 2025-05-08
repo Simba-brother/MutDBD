@@ -2,13 +2,14 @@ import os
 import copy
 import torch
 from torchvision.datasets import DatasetFolder
-from torchvision.transforms import Compose
+from torchvision.transforms import Compose,Normalize
 
 from codes.transform_dataset import cifar10_IAD
 from codes import config
 from codes.core.attacks.IAD import Generator
 from codes.scripts.dataset_constructor import Add_IAD_DatasetFolderTrigger,ModifyTarget
 from codes.poisoned_dataset.utils import filter_class
+from codes.look_poisoned_img import reverse_normalize, tensor_to_PIL
 
 class IADPoisonedDatasetFolder(DatasetFolder):
     def __init__(self,
@@ -115,6 +116,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
         # 图像数据归一化
         ToTensor(),
         Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
+        # 在这里append了中毒trans
     ])
     transform_test = Compose([
         ToPILImage(),
@@ -122,6 +124,7 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
         # 归一化
         ToTensor(),
         Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
+        # 在这里append了中毒trans
     ])
     '''
 
@@ -156,13 +159,17 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
             modelM =modelM
         )
     return poisonedDatasetFolder
-    
-    
 
-    # poisoned_testset =  IADPoisonedDatasetFolder(
-    #     benign_dataset = testset,
-    #     y_target = config.target_class_idx,
-    #     poisoned_rate = 1,
-    #     modelG = modelG,
-    #     modelM = modelM
-    # )
+
+if __name__ == "__main__":
+    model_name = "ResNet18"
+    poisoned_ids = [0,1,2,3,4,5,6,7,8,9,10]
+    trainOrtest = "train"
+    poisoned_trainset = gen_poisoned_dataset(model_name,poisoned_ids,trainOrtest)
+    sample_id = 0
+    sample, target, isPoisoned = poisoned_trainset[0]
+    sample = reverse_normalize(sample,mean=[0.4914, 0.4822, 0.4465], std=[0.247, 0.243, 0.261])
+    sample = tensor_to_PIL(sample)
+
+
+    
