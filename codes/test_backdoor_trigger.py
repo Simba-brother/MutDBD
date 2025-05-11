@@ -4,6 +4,11 @@
 import os
 import torch
 from codes import config
+
+from codes.transform_dataset import cifar10_BadNets,cifar10_IAD,cifar10_Refool,cifar10_WaNet
+from codes.transform_dataset import gtsrb_BadNets,gtsrb_IAD,gtsrb_Refool,gtsrb_WaNet
+from codes.transform_dataset import imagenet_BadNets,imagenet_IAD,imagenet_Refool,imagenet_WaNet
+
 # cifar10
 from codes.poisoned_dataset.cifar10.BadNets.generator import gen_poisoned_dataset as cifar10_badNets_gen_poisoned_dataset
 from codes.poisoned_dataset.cifar10.IAD.generator import gen_poisoned_dataset as cifar10_IAD_gen_poisoned_dataset
@@ -42,8 +47,11 @@ def CIFAR10_ResNet18_BadNets():
     poisoned_testset_fixed = backdoor_data["poisoned_testset"]
     # 测试集的id
     poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
-    # 新鲜的测试集
+    # 新鲜的poisoned_testset
     poisoned_testset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids_test,"test")
+    # 新鲜的poisoned_trainset
+    poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids_test,"train")
+    clean_trainset, clean_testset = cifar10_BadNets()
 
     device = torch.device(f"cuda:{config.gpu_id}")
     evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=4)
@@ -52,6 +60,15 @@ def CIFAR10_ResNet18_BadNets():
     device = torch.device(f"cuda:{config.gpu_id}")
     evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
     print("ASR:",evalModel.eval_acc())
+
+    evalModel = EvalModel(backdoor_model, clean_testset, device, batch_size=512, num_workers=4)
+    print("clean_testset ACC:",evalModel.eval_acc())
+
+    evalModel = EvalModel(backdoor_model, clean_trainset, device, batch_size=512, num_workers=4)
+    print("clean_trainset ACC:",evalModel.eval_acc())
+
+    evalModel = EvalModel(backdoor_model, poisoned_trainset, device, batch_size=512, num_workers=4)
+    print("poisoned_trainset ACC:",evalModel.eval_acc())
 
 def CIFAR10_VGG19_BadNets():
     print("CIFAR10_VGG19_BadNets")
@@ -121,15 +138,27 @@ def CIFAR10_ResNet18_IAD():
     poisoned_ids_test = list(range(len(poisoned_testset_fixed)))
     # 新鲜测试集
     poisoned_testset = cifar10_IAD_gen_poisoned_dataset("ResNet18",poisoned_ids_test,"test")
-
+    poisoned_trainset = cifar10_IAD_gen_poisoned_dataset("ResNet18",poisoned_ids_test,"train")
+    clean_trainset, _, clean_testset, _ = cifar10_IAD()
     device = torch.device(f"cuda:{config.gpu_id}")
+
     evalModel = EvalModel(backdoor_model, poisoned_testset_fixed, device, batch_size=512, num_workers=4)
     print("ASR_fixed:",evalModel.eval_acc())
 
-    device = torch.device(f"cuda:{config.gpu_id}")
+    
     evalModel = EvalModel(backdoor_model, poisoned_testset, device, batch_size=512, num_workers=4)
     print("ASR:",evalModel.eval_acc())
 
+    evalModel = EvalModel(backdoor_model, poisoned_trainset, device, batch_size=512, num_workers=4)
+    print("poisoned_trainset ACC:",evalModel.eval_acc())
+
+
+    
+    evalModel = EvalModel(backdoor_model, clean_trainset, device, batch_size=512, num_workers=4)
+    print("clean_trainset ACC:",evalModel.eval_acc())
+
+    evalModel = EvalModel(backdoor_model, clean_testset, device, batch_size=512, num_workers=4)
+    print("clean_testset ACC:",evalModel.eval_acc())
 
 def CIFAR10_VGG19_IAD():
     print("CIFAR10_VGG19_IAD")
@@ -966,5 +995,5 @@ def ImageNetsub_DenseNet_WaNet():
     print("ASR:",evalModel.eval_acc())
 
 if __name__ == "__main__":
-    ImageNetsub_VGG19_BadNets()
+    CIFAR10_ResNet18_IAD()
 

@@ -36,7 +36,7 @@ class EvalModel(object):
             shuffle=False,
             num_workers=num_workers,
             drop_last=False,
-            pin_memory=False,
+            pin_memory=True,
             worker_init_fn=_seed_worker
         )
         return dataset_loader

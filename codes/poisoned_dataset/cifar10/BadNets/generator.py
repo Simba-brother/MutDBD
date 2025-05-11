@@ -114,6 +114,6 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     elif trainOrtest == "test":
         # 中毒的数据集
         # 在数据集转换组合transforms.Compose[]的最后一个元素(ToTensor)之前进行中毒植入
-        filtered_testset = filter_class(testset,config.target_class_idx)
-        poisonedDatasetFolder = PoisonedDatasetFolder(filtered_testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
+        # filtered_testset = filter_class(testset,config.target_class_idx)
+        poisonedDatasetFolder = PoisonedDatasetFolder(testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
     return poisonedDatasetFolder

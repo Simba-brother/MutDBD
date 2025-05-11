@@ -567,7 +567,7 @@ if __name__ == "__main__":
     # model_name = config.model_name
     # attack_name = config.attack_name
     gpu_id = 0
-    r_seed = 668
+    r_seed = 667
     dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "DenseNet" # ResNet18, VGG19, DenseNet
     attack_name = "WaNet" # BadNets, IAD, Refool, WaNet

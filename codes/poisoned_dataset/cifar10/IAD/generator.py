@@ -150,9 +150,9 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
             modelM =modelM
         )
     elif trainOrtest == "test":
-        filtered_testset = filter_class(testset,config.target_class_idx)
+        # filtered_testset = filter_class(testset,config.target_class_idx)
         poisonedDatasetFolder =  IADPoisonedDatasetFolder(
-            benign_dataset = filtered_testset,
+            benign_dataset = testset,
             y_target = config.target_class_idx,
             poisoned_ids = poisoned_ids,
             modelG = modelG,
