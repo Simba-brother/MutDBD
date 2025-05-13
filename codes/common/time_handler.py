@@ -7,3 +7,7 @@ def get_formattedDateTime():
     date_time = time.localtime(timestamp)
     formatted_time = time.strftime('%Y-%m-%d_%H:%M:%S', date_time)
     return formatted_time
+
+if __name__ == "__main__":
+    _t = get_formattedDateTime()
+    print(_t)

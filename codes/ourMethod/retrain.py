@@ -513,7 +513,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     setproctitle.setproctitle(proctitle)
     log_dir = os.path.join("log/OurMethod/defence_train/retrain",dataset_name,model_name,attack_name)
     log_file_name = f"retrain_{_time}.log"
-    logger = _get_logger(log_dir,log_file_name,logger_name=proctitle)
+    logger = _get_logger(log_dir,log_file_name,logger_name=_time)
     
     logger.info(proctitle)
     exp_dir = os.path.join(config.exp_root_dir,"OurMethod","Retrain",dataset_name,model_name,attack_name,_time)
@@ -644,8 +644,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
 
 if __name__ == "__main__":
 
-    gpu_id = 0
-    r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
+    gpu_id = 1
+    r_seed = 668 # exp_1:666,exp_2:667,exp_3:668
 
     # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     # model_name= "ResNet18" # ResNet18, VGG19, DenseNet

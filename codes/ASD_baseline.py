@@ -38,6 +38,7 @@ from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Ref
 proctitle = f"ASD|{config.dataset_name}|{config.model_name}|{config.attack_name}"
 setproctitle.setproctitle(proctitle)
 print(proctitle)
+rand_seed = 668
 
 # 加载后门攻击配套数据
 
@@ -142,6 +143,7 @@ best_ckpt_path, latest_ckpt_path = defence_train(
                 ),
         dataset_name = config.dataset_name,
         model_name = config.model_name,
+        rand_seed = rand_seed
         )
 time_2 = time.perf_counter()
 print(f"防御式训练完成，共耗时{time_2-time_1}秒")

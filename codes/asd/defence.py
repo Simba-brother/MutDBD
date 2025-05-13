@@ -262,6 +262,7 @@ def defence_train(
     '''
     ASD防御训练方法
     '''
+    np.random.seed(kwargs["rand_seed"])
     # 模型放gpu上
     model.to(device)
     # 损失函数
