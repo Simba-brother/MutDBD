@@ -127,7 +127,7 @@ def draw(isPoisoned_list,file_name):
     plt.savefig(f"imgs/{file_name}", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
-def train(model,device, dataset, seedSet=None, num_epoch=10,lr=1e-3):
+def train(model,device, dataset, seedSet=None, num_epoch=10,lr=1e-3,logger=None):
     model.train()
     model.to(device)
     dataset_loader = DataLoader(
@@ -163,7 +163,7 @@ def train(model,device, dataset, seedSet=None, num_epoch=10,lr=1e-3):
         if epoch_loss < optimal_loss:
             optimal_loss = epoch_loss
             best_model = model
-        logging.info(f"epoch:{epoch},loss:{epoch_loss}")
+        logger.info(f"epoch:{epoch},loss:{epoch_loss}")
     return model,best_model
 
 def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
@@ -238,7 +238,7 @@ def freeze_model(model,dataset_name,model_name):
 
 
 
-def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device):
+def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device,logger):
     # FT前模型评估
     e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
@@ -253,7 +253,7 @@ def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device):
     # 获得class_rank
     class_rank = get_classes_rank()
     # 基于种子集和后门模型微调10轮次
-    model = train(model,device,seedSet,lr=1e-3)
+    model = train(model,device,seedSet,lr=1e-3,logger=logger)
     e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
     print("FT_ASR:",asr)
@@ -266,6 +266,23 @@ def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device):
     draw(isPoisoned_list,file_name="retrain10epoch_lossAndClassRank.png")
     
 
+
+def ft(model,device,dataset,epoch,lr,logger):
+    '''
+    微调
+    '''
+    # 冻结
+    freeze_model(model,dataset_name=dataset_name,model_name=model_name)
+    last_ft_model,best_ft_model = train(model,device,dataset,num_epoch=epoch,lr=lr,logger=logger)
+    return last_ft_model,best_ft_model
+
+def eval_asr_acc(model,poisoned_set,clean_set,device):
+    e = EvalModel(model,poisoned_set,device)
+    asr = e.eval_acc()
+    e = EvalModel(model,clean_set,device)
+    acc = e.eval_acc()
+    return asr,acc
+
 def our_ft(
         backdoor_model,
         poisoned_testset,
@@ -277,29 +294,24 @@ def our_ft(
         poisoned_trainset,
         poisoned_evalset_loader,
         device,
-        mutated_model = None):
+        assistant_model = None,
+        defense_model_flag = "backdoor",
+        logger = None):
     '''1: 先评估一下后门模型的ASR和ACC'''
-    logging.info("="*50)
-    logging.info("第1步: 先评估一下后门模型的ASR和ACC")
-    logging.info("="*50)
-    e = EvalModel(backdoor_model,filtered_poisoned_testset,device)
-    asr = e.eval_acc()
-    logging.info(f"Backdoor_ASR:{asr}")
-    e = EvalModel(backdoor_model,clean_testset,device)
-    acc = e.eval_acc()
-    logging.info(f"Backdoor_acc:{acc}")
+    logger.info("="*50)
+    logger.info("第1步: 先评估一下后门模型的ASR和ACC")
+    logger.info("="*50)
+    asr,acc = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"后门模型的ASR:{asr},后门模型的ACC:{acc}")
 
     '''评估一下变异模型的ASR和ACC'''
-    if mutated_model:
-        e = EvalModel(mutated_model,filtered_poisoned_testset,device)
-        asr = e.eval_acc()
-        logging.info(f"Mutated_Model_ASR:{asr}")
-        e = EvalModel(mutated_model,clean_testset,device)
-        acc = e.eval_acc()
-        logging.info(f"Mutated_Mode_acc:{acc}")
+    if assistant_model:
+        asr,acc = eval_asr_acc(assistant_model,filtered_poisoned_testset,clean_testset,device)
+        logger.info(f"辅助样本选择模型的: ASR:{asr}, ACC:{acc}")
 
-    logging.info(f"全体中毒测试集（poisoned_testset）数据量：{len(poisoned_testset)}")
-    logging.info(f"剔除了原来本属于target class的中毒测试集（filtered_poisoned_testset）数据量：{len(filtered_poisoned_testset)}")
+
+    logger.info(f"全体中毒测试集（poisoned_testset）数据量：{len(poisoned_testset)}")
+    logger.info(f"剔除了原来本属于target class的中毒测试集（filtered_poisoned_testset）数据量：{len(filtered_poisoned_testset)}")
     
     # '''1: 再评估一下ASD模型的ASR和ACC'''
     # state_dict = torch.load(config.asd_result[config.dataset_name][config.model_name][config.attack_name]["latest_model"], map_location='cpu')["model_state_dict"]
@@ -311,58 +323,75 @@ def our_ft(
     # acc = e.eval_acc()
     # print("ASD_acc:",acc)
     
-    '''2:先seed微调一下model'''
-    logging.info("="*50)
-    logging.info("第2步: 先用seed微调一下后门模型")
-    logging.info("种子集是由每个类别中选择10个干净样本组成的")
-    logging.info("="*50)
-    # 把后门模型冻结一部分，然后微调然后基于loss值切分
-    if mutated_model:
-        backdoor_model = mutated_model
-    freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
+    '''2:种子微调模型'''
+    logger.info("="*50)
+    logger.info("第2步: 种子微调模型")
+    logger.info("种子集: 由每个类别中选择10个干净样本组成")
+    logger.info("="*50)
+
     seed_num_epoch = 30
     seed_lr = 1e-3
-    logging.info(f"种子微调的轮次为:{seed_num_epoch},学习率为:{seed_lr}")
+    logger.info(f"种子微调轮次:{seed_num_epoch},学习率:{seed_lr}")
+    if assistant_model:
+        logger.info('种子微调辅助模型')
+        last_ft_assistent_model, best_ft_assitent_model = ft(assistant_model,device,seedSet,seed_num_epoch,seed_lr,logger=logger)
+        
+        save_file_name = "best_ft_assistant_model.pth"
+        save_file_path = os.path.join(exp_dir,save_file_name)
+        torch.save(best_ft_assitent_model.state_dict(), save_file_path)
+        logger.info(f"基于辅助模型进行种子微调后的best模型权重保存在:{save_file_path}")
 
-    last_BD_model,best_BD_model = train(backdoor_model,device,dataset=seedSet,num_epoch=seed_num_epoch,lr=seed_lr)
+        save_file_name = "last_ft_assistent_model.pth"
+        save_file_path = os.path.join(exp_dir,save_file_name)
+        torch.save(last_ft_assistent_model.state_dict(), save_file_path)
+        logger.info(f"基于辅助模型进行种子微调后的last模型权重保存在:{save_file_path}")
 
+    logger.info('种子微调后门模型')
+    last_BD_model,best_BD_model = ft(backdoor_model,device,seedSet,seed_num_epoch,seed_lr,logger=logger)
+ 
+    logger.info("保存种子微调后门模型")
     save_file_name = "best_BD_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(best_BD_model.state_dict(), save_file_path)
-    logging.info(f"基于后门模型进行种子微调后的训练损失最小的模型(best_seed_model)权重保存在:{save_file_path}")
+    logger.info(f"基于后门模型进行种子微调后的训练损失最小的模型权重保存在:{save_file_path}")
 
     save_file_name = "last_BD_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_BD_model.state_dict(), save_file_path)
-    logging.info(f"基于后门模型进行种子微调后的最后一轮次的模型(last_seed_model)权重保存在:{save_file_path}")
+    logger.info(f"基于后门模型进行种子微调后的最后一轮次的模型(last_seed_model)权重保存在:{save_file_path}")
 
     
     '''3:评估一下种子微调后的ASR和ACC'''
-    logging.info("="*50)
-    logging.info("第3步: 评估一下种子微调后模型（best_seed_model）的的ASR和ACC")
-    logging.info("="*50)
-    e = EvalModel(best_BD_model,filtered_poisoned_testset,device)
-    asr = e.eval_acc()
-    logging.info(f"best_seed_model的ASR:{asr}")
-    e = EvalModel(best_BD_model,clean_testset,device)
-    acc = e.eval_acc()
-    logging.info(f"best_seed_model的ACC:{acc}")
+    logger.info("="*50)
+    logger.info("第3步: 评估一下种子微调后模型的的ASR和ACC")
+    logger.info("="*50)
+    if assistant_model:
+        asr,acc = eval_asr_acc(best_ft_assitent_model,filtered_poisoned_testset,clean_testset,device)
+        logger.info(f"基于辅助种子微调后的: ASR:{asr}, ACC:{acc}")
+    asr,acc = eval_asr_acc(best_BD_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
+
+
     
     '''4:对样本进行排序，并选择出数据集'''
-    logging.info("="*50)
-    logging.info("第4步: 对样本进行排序，并选择出重训练数据集")
-    logging.info("="*50)
+    logger.info("="*50)
+    logger.info("第4步: 对样本进行排序，并选择出重训练数据集")
+    logger.info("="*50)
     # seed微调后排序一下样本
     class_rank = get_classes_rank(dataset_name, model_name, attack_name, config.exp_root_dir)
+    if assistant_model:
+        ranker_model = best_ft_assitent_model
+    else:
+        ranker_model = best_BD_model
     ranked_sample_id_list, isPoisoned_list = sort_sample_id(
-                                                best_BD_model,
+                                                ranker_model,
                                                 device,
                                                 poisoned_evalset_loader,
                                                 poisoned_ids,
                                                 class_rank)
     choice_rate = 0.6
     num = int(len(ranked_sample_id_list)*choice_rate)
-    logging.info(f"采样比例:{choice_rate},采样的数量:{num}")
+    logger.info(f"采样比例:{choice_rate},采样的数量:{num}")
     choiced_sample_id_list = ranked_sample_id_list[:num]
     # 统计一下污染的含量
     choiced_num = len(choiced_sample_id_list)
@@ -370,42 +399,44 @@ def our_ft(
     for choiced_sample_id in choiced_sample_id_list:
         if choiced_sample_id in poisoned_ids:
             count += 1
-    logging.info(f"污染样本含量:{count}/{choiced_num}")
+    logger.info(f"污染样本含量:{count}/{choiced_num}")
     choicedSet = Subset(poisoned_trainset,choiced_sample_id_list)
 
-    '''5:基于种子集和选择的集对best_seed_model进行重训练'''
-    logging.info("="*50)
-    logging.info("第5步:基于种子集和选择的集对best_seed_model进行重训练")
-    logging.info("="*50)
+    '''5:基于种子集和选择的集对微调后的后门模型或辅助模型进行重训练'''
+    logger.info("="*50)
+    logger.info("第5步:基于种子集和选择的集对best_seed_model进行重训练")
+    logger.info("="*50)
     # 合并种子集和选择集
     availableSet = ConcatDataset([seedSet,choicedSet])
     # 微调后门模型 
     num_epoch = 30
     lr = 1e-3
-    logging.info(f"轮次为:{num_epoch},学习率为:{lr}")
-    last_ft_model, best_ft_model = train(best_BD_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr)
+    logger.info(f"轮次为:{num_epoch},学习率为:{lr}")
+    if assistant_model and defense_model_flag == "assistant":
+        last_defense_model, best_defense_model = train(best_ft_assitent_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr,logger=logger)
+    else:
+        last_defense_model, best_defense_model = train(best_BD_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr,logger=logger)
+    
 
-    '''6:评估我们方法重训练后的ASR和ACC'''
-    logging.info("="*50)
-    logging.info("第6步:评估我们方法重训练后的ASR和ACC")
-    logging.info("="*50)
-    e = EvalModel(best_ft_model,filtered_poisoned_testset,device)
-    asr = e.eval_acc()
-    logging.info(f"我们方法重训练后的ASR:{asr}")
-    e = EvalModel(best_ft_model,clean_testset,device)
-    acc = e.eval_acc()
-    logging.info(f"我们方法重训练后的ACC:{acc}")
+    '''6:评估我们防御后的的ASR和ACC'''
+    logger.info("="*50)
+    logger.info("第6步:评估我们防御后的的ASR和ACC")
+    logger.info("="*50)
 
-    save_file_name = "best_ft_model.pth"
+    asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"防御后:ASR:{asr}, ACC:{acc}")
+
+
+    save_file_name = "best_defense_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
-    torch.save(best_ft_model.state_dict(), save_file_path)
-    logging.info(f"我们方法重训练后损失最小的模型权重保存在:{save_file_path}")
+    torch.save(best_defense_model.state_dict(), save_file_path)
+    logger.info(f"防御后的best权重保存在:{save_file_path}")
 
-    save_file_name = "last_ft_model.pth"
+    save_file_name = "last_defense_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
-    torch.save(last_ft_model.state_dict(), save_file_path)
-    logging.info(f"我们方法重训练后最后一轮次模型权重保存在:{save_file_path}")
-
+    torch.save(last_defense_model.state_dict(), save_file_path)
+    logger.info(f"防御后的last权重保存在:{save_file_path}")
+    
 def get_fresh_dataset(poisoned_ids):
     if dataset_name == "CIFAR10":
         if attack_name == "BadNets":
@@ -450,6 +481,27 @@ def get_fresh_dataset(poisoned_ids):
     return poisoned_trainset, clean_trainset, clean_testset
 
 
+def _get_logger(log_dir,log_file_name,logger_name):
+    # 创建一个logger
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.DEBUG)
+
+    os.makedirs(log_dir,exist_ok=True)
+    log_path = os.path.join(log_dir,log_file_name)
+
+    # logger的文件处理器，包括日志等级，日志路径，模式，编码等
+    file_handler = logging.FileHandler(log_path,mode="w",encoding="UTF-8")
+    file_handler.setLevel(logging.DEBUG)
+
+    # logger的格式化处理器
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
+    #将格式化器添加到文件处理器
+    file_handler.setFormatter(formatter)
+    # 将处理器添加到日志对象中
+    logger.addHandler(file_handler)
+    return logger
+
 
 def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     # 获得实验时间戳年月日时分秒
@@ -460,23 +512,21 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     log_dir = os.path.join("log/OurMethod/defence_train/retrain",dataset_name,model_name,attack_name)
-    os.makedirs(log_dir,exist_ok=True)
-    log_name = f"retrain_{_time}log"
-    log_path = os.path.join(log_dir,log_name)
-    logging.basicConfig(level=logging.DEBUG, filename=log_path, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
+    log_file_name = f"retrain_{_time}.log"
+    logger = _get_logger(log_dir,log_file_name,logger_name=proctitle)
     
-    logging.info(proctitle)
+    logger.info(proctitle)
     exp_dir = os.path.join(config.exp_root_dir,"OurMethod","Retrain",dataset_name,model_name,attack_name,_time)
     os.makedirs(exp_dir,exist_ok=True)
-    logging.info(f"进程名称:{proctitle}")
-    logging.info(f"实验目录:{exp_dir}")
-    logging.info(f"实验时间:{_time}")
-    logging.info("实验主代码：codes/ourMethod/retrain.py")
-    logging.info("="*50)
-    logging.info("实验开始")
-    logging.info("="*50)
-    logging.info(f"随机数种子：{r_seed}")
-    logging.info("函数：our_ft()")
+    logger.info(f"进程名称:{proctitle}")
+    logger.info(f"实验目录:{exp_dir}")
+    logger.info(f"实验时间:{_time}")
+    logger.info("实验主代码：codes/ourMethod/retrain.py")
+    logger.info("="*50)
+    logger.info("实验开始")
+    logger.info("="*50)
+    logger.info(f"随机数种子：{r_seed}")
+    logger.info("函数：our_ft()")
     # 加载后门攻击配套数据
     backdoor_data_path = os.path.join(config.exp_root_dir, 
                                     "ATTACK",
@@ -503,7 +553,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     )
     mutate_rate = 0.05
     m_id = 3
-    logging.info(f"变异率:{mutate_rate}, id:{m_id}")
+    logger.info(f"变异率:{mutate_rate}, id:{m_id}")
     mutated_model.load_state_dict(torch.load(os.path.join(mutations_dir,str(mutate_rate),"Gaussian_Fuzzing",f"model_{m_id}.pth")))
 
     # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
@@ -574,6 +624,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     device = torch.device(f"cuda:{gpu_id}")
 
     # 实验脚本
+    logger.info(f"辅助模型:变异模型")
+    logger.info(f"defense_model_flag:辅助模型")
     our_ft(
         backdoor_model,
         poisoned_testset,
@@ -585,17 +637,24 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
         poisoned_trainset,
         poisoned_evalset_loader,
         device,
-        mutated_model=mutated_model)
-    logging.info("该实验场景结束")
+        assistant_model = mutated_model,
+        defense_model_flag = "assitant",
+        logger = logger)
+    logger.info(f"{proctitle}实验场景结束")
 
 if __name__ == "__main__":
 
-    # dataset_name = config.dataset_name
-    # model_name = config.model_name
-    # attack_name = config.attack_name
     gpu_id = 0
     r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
-    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name = "BadNets" # BadNets, IAD, Refool, WaNet
-    scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
+
+    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    # attack_name = "IAD" # BadNets, IAD, Refool, WaNet
+    # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
+
+    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                continue
+            for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+                scene_single(dataset_name,model_name,attack_name,r_seed)
