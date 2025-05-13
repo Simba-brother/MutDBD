@@ -55,7 +55,7 @@ def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
         cls_num = len(class_rank)
         cls2score = {}
         for idx, cls in enumerate(class_rank):
-            cls2score[cls] = (cls_num - idx)/cls_num 
+            cls2score[cls] = (cls_num - idx)/cls_num  # 类别3：(10-0)/10 = 1, (10-9)/ 10 = 0.1
         sample_num = len(ranked_sample_id_list)
         # 一个优先级队列
         q = queue.PriorityQueue()
@@ -63,7 +63,7 @@ def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
             sample_rank = idx+1
             sample_label = label_list[sample_id]
             cls_score = cls2score[sample_label]
-            score = (sample_rank/sample_num)*cls_score
+            score = (sample_rank/sample_num)*cls_score # cls_score 归一化了，没加log
             q.put((score,sample_id)) # 越小优先级越高，越干净
         resort_sample_id_list = []
         while not q.empty():
@@ -276,7 +276,8 @@ def our_ft(
         poisoned_ids,
         poisoned_trainset,
         poisoned_evalset_loader,
-        device):
+        device,
+        mutated_model = None):
     '''1: 先评估一下后门模型的ASR和ACC'''
     logging.info("="*50)
     logging.info("第1步: 先评估一下后门模型的ASR和ACC")
@@ -287,6 +288,16 @@ def our_ft(
     e = EvalModel(backdoor_model,clean_testset,device)
     acc = e.eval_acc()
     logging.info(f"Backdoor_acc:{acc}")
+
+    '''评估一下变异模型的ASR和ACC'''
+    if mutated_model:
+        e = EvalModel(mutated_model,filtered_poisoned_testset,device)
+        asr = e.eval_acc()
+        logging.info(f"Mutated_Model_ASR:{asr}")
+        e = EvalModel(mutated_model,clean_testset,device)
+        acc = e.eval_acc()
+        logging.info(f"Mutated_Mode_acc:{acc}")
+
     logging.info(f"全体中毒测试集（poisoned_testset）数据量：{len(poisoned_testset)}")
     logging.info(f"剔除了原来本属于target class的中毒测试集（filtered_poisoned_testset）数据量：{len(filtered_poisoned_testset)}")
     
@@ -305,6 +316,9 @@ def our_ft(
     logging.info("第2步: 先用seed微调一下后门模型")
     logging.info("种子集是由每个类别中选择10个干净样本组成的")
     logging.info("="*50)
+    # 把后门模型冻结一部分，然后微调然后基于loss值切分
+    if mutated_model:
+        backdoor_model = mutated_model
     freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
     seed_num_epoch = 30
     seed_lr = 1e-3
@@ -447,7 +461,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     setproctitle.setproctitle(proctitle)
     log_dir = os.path.join("log/OurMethod/defence_train/retrain",dataset_name,model_name,attack_name)
     os.makedirs(log_dir,exist_ok=True)
-    log_name = f"retrain_{_time}.log"
+    log_name = f"retrain_{_time}log"
     log_path = os.path.join(log_dir,log_name)
     logging.basicConfig(level=logging.DEBUG, filename=log_path, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
     
@@ -478,7 +492,19 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     # 预制的poisoned_testset
     poisoned_testset = backdoor_data["poisoned_testset"] 
     # 空白模型
-    blank_model = get_model(dataset_name, model_name)
+    mutated_model = get_model(dataset_name, model_name)
+    # 某个变异模型
+    mutations_dir = os.path.join(
+        config.exp_root_dir,
+        "MutationModels",
+        dataset_name,
+        model_name,
+        attack_name
+    )
+    mutate_rate = 0.05
+    m_id = 3
+    logging.info(f"变异率:{mutate_rate}, id:{m_id}")
+    mutated_model.load_state_dict(torch.load(os.path.join(mutations_dir,str(mutate_rate),"Gaussian_Fuzzing",f"model_{m_id}.pth")))
 
     # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
     poisoned_trainset, clean_trainset, clean_testset = get_fresh_dataset(poisoned_ids)
@@ -558,7 +584,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
         poisoned_ids,
         poisoned_trainset,
         poisoned_evalset_loader,
-        device)
+        device,
+        mutated_model=mutated_model)
     logging.info("该实验场景结束")
 
 if __name__ == "__main__":
@@ -567,8 +594,8 @@ if __name__ == "__main__":
     # model_name = config.model_name
     # attack_name = config.attack_name
     gpu_id = 0
-    r_seed = 667
-    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
-    attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
+    r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name = "BadNets" # BadNets, IAD, Refool, WaNet
     scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)

@@ -144,7 +144,7 @@ ASD = {
             },
             "IAD":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/ResNet18/IAD/2025-03-07_20:28:50/ckpt/latest_model.pt",
-                "exp_2":"",
+                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/ResNet18/IAD/2025-05-11_13:38:49/ckpt/latest_model.pt",
                 "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/ResNet18/IAD/2025-05-09_11:37:01/ckpt/latest_model.pt"
             },
             "Refool":{
@@ -167,7 +167,7 @@ ASD = {
             "IAD":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-03-12_11:40:01/ckpt/latest_model.pt",
                 "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-05-06_16:16:06/ckpt/latest_model.pt",
-                "exp_3":""
+                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-05-09_16:21:34/ckpt/latest_model.pt"
             },
             "Refool":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/Refool/2025-03-14_11:10:26/ckpt/latest_model.pt",
@@ -176,8 +176,8 @@ ASD = {
             },
             "WaNet":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-03-14_12:34:37/ckpt/latest_model.pt",
-                "exp_2":"",
-                "exp_3":""
+                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-11_13:14:34/ckpt/latest_model.pt",
+                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-11_13:19:47/ckpt/latest_model.pt"
             }
         }
     }
@@ -494,24 +494,24 @@ def single_scence(dataset_name, model_name, attack_name):
     print(f"ACC:{acc}")
 
 
-# dataset_name = "ImageNet2012_subset" # ["CIFAR10","GTSRB", "ImageNet2012_subset"]
-# model_name = "DenseNet" # ["ResNet18", "VGG19", "DenseNet"]
-# attack_name = "Refool" # ["BadNets", "IAD", "Refool", "WaNet"]
+dataset_name = "ImageNet2012_subset" # ["CIFAR10","GTSRB", "ImageNet2012_subset"]
+model_name = "DenseNet" # ["ResNet18", "VGG19", "DenseNet"]
+attack_name = "WaNet" # ["BadNets", "IAD", "Refool", "WaNet"]
 exp_id = "exp_3" # ["exp_1","exp_2","exp_3"]
 gpu_id = 0
 
-# single_scence(dataset_name,model_name,attack_name)
+single_scence(dataset_name,model_name,attack_name)
 
 
 
-for dataset_name in ["ImageNet2012_subset"]:
-    for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-        if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-            continue
-        for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-            if dataset_name == "ImageNet2012_subset" and model_name == "DenseNet" and attack_name == "IAD":
-                continue
-            if dataset_name == "ImageNet2012_subset" and model_name == "DenseNet" and attack_name == "WaNet":
-                continue
-            single_scence(dataset_name,model_name,attack_name)
+# for dataset_name in ["ImageNet2012_subset"]:
+#     for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+#         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+#             continue
+#         for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+#             if dataset_name == "ImageNet2012_subset" and model_name == "DenseNet" and attack_name == "IAD":
+#                 continue
+#             if dataset_name == "ImageNet2012_subset" and model_name == "DenseNet" and attack_name == "WaNet":
+#                 continue
+#             single_scence(dataset_name,model_name,attack_name)
 
