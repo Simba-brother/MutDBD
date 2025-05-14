@@ -381,6 +381,7 @@ def our_ft(
     class_rank = get_classes_rank(dataset_name, model_name, attack_name, config.exp_root_dir)
     if assistant_model:
         ranker_model = best_ft_assitent_model
+        logger.info(f"排序辅助模型:变异模型")
     else:
         ranker_model = best_BD_model
     ranked_sample_id_list, isPoisoned_list = sort_sample_id(
@@ -413,11 +414,12 @@ def our_ft(
     lr = 1e-3
     logger.info(f"轮次为:{num_epoch},学习率为:{lr}")
     if assistant_model and defense_model_flag == "assistant":
+        logger.info(f"防御模型:变异模型")
         last_defense_model, best_defense_model = train(best_ft_assitent_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr,logger=logger)
     else:
+        logger.info(f"防御模型:后门模型")
         last_defense_model, best_defense_model = train(best_BD_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr,logger=logger)
-    
-
+        
     '''6:评估我们防御后的的ASR和ACC'''
     logger.info("="*50)
     logger.info("第6步:评估我们防御后的的ASR和ACC")
@@ -624,8 +626,6 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     device = torch.device(f"cuda:{gpu_id}")
 
     # 实验脚本
-    logger.info(f"辅助模型:变异模型")
-    logger.info(f"defense_model_flag:辅助模型")
     our_ft(
         backdoor_model,
         poisoned_testset,
@@ -638,23 +638,23 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
         poisoned_evalset_loader,
         device,
         assistant_model = mutated_model,
-        defense_model_flag = "assitant",
+        defense_model_flag = "backdoor", # str: assistant | backdoor
         logger = logger)
     logger.info(f"{proctitle}实验场景结束")
 
 if __name__ == "__main__":
 
     gpu_id = 1
-    r_seed = 668 # exp_1:666,exp_2:667,exp_3:668
+    r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
 
-    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    # dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
     # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    # attack_name = "IAD" # BadNets, IAD, Refool, WaNet
+    # attack_name = "BadNets" # BadNets, IAD, Refool, WaNet
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
-
-    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                continue
-            for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                scene_single(dataset_name,model_name,attack_name,r_seed)
+    for r_seed in [666,667,668]:
+        for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+                    scene_single(dataset_name,model_name,attack_name,r_seed)
