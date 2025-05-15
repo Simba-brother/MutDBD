@@ -171,13 +171,13 @@ ASD = {
             },
             "Refool":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/Refool/2025-03-14_11:10:26/ckpt/latest_model.pt",
-                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/Refool/2025-05-06_16:46:36/ckpt/latest_model.pt",
-                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/Refool/2025-05-09_16:57:52/ckpt/latest_model.pt"
+                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/Refool/2025-05-13_18:37:06/ckpt/latest_model.pt",
+                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/Refool/2025-05-13_18:40:35/ckpt/latest_model.pt"
             },
             "WaNet":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-03-14_12:34:37/ckpt/latest_model.pt",
-                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-11_13:14:34/ckpt/latest_model.pt",
-                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-11_13:19:47/ckpt/latest_model.pt"
+                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-13_19:30:49/ckpt/latest_model.pt",
+                "exp_3":""
             }
         }
     }
@@ -497,10 +497,11 @@ def single_scence(dataset_name, model_name, attack_name):
 dataset_name = "ImageNet2012_subset" # ["CIFAR10","GTSRB", "ImageNet2012_subset"]
 model_name = "DenseNet" # ["ResNet18", "VGG19", "DenseNet"]
 attack_name = "WaNet" # ["BadNets", "IAD", "Refool", "WaNet"]
-exp_id = "exp_3" # ["exp_1","exp_2","exp_3"]
-gpu_id = 0
+exp_id = "exp_2" # ["exp_1","exp_2","exp_3"]
+gpu_id = 1
 
 single_scence(dataset_name,model_name,attack_name)
+print("END")
 
 
 

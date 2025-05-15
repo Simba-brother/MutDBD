@@ -38,7 +38,7 @@ from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Ref
 proctitle = f"ASD|{config.dataset_name}|{config.model_name}|{config.attack_name}"
 setproctitle.setproctitle(proctitle)
 print(proctitle)
-rand_seed = 668
+rand_seed = 667
 
 # 加载后门攻击配套数据
 
