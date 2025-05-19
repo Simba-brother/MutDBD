@@ -159,8 +159,15 @@ def test23():
 
     diff = list(set(list_1) - set(list_2))
     print(diff)
+
+def test24():
+    matrix = [[1,2,3],[4,5,6]]
+    x = [row[1] for row in matrix]
+    
+    print(x)
+
 if __name__ == "__main__":
-    test23()
+    test24()
 
 
 

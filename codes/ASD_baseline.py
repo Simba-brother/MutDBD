@@ -39,6 +39,7 @@ proctitle = f"ASD|{config.dataset_name}|{config.model_name}|{config.attack_name}
 setproctitle.setproctitle(proctitle)
 print(proctitle)
 rand_seed = 667
+print(f"rand_seed:{rand_seed}")
 
 # 加载后门攻击配套数据
 

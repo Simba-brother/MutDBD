@@ -140,7 +140,7 @@ ASD = {
             "BadNets":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/ResNet18/BadNets/2025-03-07_13:55:26/ckpt/latest_model.pt",
                 "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/ResNet18/BadNets/2025-05-06_12:47:16/ckpt/latest_model.pt",
-                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/ResNet18/BadNets/2025-05-09_11:20:53/ckpt/latest_model.pt"
+                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/BadNets/2025-05-15_21:04:21/ckpt/latest_model.pt"
             },
             "IAD":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/ResNet18/IAD/2025-03-07_20:28:50/ckpt/latest_model.pt",
@@ -161,13 +161,13 @@ ASD = {
         "DenseNet":{
             "BadNets":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/BadNets/2025-03-12_11:30:35/ckpt/latest_model.pt",
-                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/BadNets/2025-05-06_15:26:14/ckpt/latest_model.pt",
+                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/BadNets/2025-05-15_20:58:25/ckpt/latest_model.pt",
                 "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/BadNets/2025-05-09_15:19:19/ckpt/latest_model.pt"
             },
             "IAD":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-03-12_11:40:01/ckpt/latest_model.pt",
-                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-05-06_16:16:06/ckpt/latest_model.pt",
-                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-05-09_16:21:34/ckpt/latest_model.pt"
+                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-05-16_11:30:01/ckpt/latest_model.pt",
+                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/IAD/2025-05-17_15:39:22/ckpt/latest_model.pt"
             },
             "Refool":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/Refool/2025-03-14_11:10:26/ckpt/latest_model.pt",
@@ -176,8 +176,8 @@ ASD = {
             },
             "WaNet":{
                 "exp_1":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-03-14_12:34:37/ckpt/latest_model.pt",
-                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-13_19:30:49/ckpt/latest_model.pt",
-                "exp_3":""
+                "exp_2":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-17_21:50:00/ckpt/latest_model.pt",
+                "exp_3":"/data/mml/backdoor_detect/experiments/ASD/ImageNet2012_subset/DenseNet/WaNet/2025-05-16_11:32:37/ckpt/latest_model.pt"
             }
         }
     }
@@ -496,8 +496,8 @@ def single_scence(dataset_name, model_name, attack_name):
 
 dataset_name = "ImageNet2012_subset" # ["CIFAR10","GTSRB", "ImageNet2012_subset"]
 model_name = "DenseNet" # ["ResNet18", "VGG19", "DenseNet"]
-attack_name = "WaNet" # ["BadNets", "IAD", "Refool", "WaNet"]
-exp_id = "exp_2" # ["exp_1","exp_2","exp_3"]
+attack_name = "IAD" # ["BadNets", "IAD", "Refool", "WaNet"]
+exp_id = "exp_3" # ["exp_1","exp_2","exp_3"]
 gpu_id = 1
 
 single_scence(dataset_name,model_name,attack_name)
