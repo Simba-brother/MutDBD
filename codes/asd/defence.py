@@ -3,6 +3,7 @@
 import joblib
 import setproctitle
 import os
+import time
 from copy import deepcopy
 import cv2
 import numpy as np
@@ -10,6 +11,7 @@ import torch
 import torch.nn as nn
 # import torch.nn.functional as F
 from torch.utils.data import DataLoader # 用于批量加载训练集的
+
 
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomCrop
 from torchvision.datasets import DatasetFolder
@@ -249,10 +251,13 @@ def prepare_data():
 def defence_train(
         model, # victim model
         class_num, # 分类数量
-        poisoned_train_dataset, # 有污染的训练集,不打乱的list
+        poisoned_train_dataset, # 预制的有污染的训练集
+        poisoned_train_dataset_2, # 另外一份预制有污染的数据集（位于内存）
         poisoned_ids, # 被污染的样本id list
         poisoned_eval_dataset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-        poisoned_train_dataset_loader, #有污染的训练集加载器,打乱顺序加载
+        # poisoned_train_dataset_loader, #有污染的训练集加载器,打乱顺序加载
+        extracted_poisoned_trainset_1_loader,
+        # extracted_poisoned_trainset_2_loader,
         clean_test_dataset_loader, # 干净的测试集加载器
         poisoned_test_dataset_loader, # 污染的测试集加载器
         device, # GPU设备对象
@@ -310,6 +315,7 @@ def defence_train(
     # 从配置文件中读取总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
+        epoch_start_time = time.perf_counter()
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
         if epoch < 60: # [0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
@@ -321,15 +327,15 @@ def defence_train(
             print("Mining clean data by class-aware loss-guided split...")
             # 0表示在污染池,1表示在clean pool
             split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
-            xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
-            udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
-        elif epoch < 90: # []
+            xdata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=True)
+            udata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=False)
+        elif epoch < 90: # [60,89]
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids)
-            xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
-            udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
+            xdata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=True)
+            udata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=False)
         elif epoch < total_epoch:
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
@@ -383,7 +389,7 @@ def defence_train(
                 # 使用完整的训练集训练一轮元模型
                 train_the_virtual_model(
                                         meta_virtual_model=meta_virtual_model, 
-                                        poison_train_loader=poisoned_train_dataset_loader, 
+                                        poison_train_loader = extracted_poisoned_trainset_1_loader, # poisoned_train_dataset_loader, 
                                         meta_optimizer=meta_optimizer,
                                         meta_criterion=meta_criterion,
                                         device = device
@@ -395,14 +401,14 @@ def defence_train(
             print("Mining clean data by meta-split...")
             split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids)
 
-            xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
-            udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
+            xdata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=True)
+            udata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=False)  
         # 开始半监督训练
         # 开始clean pool进行监督学习,poisoned pool进行半监督学习    
-        xloader = DataLoader(xdata,batch_size=64, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
-        uloader = DataLoader(udata,batch_size=64, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
+        xloader = DataLoader(xdata, batch_size=64, num_workers=0, pin_memory=True, shuffle=True, drop_last=True)
+        uloader = DataLoader(udata, batch_size=64, num_workers=0, pin_memory=True, shuffle=True, drop_last=True)
         print("MixMatch training...")
-        # 半监督训练参数
+        # 半监督训练参数,1024哥batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
         poison_train_result = mixmatch_train(
             model,
@@ -414,7 +420,12 @@ def defence_train(
             device,
             **semi_mixmatch
         )
-
+        epoch_end_time = time.perf_counter()
+        epcoch_cost_time = epoch_end_time - epoch_start_time
+        hours = int(epcoch_cost_time // 3600)
+        minutes = int((epcoch_cost_time % 3600) // 60)
+        seconds = epcoch_cost_time % 6
+        print(f"Epoch耗时:{hours}时{minutes}分{seconds:.3f}秒")
         print("Test model on clean data...")
         clean_test_result = linear_test(
             model, clean_test_dataset_loader, criterion,device

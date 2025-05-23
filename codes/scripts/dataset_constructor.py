@@ -60,6 +60,26 @@ class PurePoisonedTrainDataset(Dataset):
         sample,label,isPoisoned=self.purePoisonedTrainDataset[index]
         return sample,label,isPoisoned
 
+class ExtractDataset_NormalPattern(Dataset):
+    def __init__(self, old_dataset):
+        self.old_dataset = old_dataset
+        self.new_dataset = self._get_new_dataset()
+
+    def _get_new_dataset(self):
+        # 将数据集加载到内存中了
+        new_dataset = []
+        for id in range(len(self.old_dataset)):
+            sample, label = self.old_dataset[id][0], self.old_dataset[id][1]
+            new_dataset.append((sample,label))
+        return new_dataset
+    
+    def __len__(self):
+        return len(self.new_dataset)
+    
+    def __getitem__(self, index):
+        sample,label=self.new_dataset[index]
+        return sample,label
+
 class ExtractDataset(Dataset):
     '''
     抽取数据集到一个list中,目的是加快速度
@@ -69,9 +89,10 @@ class ExtractDataset(Dataset):
         self.new_dataset = self._get_new_dataset()
 
     def _get_new_dataset(self):
+        # 将数据集加载到内存中了
         new_dataset = []
         for id in range(len(self.old_dataset)):
-            sample, label, isPoisoned = self.old_dataset[id][0], self.old_dataset[id][1], self.old_dataset[id][2]
+            sample, label, isPoisoned = self.old_dataset[id]
             new_dataset.append((sample,label,isPoisoned))
         return new_dataset
     

@@ -121,9 +121,12 @@ class MixMatchDataset(Dataset):
             set (default: True).
     """
 
-    def __init__(self, dataset, semi_idx, labeled=True):
+    def __init__(self, dataset, dataset_2, semi_idx, labeled=True):
         super(MixMatchDataset, self).__init__()
-        self.dataset = copy.deepcopy(dataset)
+        # self.dataset = copy.deepcopy(dataset)
+        # self.dataset_2 = copy.deepcopy(dataset_2)
+        self.dataset = dataset
+        self.dataset_2 = dataset_2
         if labeled:
             # 有标签的情况，从semi_id array中找到对应的索引
             # 比如arr = np.array([1,0,1,0])
@@ -138,6 +141,7 @@ class MixMatchDataset(Dataset):
         #     self.mean, self.std = self.dataset.mean, self.dataset.std
 
     def __getitem__(self, index):
+        # index in [0,len(self.semi_indice)-1]
         if self.labeled:
             item1 = self.dataset[self.semi_indice[index]] # self.semi_indice[index] = sampl_id(datset)
             img = item1[0]
@@ -148,7 +152,7 @@ class MixMatchDataset(Dataset):
             item["labeled"] = True
         else:
             item1 = self.dataset[self.semi_indice[index]]
-            item2 = self.dataset[self.semi_indice[index]]
+            item2 = self.dataset_2[self.semi_indice[index]]
             img1 = item1[0]
             img2 = item2[0]
             item = {}

@@ -163,11 +163,14 @@ def test23():
 def test24():
     matrix = [[1,2,3],[4,5,6]]
     x = [row[1] for row in matrix]
-    
+
+def test25():
+    data = np.array([0,1,1,0])
+    x = np.nonzero(data==1)
     print(x)
 
 if __name__ == "__main__":
-    test24()
+    test25()
 
 
 
