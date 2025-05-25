@@ -95,15 +95,15 @@ elif config.dataset_name == "ImageNet2012_subset":
 
 
 # 提前把poisoned_trainset加载到内存中
-extract_time_start = time.perf_counter()
-extracted_poisoned_trainset_1 = ExtractDataset(poisoned_trainset)
-extracted_poisoned_trainset_2 = ExtractDataset(poisoned_trainset)
-extract_time_end = time.perf_counter()
-extract_cost_seconds = extract_time_end - extract_time_start
-hours = int(extract_cost_seconds // 3600)
-minutes = int((extract_cost_seconds % 3600) // 60)
-seconds = extract_cost_seconds % 6
-print(f"抽取2份训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
+# extract_time_start = time.perf_counter()
+# extracted_poisoned_trainset_1 = ExtractDataset(poisoned_trainset)
+# extracted_poisoned_trainset_2 = ExtractDataset(poisoned_trainset)
+# extract_time_end = time.perf_counter()
+# extract_cost_seconds = extract_time_end - extract_time_start
+# hours = int(extract_cost_seconds // 3600)
+# minutes = int((extract_cost_seconds % 3600) // 60)
+# seconds = extract_cost_seconds % 6
+# print(f"抽取2份训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
 # dataset_list = []
@@ -181,26 +181,26 @@ print(f"抽取2份训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
 # print(f"遍历新鲜耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
-extracted_poisoned_trainset_1_loader = DataLoader(
-            extracted_poisoned_trainset_1, # 新鲜
-            batch_size=64,
-            shuffle=True,
-            num_workers=4,
-            pin_memory=True)
+# extracted_poisoned_trainset_1_loader = DataLoader(
+#             extracted_poisoned_trainset_1, # 新鲜
+#             batch_size=64,
+#             shuffle=True,
+#             num_workers=4,
+#             pin_memory=True)
 
-extracted_poisoned_trainset_2_loader = DataLoader(
-            extracted_poisoned_trainset_2, # 
-            batch_size=64,
-            shuffle=True,
-            num_workers=4,
-            pin_memory=True)
+# extracted_poisoned_trainset_2_loader = DataLoader(
+#             extracted_poisoned_trainset_2, # 
+#             batch_size=64,
+#             shuffle=True,
+#             num_workers=4,
+#             pin_memory=True)
 
-extracted_poisoned_evalset_loader = DataLoader(
-            extracted_poisoned_trainset_1, # 
-            batch_size=64,
-            shuffle=False,
-            num_workers=4,
-            pin_memory=True)
+# extracted_poisoned_evalset_loader = DataLoader(
+#             extracted_poisoned_trainset_1, # 
+#             batch_size=64,
+#             shuffle=False,
+#             num_workers=4,
+#             pin_memory=True)
 
 
 # 数据加载器
@@ -236,18 +236,14 @@ device = torch.device(f"cuda:{config.gpu_id}")
 
 # 开始防御式训练
 print("开始ASD防御式训练")
-print("抽取,工人数:64,batch_size:128")
 time_1 = time.perf_counter()
 best_ckpt_path, latest_ckpt_path = defence_train(
         model = victim_model, # victim model
         class_num = config.class_num, # 分类数量
-        poisoned_train_dataset = extracted_poisoned_trainset_1, # extracted_poisoned_trainset_1, # 有污染的训练集, poisoned_trainset
-        poisoned_train_dataset_2 = extracted_poisoned_trainset_2, # 有污染的训练集, poisoned_trainset
+        poisoned_train_dataset = poisoned_trainset,
         poisoned_ids = poisoned_ids, # 被污染的样本id list
-        poisoned_eval_dataset_loader = extracted_poisoned_evalset_loader, # poisoned_evalset_loader, # （新鲜）有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-        # poisoned_train_dataset_loader = poisoned_trainset_loader, # （新鲜）有污染的训练集加载器（打乱加载）
-        extracted_poisoned_trainset_1_loader = extracted_poisoned_trainset_1_loader,
-        # extracted_poisoned_trainset_2_loader = extracted_poisoned_trainset_2_loader,
+        poisoned_eval_dataset_loader = poisoned_evalset_loader, # （新鲜）有污染的训练集加载器（不打乱加载）
+        poisoned_train_dataset_loader = poisoned_trainset_loader, # （新鲜）有污染的训练集加载器（打乱加载）
         clean_test_dataset_loader = clean_testset_loader, # 干净的测试集加载器
         poisoned_test_dataset_loader = poisoned_testset_loader, # 污染的测试集加载器（预制）
         device=device, # GPU设备对象

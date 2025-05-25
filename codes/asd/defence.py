@@ -252,12 +252,9 @@ def defence_train(
         model, # victim model
         class_num, # 分类数量
         poisoned_train_dataset, # 预制的有污染的训练集
-        poisoned_train_dataset_2, # 另外一份预制有污染的数据集（位于内存）
         poisoned_ids, # 被污染的样本id list
         poisoned_eval_dataset_loader, # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
-        # poisoned_train_dataset_loader, #有污染的训练集加载器,打乱顺序加载
-        extracted_poisoned_trainset_1_loader,
-        # extracted_poisoned_trainset_2_loader,
+        poisoned_train_dataset_loader, #有污染的训练集加载器,打乱顺序加载
         clean_test_dataset_loader, # 干净的测试集加载器
         poisoned_test_dataset_loader, # 污染的测试集加载器
         device, # GPU设备对象
@@ -327,15 +324,15 @@ def defence_train(
             print("Mining clean data by class-aware loss-guided split...")
             # 0表示在污染池,1表示在clean pool
             split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
-            xdata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=True)
-            udata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=False)
+            xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
+            udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < 90: # [60,89]
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids)
-            xdata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=True)
-            udata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=False)
+            xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
+            udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch:
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
@@ -389,7 +386,7 @@ def defence_train(
                 # 使用完整的训练集训练一轮元模型
                 train_the_virtual_model(
                                         meta_virtual_model=meta_virtual_model, 
-                                        poison_train_loader = extracted_poisoned_trainset_1_loader, # poisoned_train_dataset_loader, 
+                                        poison_train_loader = poisoned_train_dataset_loader,
                                         meta_optimizer=meta_optimizer,
                                         meta_criterion=meta_criterion,
                                         device = device
@@ -401,12 +398,12 @@ def defence_train(
             print("Mining clean data by meta-split...")
             split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids)
 
-            xdata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=True)
-            udata = MixMatchDataset(poisoned_train_dataset, poisoned_train_dataset_2, split_indice, labeled=False)  
+            xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
+            udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
         # 开始半监督训练
         # 开始clean pool进行监督学习,poisoned pool进行半监督学习    
-        xloader = DataLoader(xdata, batch_size=64, num_workers=0, pin_memory=True, shuffle=True, drop_last=True)
-        uloader = DataLoader(udata, batch_size=64, num_workers=0, pin_memory=True, shuffle=True, drop_last=True)
+        xloader = DataLoader(xdata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
+        uloader = DataLoader(udata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
         print("MixMatch training...")
         # 半监督训练参数,1024哥batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
@@ -456,6 +453,8 @@ def defence_train(
         save_file_path = os.path.join(result_epochs_dir, save_file_name)
         joblib.dump(result,save_file_path)
         print(f"epoch:{epoch},result: is saved in {save_file_path}")
+
+        
         # result2csv(result, save_dir)
        
         # if scheduler is not None:
@@ -490,6 +489,16 @@ def defence_train(
         latest_ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
         torch.save(saved_dict, latest_ckpt_path)
         print("Save the latest model to {}".format(latest_ckpt_path))
+        # 保存倒数第2轮次的模型权重
+        if epoch == total_epoch-2:
+            secondtolast_path = os.path.join(ckpt_dir,"secondtolast.pth")
+            torch.save(model.state_dict(),secondtolast_path)
+            print("Save the secondtolast model to {}".format(secondtolast_path))
+        # 保存第第59轮次结束的模型权重
+        if epoch == 59:
+            epoch_59_path = os.path.join(ckpt_dir,"epoch_59.pth")
+            torch.save(model.state_dict(),epoch_59_path)
+            print("Save the secondtolast model to {}".format(epoch_59_path))
     
     print("asd_train() End")
     return best_ckpt_path,latest_ckpt_path
