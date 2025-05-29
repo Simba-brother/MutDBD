@@ -920,11 +920,11 @@ def our_ft_2(
     #     best_BD_model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
     #     num_epoch=30, lr=1e-3, batch_size=64, logger=logger)
     
-    # logger.info("trainWithSemi")
-    # # best_BD_model = unfreeze(best_BD_model)
-    # best_defense_model,last_defense_model = train_with_semi(
-    #     best_BD_model,device,seedSet,seed_sample_id_list, poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
-    #     class_num, num_epoch=50, lr=1e-3, batch_size=128, logger=logger)
+    logger.info("trainWithSemi")
+    # best_BD_model = unfreeze(best_BD_model)
+    best_defense_model,last_defense_model = train_with_semi(
+        best_BD_model,device,seedSet,seed_sample_id_list, poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
+        class_num, num_epoch=50, lr=1e-3, batch_size=128, logger=logger)
 
     '''5:评估我们防御后的的ASR和ACC'''
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
