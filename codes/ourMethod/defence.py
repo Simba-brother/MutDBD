@@ -14,7 +14,8 @@ from copy import deepcopy
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader # 用于批量加载训练集的
+from torch.utils.data import DataLoader, Subset # 用于批量加载训练集的
+from torch.optim.lr_scheduler import StepLR,MultiStepLR
 
 import matplotlib.pyplot as plt
 
@@ -548,6 +549,91 @@ def sampling_7(samples_num:int,ranked_sample_idx_array, cls_rank:list, label_lis
     return seletcted_sample_id_list
 
 
+def ft(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64, use_lr_scheduer=False):
+    model.train()
+    model.to(device)
+    dataset_loader = DataLoader(
+            dataset, # 非预制
+            batch_size=batch_size,
+            shuffle=True, # 打乱
+            num_workers=4)
+    optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+    if use_lr_scheduer:
+        scheduler = MultiStepLR(optimizer, milestones=[10,20,30,40], gamma=0.1)
+    loss_function = nn.CrossEntropyLoss()
+    optimal_loss = float('inf')
+    best_model = None
+    for epoch in range(num_epoch):
+        step_loss_list = []
+        for _, batch in enumerate(dataset_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+            step_loss_list.append(loss.item())
+        if use_lr_scheduer:
+            scheduler.step()
+        epoch_loss = sum(step_loss_list) / len(step_loss_list)
+        if epoch_loss < optimal_loss:
+            optimal_loss = epoch_loss
+            best_model = model
+        print(f"epoch:{epoch},loss:{epoch_loss}")
+    return model,best_model
+
+def unfreeze(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = True
+    return model
+
+def freeze_model(model,dataset_name,model_name):
+    if dataset_name == "CIFAR10" or dataset_name == "GTSRB":
+        if model_name == "ResNet18":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'features.5' in name or 'features.4' in name or 'features.3' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'dense4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    elif dataset_name == "ImageNet2012_subset":
+        if model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name,param in model.named_parameters():
+                if 'classifier' in name or 'features.denseblock4' in name or 'features.denseblock3' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "ResNet18":
+            for name,param in model.named_parameters():
+                if 'fc' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    else:
+        raise Exception("模型不存在")
+    return model
 
 def defence_train(
         model, # victim model
@@ -569,8 +655,7 @@ def defence_train(
     # 类别排序，越靠前类别越有可能为target class
     classes_rank = kwargs["classes_rank"]
     #  各个类别采样概率
-    class_prob_map = get_class_sampled_prob_map(classes_rank)
-    
+    class_prob_map = get_class_sampled_prob_map(classes_rank)    
     model.to(device)
     # 损失函数
     criterion = nn.CrossEntropyLoss()
@@ -580,12 +665,13 @@ def defence_train(
     split_criterion = SCELoss(alpha=0.1, beta=1, num_classes=class_num)
     # 分割损失函数对象放到gpu上
     split_criterion.to(device)
-    # semi 损失函数
-    semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=15) # rampup_length = 120  same as epoches
+    # semi 损失函数 config.asd_config[kwargs["dataset_name"]]["epoch"]
+    semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=0.5) # rampup_length = 120  same as epoches
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     # 模型参数的优化器
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.002)
+    optimizer = torch.optim.Adam(model.parameters(), lr = 2e-3)
+    # scheduler = MultiStepLR(optimizer, milestones=[10,20,30,40], gamma=0.1)
     # 先选择clean seed
     # clean seed samples
     clean_data_info = {}
@@ -614,18 +700,32 @@ def defence_train(
     best_epoch = -1
     # 总共的训练轮次
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
-    for epoch in range(60,90): # range(total_epoch): # range(60,90)
+    # 先冻结微调一下
+    model = freeze_model(model,kwargs["dataset_name"],kwargs["model_name"])
+    seedSet = Subset(poisoned_train_dataset,choice_clean_indice.tolist())
+    last_model, best_model = ft(model,device, seedSet, num_epoch=30, lr=1e-3, batch_size=64, use_lr_scheduer=False)
+    # 解冻模型
+    model = unfreeze(model)
+    model = best_model # 下游使用best model
+    split_rate = 0.6
+    for epoch in range(total_epoch): # range(total_epoch): # range(60,90)
         print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
         if epoch < 60: # epoch:[0,59]
-            # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
-            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
-            if epoch % 5 == 0 and epoch != 0:
-                # 每五个epoch 每个class中选择数量就多加10个
-                choice_num += 10
-            print("Mining clean data by class-aware loss-guided split...")
-            # all_data_info = {class_id:indice（剔除了干净种子）}
-            # 0表示在污染池,1表示在clean pool
-            split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
+            # # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
+            # record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
+            # if epoch % 5 == 0 and epoch != 0:
+            #     # 每五个epoch 每个class中选择数量就多加10个
+            #     choice_num += 10
+            # print("Mining clean data by class-aware loss-guided split...")
+            # # all_data_info = {class_id:indice（剔除了干净种子）}
+            # # 0表示在污染池,1表示在clean pool
+            # split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
+            # xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
+            # udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
+            record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
+            print("Mining clean data by class-agnostic loss-guided split...")
+            # 将trainset对半划分为clean pool和poisoned pool
+            split_indice = class_agnostic_loss_guided_split(record_list, split_rate, poisoned_ids, sampling_method="method_2", class_prob_map=class_prob_map, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < 90: # epoch:[60,89]
@@ -633,7 +733,7 @@ def defence_train(
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
             print("Mining clean data by class-agnostic loss-guided split...")
             # 将trainset对半划分为clean pool和poisoned pool
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids, sampling_method="method_2", class_prob_map=class_prob_map, classes_rank = classes_rank) # class_prob_map=class_prob_map
+            split_indice = class_agnostic_loss_guided_split(record_list, split_rate, poisoned_ids, sampling_method="method_2", class_prob_map=class_prob_map, classes_rank = classes_rank) # class_prob_map=class_prob_map
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch: # epoch:[90,120]
@@ -699,14 +799,15 @@ def defence_train(
 
             # 开始干净样本的挖掘
             print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids, sampling_method="method_2", class_prob_map=class_prob_map, classes_rank = classes_rank)
+            split_indice = meta_split(record_list, meta_record_list, split_rate, poisoned_ids, sampling_method="method_2", class_prob_map=class_prob_map, classes_rank = classes_rank)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
 
         # 开始clean pool进行监督学习,poisoned pool进行半监督学习    
-        xloader = DataLoader(xdata,batch_size=64, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
-        uloader = DataLoader(udata,batch_size=64, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
+        batch_size = 64
+        xloader = DataLoader(xdata,batch_size=batch_size, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
+        uloader = DataLoader(udata,batch_size=batch_size, num_workers=4, pin_memory=True, shuffle=True, drop_last=True)
         print("MixMatch training...")
         # 半监督训练参数
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
@@ -730,7 +831,7 @@ def defence_train(
         poison_test_result = linear_test(
             model, poisoned_test_dataset_loader, criterion,device
         )
-
+        # scheduler.step()
         # if scheduler is not None:
         #     scheduler.step()
         #     logger.info(
@@ -787,16 +888,16 @@ def defence_train(
         torch.save(saved_dict, latest_ckpt_path)
         print("Save the latest model to {}".format(latest_ckpt_path))
 
-        # 保存第59个epoch(eg.stage1（class aware训练结束点）)
-        if epoch == 59:
-            latest_ckpt_path = os.path.join(ckpt_dir, "epoch59.pt")
-            torch.save(saved_dict, latest_ckpt_path)
-            print("Save the latest model to {}".format(latest_ckpt_path))
-        # 保存第60个epoch(eg.stage1（class agnostic首个保存点）)
-        if epoch == 60:
-            latest_ckpt_path = os.path.join(ckpt_dir, "epoch60.pt")
-            torch.save(saved_dict, latest_ckpt_path)
-            print("Save the latest model to {}".format(latest_ckpt_path))
+        # # 保存第59个epoch(eg.stage1（class aware训练结束点）)
+        # if epoch == 59:
+        #     latest_ckpt_path = os.path.join(ckpt_dir, "epoch59.pt")
+        #     torch.save(saved_dict, latest_ckpt_path)
+        #     print("Save the latest model to {}".format(latest_ckpt_path))
+        # # 保存第60个epoch(eg.stage1（class agnostic首个保存点）)
+        # if epoch == 60:
+        #     latest_ckpt_path = os.path.join(ckpt_dir, "epoch60.pt")
+        #     torch.save(saved_dict, latest_ckpt_path)
+        #     print("Save the latest model to {}".format(latest_ckpt_path))
             
     print("OurMethod_train() End")
     return best_ckpt_path,latest_ckpt_path

@@ -37,6 +37,9 @@ from codes.transform_dataset import gtsrb_BadNets, gtsrb_IAD, gtsrb_Refool, gtsr
 from codes.transform_dataset import imagenet_BadNets, imagenet_IAD, imagenet_Refool, imagenet_WaNet
 
 
+# log描述
+print("基于class rank, backdoor微调, 剔除ASD的第一阶段, 整体还是基于ASD, unfreeze")
+
 # 进程名称
 proctitle = f"OurMethod|{config.dataset_name}|{config.model_name}|{config.attack_name}"
 setproctitle.setproctitle(proctitle)
@@ -54,15 +57,14 @@ backdoor_model = backdoor_data["backdoor_model"]
 poisoned_ids = backdoor_data["poisoned_ids"]
 poisoned_testset = backdoor_data["poisoned_testset"] # 预制的poisoned_testset
 # 得到一个raw model
-victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
-
+# victim_model = get_model(dataset_name=config.dataset_name, model_name=config.model_name)
 
 # 加载stage1后(epoch=59完成后)的模型权重
 # 权重路径
-dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/DenseNet/BadNets/2025-04-21_14:55:01/ckpt/epoch59.pt"
-dict_data = torch.load(dict_path,map_location="cpu")
-# 权重load到模型中
-victim_model.load_state_dict(dict_data["model_state_dict"])
+# dict_path = "/data/mml/backdoor_detect/experiments/OurMethod/CIFAR10/DenseNet/BadNets/2025-04-21_14:55:01/ckpt/epoch59.pt"
+# dict_data = torch.load(dict_path,map_location="cpu")
+# # 权重load到模型中
+# victim_model.load_state_dict(dict_data["model_state_dict"])
 
 
 
@@ -172,11 +174,13 @@ elif config.dataset_name == "ImageNet2012_subset":
 else:
     raise Exception("数据集名称错误")
 
+
+
 # 开始防御式训练
 print("开始OurMethod防御式训练")
 time_1 = time.perf_counter()
 best_ckpt_path, latest_ckpt_path = defence_train(
-        model = victim_model, # victim model
+        model = backdoor_model, # victim model 
         class_num = config.class_num, # 分类数量
         poisoned_train_dataset = poisoned_trainset, # 有污染的训练集
         poisoned_ids = poisoned_ids, # 被污染的样本id list
@@ -204,8 +208,8 @@ print(f"防御式训练完成，共耗时{time_2-time_1}秒")
 print("开始评估防御结果")
 time_3 = time.perf_counter()
 best_model_ckpt = torch.load(best_ckpt_path, map_location="cpu")
-victim_model.load_state_dict(best_model_ckpt["model_state_dict"])
-new_model = victim_model
+backdoor_model.load_state_dict(best_model_ckpt["model_state_dict"])
+new_model = backdoor_model
 # (1) 评估新模型在clean testset上的acc
 em = EvalModel(new_model,clean_testset,torch.device(f"cuda:{config.gpu_id}"),)
 clean_test_acc = em.eval_acc()
@@ -221,15 +225,6 @@ clean_test_acc = model_train_test.test(
 # (2) 评估新模型在poisoned testset上的acc
 em = EvalModel(new_model,poisoned_testset,torch.device(f"cuda:{config.gpu_id}"),)
 poisoned_test_acc = em.eval_acc()
-'''
-poisoned_test_acc = model_train_test.test(
-    model = new_model,
-    testset = poisoned_testset,
-    batch_size = 128,
-    device = torch.device(f"cuda:{config.gpu_id}"),
-    loss_fn = nn.CrossEntropyLoss()
-    )
-'''
 print({'clean_test_acc':clean_test_acc, 'poisoned_test_acc':poisoned_test_acc})
 time_4 = time.perf_counter()
 print(f"评估防御结果结束，共耗时{time_4-time_2}秒")

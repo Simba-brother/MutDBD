@@ -17,8 +17,9 @@ from codes.ourMethod.loss import SCELoss
 import matplotlib.pyplot as plt
 from codes.asd.log import Record
 import torch
+from torch.optim.lr_scheduler import StepLR,MultiStepLR
 import setproctitle
-from torch.utils.data import DataLoader,Subset,ConcatDataset
+from torch.utils.data import DataLoader,Subset,ConcatDataset,random_split
 import torch.nn as nn
 import torch.optim as optim
 from codes import config
@@ -26,7 +27,8 @@ from codes.ourMethod.defence import defence_train
 from codes.scripts.dataset_constructor import *
 from codes.models import get_model
 from codes.common.eval_model import EvalModel
-
+from sklearn.model_selection import KFold
+from codes.asd.loss import SCELoss, MixMatchLoss
 # from codes.tools import model_train_test
 # cifar10
 from codes.poisoned_dataset.cifar10.BadNets.generator import gen_poisoned_dataset as cifar10_badNets_gen_poisoned_dataset
@@ -127,17 +129,335 @@ def draw(isPoisoned_list,file_name):
     plt.savefig(f"imgs/{file_name}", bbox_inches='tight', pad_inches=0.0, dpi=800)
     plt.close()
 
-def train(model,device, dataset, seedSet=None, num_epoch=10,lr=1e-3,logger=None):
+def train_epoch(model,dataset_loader,loss_fn,device,optimizer):
+    model.train()
+    step_loss_list = []
+    for _, batch in enumerate(dataset_loader):
+        optimizer.zero_grad()
+        X = batch[0].to(device)
+        Y = batch[1].to(device)
+        P_Y = model(X)
+        loss = loss_fn(P_Y, Y)
+        loss.backward()
+        optimizer.step()
+        step_loss_list.append(loss.item())
+    epoch_loss = sum(step_loss_list) / len(step_loss_list)
+    return model, epoch_loss
+    
+
+def train_dynamic(model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, num_epoch=30, lr=1e-3, batch_size=64, logger=None):
+    # model = unfreeze(model)
+    model.to(device)
+    optimizer = optim.Adam(model.parameters(),lr=lr)
+    scheduler = MultiStepLR(optimizer, milestones=[10,20], gamma=0.1)
+    loss_function = nn.CrossEntropyLoss()
+    best_loss = float('inf')
+    choice_rate = 0.8
+    pre_choiced_sample_id_list = None
+    for epoch in range(num_epoch):
+        choicedSet,choiced_sample_id_list = build_choiced_dataset(model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+        if pre_choiced_sample_id_list:
+            inter_num = len(set(choiced_sample_id_list) & set(pre_choiced_sample_id_list))
+            logger.info(f"和上次选择的训练集的交集数量:{inter_num}") 
+        availableSet = ConcatDataset([seedSet,choicedSet])
+        dataset_loader = DataLoader(availableSet,batch_size=batch_size,shuffle=True,num_workers=4)
+        model,epoch_loss = train_epoch(model,dataset_loader,loss_function,device,optimizer)
+        scheduler.step()
+        logger.info(f"epoch:{epoch},loss:{epoch_loss}")
+        pre_choiced_sample_id_list = choiced_sample_id_list
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            best_model = model
+    return best_model, model
+
+
+def train_KFold(model_o,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, num_epoch=30, lr=1e-3, batch_size=64, logger=None):
+    choice_rate = 0.6
+    choicedSet,choiced_sample_id_list = build_choiced_dataset(model_o,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+    availableSet = ConcatDataset([seedSet,choicedSet])
+    # K折交叉验证
+    kf = KFold(n_splits=5,shuffle=True,random_state=666)
+    # 用于存储每折的性能指标
+    max_acc = 0
+    best_model = None
+    for fold, (train_idx, test_idx) in enumerate(kf.split(availableSet)):
+        train_subset = Subset(availableSet,train_idx)
+        val_subset = Subset(availableSet,test_idx)
+        # 创建DataLoader
+        train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+        # 初始模型
+        model = copy.deepcopy(model_o)
+        # 初始优化器
+        optimizer = optim.Adam(model.parameters(),lr=lr)
+        # 初始lr调整器
+        scheduler = MultiStepLR(optimizer, milestones=[10,20], gamma=0.1)
+        # 初始化损失函数
+        loss_function = nn.CrossEntropyLoss()
+        # 训练模型
+        model.train()
+        model.to(device)
+        for epoch in range(num_epoch):
+            for _, batch in enumerate(train_loader):
+                optimizer.zero_grad()
+                X = batch[0].to(device)
+                Y = batch[1].to(device)
+                P_Y = model(X)
+                loss = loss_function(P_Y, Y)
+                loss.backward()
+                optimizer.step()
+        # 模型评估
+        em = EvalModel(model,val_subset,device,batch_size=batch_size)
+        acc = em.eval_acc()
+        logger.info(f"Fold:{fold+1},eval_ACC:{acc}")
+        if acc > max_acc:
+            max_acc = acc
+            best_model = model
+    return best_model,model
+
+
+def train_with_eval(model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, num_epoch=30, lr=1e-3, batch_size=64, logger=None):
+    choice_rate = 0.6
+    choicedSet,choiced_sample_id_list = build_choiced_dataset(model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+    availableSet = ConcatDataset([seedSet,choicedSet])
+    max_acc = 0
+    best_model = None
+    train_loader = DataLoader(availableSet, batch_size=batch_size, shuffle=True)
+    # 初始优化器
+    optimizer = optim.Adam(model.parameters(),lr=lr)
+    # 初始lr调整器
+    scheduler = MultiStepLR(optimizer, milestones=[10,20], gamma=0.1)
+    # 初始化损失函数
+    loss_function = nn.CrossEntropyLoss()
+    # 训练模型
+    model.train()
+    model.to(device)
+    for epoch in range(num_epoch):
+        for _, batch in enumerate(train_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+        # 每个轮次的模型评估
+        em = EvalModel(model,seedSet,device,batch_size=batch_size)
+        acc = em.eval_acc()
+        logger.info(f"Epoch:{epoch+1},eval_ACC:{acc}")
+        if acc > max_acc:
+            max_acc = acc
+            best_model = model
+        scheduler.step()
+    return best_model,model
+
+
+def interleave_offsets(batch, nu):
+    groups = [batch // (nu + 1)] * (nu + 1)
+    for x in range(batch - sum(groups)):
+        groups[-x - 1] += 1
+    offsets = [0]
+    for g in groups:
+        offsets.append(offsets[-1] + g)
+    assert offsets[-1] == batch
+
+    return offsets
+
+def interleave(xy, batch):
+    nu = len(xy) - 1
+    offsets = interleave_offsets(batch, nu)
+    xy = [[v[offsets[p] : offsets[p + 1]] for p in range(nu + 1)] for v in xy]
+    for i in range(1, nu + 1):
+        xy[0][i], xy[i][i] = xy[i][i], xy[0][i]
+
+    return [torch.cat(v, dim=0) for v in xy]
+
+def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, device, **kwargs):
+    xiter = iter(xloader) # 有监督
+    uiter = iter(uloader) # 无监督
+    model.train()
+    batch_loss_list = []
+    for batch_idx in range(kwargs["train_iteration"]):
+        try:
+            # 带标签中的一个批次
+            xbatch = next(xiter) 
+            xinput,xtarget = xbatch["img"], xbatch["target"]
+        except:
+            # 如果迭代器走到最后无了,则从头再来迭代
+            xiter = iter(xloader)
+            xbatch = next(xiter)
+            xinput,xtarget = xbatch["img"], xbatch["target"]
+        try:
+            # 无标签batch
+            ubatch = next(uiter) # 不带标签中的一个批次
+            uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+        except:
+            # 如果迭代器走到最后无了,则从头再来迭代
+            uiter = iter(uloader)
+            ubatch = next(uiter)
+            uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+
+        batch_size = xinput.size(0)
+        xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
+            1, xtarget.view(-1, 1).long(), 1
+        )
+        xinput = xinput.to(device) # 带标签批次
+        xtarget = xtarget.to(device) 
+        uinput1 = uinput1.to(device) # 不带标签批次
+        uinput2 = uinput2.to(device)
+        # uinput2 = uinput2.cuda(gpu, non_blocking=True)
+
+        with torch.no_grad():
+            # compute guessed labels of unlabel samples
+            uoutput1 = model(uinput1)
+            uoutput2 = model(uinput2)
+            p = (torch.softmax(uoutput1, dim=1) + torch.softmax(uoutput2, dim=1)) / 2
+            pt = p ** (1 / kwargs["temperature"])
+            utarget = pt / pt.sum(dim=1, keepdim=True)
+            utarget = utarget.detach()
+
+
+        all_input = torch.cat([xinput, uinput1, uinput2], dim=0)
+        all_target = torch.cat([xtarget, utarget, utarget], dim=0)
+        l = np.random.beta(kwargs["alpha"], kwargs["alpha"])
+        l = max(l, 1 - l)
+        idx = torch.randperm(all_input.size(0))
+        input_a, input_b = all_input, all_input[idx]
+        target_a, target_b = all_target, all_target[idx]
+        mixed_input = l * input_a + (1 - l) * input_b
+        mixed_target = l * target_a + (1 - l) * target_b
+
+        # interleave labeled and unlabeled samples between batches to get correct batchnorm calculation
+        mixed_input = list(torch.split(mixed_input, batch_size))
+        mixed_input = interleave(mixed_input, batch_size)
+
+        logit = [model(mixed_input[0])]
+        for input in mixed_input[1:]:
+            logit.append(model(input))
+
+        # put interleaved samples back
+        logit = interleave(logit, batch_size)
+        xlogit = logit[0]
+        ulogit = torch.cat(logit[1:], dim=0)
+
+        # 计算损失
+        Lx, Lu, lambda_u = criterion(
+            xlogit,
+            mixed_target[:batch_size],
+            ulogit,
+            mixed_target[batch_size:],
+            epoch + batch_idx / kwargs["train_iteration"],
+        )
+        # 半监督损失
+        loss = Lx + lambda_u * Lu
+        optimizer.zero_grad()
+        loss.backward() # 该批次反向传播
+        optimizer.step()
+        batch_loss_list.append(loss.item())
+    epoch_avg_loss = round(sum(batch_loss_list) / len(batch_loss_list),5)
+    return epoch_avg_loss
+
+
+class MixMatchDataset(Dataset):
+        """Semi-supervised MixMatch dataset.
+
+        Args:
+            dataset (Dataset): The dataset to be wrapped.
+            semi_idx (np.array): An 0/1 (labeled/unlabeled) array with shape ``(len(dataset), )``.
+            labeled (bool): If True, creates dataset from labeled set, otherwise creates from unlabeled
+                set (default: True).
+        """
+
+        def __init__(self, dataset, semi_idx, labeled=True):
+            super(MixMatchDataset, self).__init__()
+            # self.dataset = copy.deepcopy(dataset)
+            # self.dataset_2 = copy.deepcopy(dataset_2)
+            self.dataset = dataset
+            # self.dataset_2 = dataset_2
+            if labeled:
+                # 有标签的情况，从semi_id array中找到对应的索引
+                # 比如arr = np.array([1,0,1,0])
+                # np.nonzero(arr==1)[0]就为np.array([0,2]),self.semi_indice,__len__类的魔术方法就使用这个
+                # np.nonzero(arr==0)[0]就为np.array([1,3])
+                self.semi_indice = np.nonzero(semi_idx == 1)[0]
+            else:
+                self.semi_indice = np.nonzero(semi_idx == 0)[0]
+            self.labeled = labeled
+            # self.prefetch = self.dataset.prefetch
+            # if self.prefetch:
+            #     self.mean, self.std = self.dataset.mean, self.dataset.std
+
+        def __getitem__(self, index):
+            # index in [0,len(self.semi_indice)-1]
+            if self.labeled:
+                item1 = self.dataset[self.semi_indice[index]] # self.semi_indice[index] = sampl_id(datset)
+                img = item1[0]
+                target = item1[1]
+                item = {}
+                item["img"] = img
+                item["target"] = target
+                item["labeled"] = True
+            else:
+                item1 = self.dataset[self.semi_indice[index]]
+                item2 = self.dataset[self.semi_indice[index]]
+                # item2 = self.dataset_2[self.semi_indice[index]]
+                img1 = item1[0]
+                img2 = item2[0]
+                item = {}
+                item["img1"] = img1
+                item["img2"] = img2
+                item["target"] = item1[1]
+                item["labeled"] = False
+            return item
+
+        def __len__(self):
+            # 这里的semi_indice其实就时选择出的带标签或不带标签的样本索引array
+            return len(self.semi_indice)
+
+def train_with_semi(model,device,seedSet,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, num_epoch=30, lr=1e-3, batch_size=64, logger=None):
+    choice_rate = 0.6
+    x_id_set, u_id_set  = split_sample_id_list(model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger)
+    # 0表示在污染池,1表示在clean pool
+    flag_list = [0] * len(poisoned_trainset)
+    for i in range(len(flag_list)):
+        if i in x_id_set:
+            flag_list[i] = 1
+    flag_array = np.array(flag_list)
+    xdata = MixMatchDataset(poisoned_trainset, flag_array, labeled=True)
+    udata = MixMatchDataset(poisoned_trainset, flag_array, labeled=False)
+    xloader = DataLoader(xdata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
+    uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
+    model.train()
+    model.to(device)
+    semi_criterion = MixMatchLoss(rampup_length=num_epoch, lambda_u=15) # rampup_length = 120  same as epoches
+    # 损失函数对象放到gpu上
+    semi_criterion.to(device)
+    optimizer = optim.Adam(model.parameters(),lr=lr)
+    # scheduler = MultiStepLR(optimizer, milestones=[10,20,30,40], gamma=0.1)
+    batch_num = int(len(poisoned_trainset) / batch_size)
+    semi_mixmatch = {"train_iteration": batch_num,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
+    best_loss = float('inf')
+    best_model = None
+    for epoch in range(num_epoch):
+        epoch_loss = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
+        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss}")
+        # scheduler.step()
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            best_model = model
+    return best_model,model
+
+def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64, logger=None, use_lr_scheduer=False):
     model.train()
     model.to(device)
     dataset_loader = DataLoader(
             dataset, # 非预制
-            batch_size=64,
+            batch_size=batch_size,
             shuffle=True, # 打乱
             num_workers=4)
-    optimizer = optim.Adam(model.parameters(),lr=lr)
+    optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=1e-4)
+    if use_lr_scheduer:
+        scheduler = MultiStepLR(optimizer, milestones=[20,30,40], gamma=0.1)
     loss_function = nn.CrossEntropyLoss()
-    # optimal_clean_acc = -1
     optimal_loss = float('inf')
     best_model = None
     for epoch in range(num_epoch):
@@ -151,19 +471,54 @@ def train(model,device, dataset, seedSet=None, num_epoch=10,lr=1e-3,logger=None)
             loss.backward()
             optimizer.step()
             step_loss_list.append(loss.item())
+        if use_lr_scheduer:
+            scheduler.step()
         epoch_loss = sum(step_loss_list) / len(step_loss_list)
-        '''
-        if seedSet:
-            e = EvalModel(model,seedSet,device,batch_size=8)
-            acc = e.eval_acc()
-            if acc > optimal_clean_acc:
-                best_model = model
-                optimal_clean_acc = acc
-        '''
         if epoch_loss < optimal_loss:
             optimal_loss = epoch_loss
             best_model = model
         logger.info(f"epoch:{epoch},loss:{epoch_loss}")
+    return model,best_model
+
+def train_oneFold(model,device, dataset, seedSet=None, num_epoch=30, lr=1e-3, batch_size=64, logger=None, use_lr_scheduer=False):
+    model.train()
+    model.to(device)
+    total_size = len(dataset)
+    train_size = int(0.8*len(dataset))
+    val_size = total_size - train_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+    val_dataset = ConcatDataset([seedSet,val_dataset])
+    train_dataset_loader = DataLoader(
+            train_dataset, # 非预制
+            batch_size=batch_size,
+            shuffle=True, # 打乱
+            num_workers=4)
+    optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=1e-4)
+    if use_lr_scheduer:
+        scheduler = MultiStepLR(optimizer, milestones=[10,20], gamma=0.1)
+    loss_function = nn.CrossEntropyLoss()
+    
+    best_val_acc = 0
+    best_model = None
+    for epoch in range(num_epoch):
+        step_loss_list = []
+        for _, batch in enumerate(train_dataset_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+            step_loss_list.append(loss.item())
+        if use_lr_scheduer:
+            scheduler.step()
+        e = EvalModel(model,val_dataset,device,batch_size=32)
+        val_acc = e.eval_acc()
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            best_model = model
+        logger.info(f"epoch:{epoch},val_acc:{val_acc}")
     return model,best_model
 
 def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
@@ -188,6 +543,11 @@ def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
     else:
         raise Exception("数据集名称错误")
     return classes_rank
+
+def unfreeze(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = True
+    return model
 
 def freeze_model(model,dataset_name,model_name):
     if dataset_name == "CIFAR10" or dataset_name == "GTSRB":
@@ -236,8 +596,6 @@ def freeze_model(model,dataset_name,model_name):
         raise Exception("模型不存在")
     return model
 
-
-
 def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device,logger):
     # FT前模型评估
     e = EvalModel(model,filtered_poisoned_testset,device)
@@ -264,8 +622,6 @@ def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device,log
     draw(isPoisoned_list,file_name="retrain10epoch_loss.png")
     ranked_sample_id_list, isPoisoned_list = sort_sample_id(model,class_rank)
     draw(isPoisoned_list,file_name="retrain10epoch_lossAndClassRank.png")
-    
-
 
 def ft(model,device,dataset,epoch,lr,logger):
     '''
@@ -390,7 +746,7 @@ def our_ft(
                                                 poisoned_evalset_loader,
                                                 poisoned_ids,
                                                 class_rank)
-    choice_rate = 0.6
+    choice_rate = 0.7
     num = int(len(ranked_sample_id_list)*choice_rate)
     logger.info(f"采样比例:{choice_rate},采样的数量:{num}")
     choiced_sample_id_list = ranked_sample_id_list[:num]
@@ -410,7 +766,7 @@ def our_ft(
     # 合并种子集和选择集
     availableSet = ConcatDataset([seedSet,choicedSet])
     # 微调后门模型 
-    num_epoch = 30
+    num_epoch = 50
     lr = 1e-3
     logger.info(f"轮次为:{num_epoch},学习率为:{lr}")
     if assistant_model and defense_model_flag == "assistant":
@@ -418,7 +774,9 @@ def our_ft(
         last_defense_model, best_defense_model = train(best_ft_assitent_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr,logger=logger)
     else:
         logger.info(f"防御模型:后门模型")
-        last_defense_model, best_defense_model = train(best_BD_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr,logger=logger)
+        batch_size = 512
+        last_defense_model, best_defense_model = train(best_BD_model,device,dataset=availableSet,num_epoch=num_epoch,lr=lr, batch_size=batch_size, logger=logger, use_lr_scheduer=True)
+        # last_defense_model, best_defense_model = train_oneFold(best_BD_model,device,dataset=availableSet,seedSet=seedSet, num_epoch=num_epoch,lr=lr, batch_size=batch_size, logger=logger, use_lr_scheduer=False)
         
     '''6:评估我们防御后的的ASR和ACC'''
     logger.info("="*50)
@@ -426,8 +784,10 @@ def our_ft(
     logger.info("="*50)
 
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
-    logger.info(f"防御后:ASR:{asr}, ACC:{acc}")
+    logger.info(f"防御后bestmodel:ASR:{asr}, ACC:{acc}")
 
+    asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"防御后lastmodel:ASR:{asr}, ACC:{acc}")
 
     save_file_name = "best_defense_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
@@ -438,7 +798,151 @@ def our_ft(
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"防御后的last权重保存在:{save_file_path}")
+
+def build_choiced_dataset(ranker_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger):
+    # seed微调后排序一下样本
+    class_rank = get_classes_rank(dataset_name, model_name, attack_name, config.exp_root_dir)
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(
+                                                ranker_model,
+                                                device,
+                                                poisoned_evalset_loader,
+                                                poisoned_ids,
+                                                class_rank)
+    num = int(len(ranked_sample_id_list)*choice_rate)
+    choiced_sample_id_list = ranked_sample_id_list[:num]
+    remain_sample_id_list = ranked_sample_id_list[num:]
+    # 统计一下污染的含量
+    choiced_num = len(choiced_sample_id_list)
+    count = 0
+    for choiced_sample_id in choiced_sample_id_list:
+        if choiced_sample_id in poisoned_ids:
+            count += 1
+    logger.info(f"污染样本含量:{count}/{choiced_num}")
+    choicedSet = Subset(poisoned_trainset,choiced_sample_id_list)
+    remainSet = Subset(poisoned_trainset,remain_sample_id_list)
+    return choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list
+
+def split_sample_id_list(ranker_model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger):
+    # seed微调后排序一下样本
+    class_rank = get_classes_rank(dataset_name, model_name, attack_name, config.exp_root_dir)
+    ranked_sample_id_list, isPoisoned_list = sort_sample_id(
+                                                ranker_model,
+                                                device,
+                                                poisoned_evalset_loader,
+                                                poisoned_ids,
+                                                class_rank)
+    num = int(len(ranked_sample_id_list)*choice_rate)
+    choiced_sample_id_list = ranked_sample_id_list[:num]
+    remain_sample_id_list = ranked_sample_id_list[num:]
+
+    seed_set = set(seed_sample_id_list)
+    choice_set = set(choiced_sample_id_list)
+    x_set = seed_set.union(choice_set)
+    u_set = set(remain_sample_id_list)
+
+    # 统计一下污染的含量
+    choiced_num = len(choiced_sample_id_list)
+    count = 0
+    for choiced_sample_id in choiced_sample_id_list:
+        if choiced_sample_id in poisoned_ids:
+            count += 1
+    logger.info(f"污染样本含量:{count}/{choiced_num}")
+    return x_set, u_set
+
+
+def our_ft_2(
+        backdoor_model,
+        poisoned_testset,
+        filtered_poisoned_testset, 
+        clean_testset,
+        seedSet,
+        seed_sample_id_list,
+        exp_dir,
+        poisoned_ids,
+        poisoned_trainset,
+        poisoned_evalset_loader,
+        device,
+        class_num = 0,
+        logger = None):
     
+    '''1: 先评估一下后门模型的ASR和ACC'''
+    logger.info("第1步: 先评估一下后门模型的ASR和ACC")
+    asr,acc = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"后门模型的ASR:{asr},后门模型的ACC:{acc}")
+
+    logger.info(f"全体中毒测试集（poisoned_testset）数据量：{len(poisoned_testset)}")
+    logger.info(f"剔除了原来本属于target class的中毒测试集（filtered_poisoned_testset）数据量：{len(filtered_poisoned_testset)}")
+
+    '''2:种子微调模型'''
+    logger.info("第2步: 种子微调模型")
+    logger.info("种子集: 由每个类别中选择10个干净样本组成")
+    seed_num_epoch = 30
+    seed_lr = 1e-3
+    logger.info(f"种子微调轮次:{seed_num_epoch},学习率:{seed_lr}")
+
+    last_BD_model,best_BD_model = ft(backdoor_model,device,seedSet,seed_num_epoch,seed_lr,logger=logger)
+ 
+    logger.info("保存种子微调后门模型")
+    save_file_name = "best_BD_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(best_BD_model.state_dict(), save_file_path)
+    logger.info(f"基于后门模型进行种子微调后的训练损失最小的模型权重保存在:{save_file_path}")
+
+    save_file_name = "last_BD_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(last_BD_model.state_dict(), save_file_path)
+    logger.info(f"基于后门模型进行种子微调后的最后一轮次的模型(last_seed_model)权重保存在:{save_file_path}")
+
+    
+    '''3:评估一下种子微调后的ASR和ACC'''
+    
+    logger.info("第3步: 评估一下种子微调后模型的的ASR和ACC")
+    asr,acc = eval_asr_acc(best_BD_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
+
+    '''4:重训练'''
+    num_epoch = 30
+    lr = 1e-3
+    logger.info(f"设置重训练轮次为:{num_epoch},学习率为:{lr}")
+
+    # logger.info("train_dynamic_choice")
+    # best_defense_model, last_defense_model = train_dynamic(
+    #     best_BD_model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
+    #     num_epoch=num_epoch,lr=lr,batch_size=128,logger=logger)
+
+    # logger.info("KFold")
+    # best_defense_model,last_defense_model = train_KFold(
+    #     best_BD_model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
+    #     num_epoch=30, lr=1e-3, batch_size=64, logger=logger)
+
+    # logger.info("trainWithEval")
+    # best_defense_model,last_defense_model = train_with_eval(
+    #     best_BD_model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
+    #     num_epoch=30, lr=1e-3, batch_size=64, logger=logger)
+    
+    # logger.info("trainWithSemi")
+    # # best_BD_model = unfreeze(best_BD_model)
+    # best_defense_model,last_defense_model = train_with_semi(
+    #     best_BD_model,device,seedSet,seed_sample_id_list, poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
+    #     class_num, num_epoch=50, lr=1e-3, batch_size=128, logger=logger)
+
+    '''5:评估我们防御后的的ASR和ACC'''
+    asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"防御后best_model:ASR:{asr}, ACC:{acc}")
+
+    asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"防御后last_model:ASR:{asr}, ACC:{acc}")
+
+    save_file_name = "best_defense_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(best_defense_model.state_dict(), save_file_path)
+    logger.info(f"防御后的best权重保存在:{save_file_path}")
+
+    save_file_name = "last_defense_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(last_defense_model.state_dict(), save_file_path)
+    logger.info(f"防御后的last权重保存在:{save_file_path}")
+
 def get_fresh_dataset(poisoned_ids):
     if dataset_name == "CIFAR10":
         if attack_name == "BadNets":
@@ -482,7 +986,6 @@ def get_fresh_dataset(poisoned_ids):
             clean_trainset, clean_testset = imagenet_WaNet()
     return poisoned_trainset, clean_trainset, clean_testset
 
-
 def _get_logger(log_dir,log_file_name,logger_name):
     # 创建一个logger
     logger = logging.getLogger(logger_name)
@@ -504,8 +1007,7 @@ def _get_logger(log_dir,log_file_name,logger_name):
     logger.addHandler(file_handler)
     return logger
 
-
-def scene_single(dataset_name, model_name, attack_name, r_seed=666):
+def  scene_single(dataset_name, model_name, attack_name, r_seed=666):
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
     # 随机数种子
@@ -513,7 +1015,9 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     # 进程名称
     proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
-    log_dir = os.path.join("log/OurMethod/defence_train/retrain",dataset_name,model_name,attack_name)
+    log_base_dir = "log/OurMethod/defence_train/retrain"
+    log_test_dir = "log/temp"
+    log_dir = os.path.join(log_test_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
     
@@ -543,20 +1047,21 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
     poisoned_ids = backdoor_data["poisoned_ids"]
     # 预制的poisoned_testset
     poisoned_testset = backdoor_data["poisoned_testset"] 
+
     # 空白模型
-    mutated_model = get_model(dataset_name, model_name)
+    # mutated_model = get_model(dataset_name, model_name)
     # 某个变异模型
-    mutations_dir = os.path.join(
-        config.exp_root_dir,
-        "MutationModels",
-        dataset_name,
-        model_name,
-        attack_name
-    )
-    mutate_rate = 0.05
-    m_id = 3
-    logger.info(f"变异率:{mutate_rate}, id:{m_id}")
-    mutated_model.load_state_dict(torch.load(os.path.join(mutations_dir,str(mutate_rate),"Gaussian_Fuzzing",f"model_{m_id}.pth")))
+    # mutations_dir = os.path.join(
+    #     config.exp_root_dir,
+    #     "MutationModels",
+    #     dataset_name,
+    #     model_name,
+    #     attack_name
+    # )
+    # mutate_rate = 0.05
+    # m_id = 3
+    # logger.info(f"变异率:{mutate_rate}, id:{m_id}")
+    # mutated_model.load_state_dict(torch.load(os.path.join(mutations_dir,str(mutate_rate),"Gaussian_Fuzzing",f"model_{m_id}.pth")))
 
     # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
     poisoned_trainset, clean_trainset, clean_testset = get_fresh_dataset(poisoned_ids)
@@ -637,24 +1142,42 @@ def scene_single(dataset_name, model_name, attack_name, r_seed=666):
         poisoned_trainset,
         poisoned_evalset_loader,
         device,
-        assistant_model = mutated_model,
+        assistant_model = None,
         defense_model_flag = "backdoor", # str: assistant | backdoor
         logger = logger)
+    
+    # our_ft_2(
+    #     backdoor_model,
+    #     poisoned_testset,
+    #     filtered_poisoned_testset, 
+    #     clean_testset,
+    #     seedSet,
+    #     seed_sample_id_list,
+    #     exp_dir,
+    #     poisoned_ids,
+    #     poisoned_trainset,
+    #     poisoned_evalset_loader,
+    #     device,
+    #     class_num=class_num,
+    #     logger = logger)
     logger.info(f"{proctitle}实验场景结束")
 
 if __name__ == "__main__":
-
+    
     gpu_id = 1
     r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
 
-    # dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
-    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    # attack_name = "BadNets" # BadNets, IAD, Refool, WaNet
-    # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
-    for r_seed in [666,667,668]:
-        for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                    scene_single(dataset_name,model_name,attack_name,r_seed)
+    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
+    attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
+    class_num = 30
+    scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
+
+
+    # for r_seed in [666,667,668]:
+    #     for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #                 scene_single(dataset_name,model_name,attack_name,r_seed)

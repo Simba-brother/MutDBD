@@ -401,11 +401,12 @@ def defence_train(
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
         # 开始半监督训练
-        # 开始clean pool进行监督学习,poisoned pool进行半监督学习    
+        # 开始clean pool进行监督学习,poisoned pool进行半监督学习
+        batch_size = 64
         xloader = DataLoader(xdata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
         uloader = DataLoader(udata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
         print("MixMatch training...")
-        # 半监督训练参数,1024哥batch
+        # 半监督训练参数,固定1024个batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
         poison_train_result = mixmatch_train(
             model,

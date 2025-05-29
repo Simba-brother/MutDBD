@@ -55,9 +55,11 @@ class MixMatchLoss(nn.Module):
         self.current_lambda_u = lambda_u
 
     def linear_rampup(self, epoch):
+        # epoch越接近epoch_total，越解决初始lambda
         if self.rampup_length == 0:
             return 1.0
         else:
+            # 在迭代轮次初期 lambda_u会比较小
             current = np.clip(epoch / self.rampup_length, 0.0, 1.0)
             self.current_lambda_u = float(current) * self.lambda_u
 

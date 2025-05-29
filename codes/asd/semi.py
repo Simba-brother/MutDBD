@@ -140,7 +140,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     model.train()
     
     start = time.time()
-    for batch_idx in range(kwargs["train_iteration"]): # 1024个batch
+    for batch_idx in range(kwargs["train_iteration"]): 
 
         # data_load_start_time = time.perf_counter()
         try:
