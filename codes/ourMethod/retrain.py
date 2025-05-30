@@ -338,7 +338,6 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
         logit = interleave(logit, batch_size)
         xlogit = logit[0]
         ulogit = torch.cat(logit[1:], dim=0)
-
         # 计算损失
         Lx, Lu, lambda_u = criterion(
             xlogit,
@@ -413,14 +412,13 @@ class MixMatchDataset(Dataset):
             # 这里的semi_indice其实就时选择出的带标签或不带标签的样本索引array
             return len(self.semi_indice)
 
-def train_with_semi(model,device,seedSet,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, num_epoch=30, lr=1e-3, batch_size=64, logger=None):
-    choice_rate = 0.6
+def train_with_semi(model,device,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, logger,
+                    choice_rate=0.6, epoch_num=120, batch_num = 1024, lr=2e-3, batch_size=64):
     x_id_set, u_id_set  = split_sample_id_list(model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger)
     # 0表示在污染池,1表示在clean pool
     flag_list = [0] * len(poisoned_trainset)
-    for i in range(len(flag_list)):
-        if i in x_id_set:
-            flag_list[i] = 1
+    for x_id in x_id_set:
+        flag_list[x_id] = 1
     flag_array = np.array(flag_list)
     xdata = MixMatchDataset(poisoned_trainset, flag_array, labeled=True)
     udata = MixMatchDataset(poisoned_trainset, flag_array, labeled=False)
@@ -428,16 +426,15 @@ def train_with_semi(model,device,seedSet,seed_sample_id_list,poisoned_trainset, 
     uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
     model.train()
     model.to(device)
-    semi_criterion = MixMatchLoss(rampup_length=num_epoch, lambda_u=15) # rampup_length = 120  same as epoches
+    semi_criterion = MixMatchLoss(rampup_length=epoch_num, lambda_u=75) # rampup_length = 120  same as epoches
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     optimizer = optim.Adam(model.parameters(),lr=lr)
     # scheduler = MultiStepLR(optimizer, milestones=[10,20,30,40], gamma=0.1)
-    batch_num = int(len(poisoned_trainset) / batch_size)
     semi_mixmatch = {"train_iteration": batch_num,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
     best_loss = float('inf')
     best_model = None
-    for epoch in range(num_epoch):
+    for epoch in range(epoch_num):
         epoch_loss = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
         logger.info(f"Epoch:{epoch+1},loss:{epoch_loss}")
         # scheduler.step()
@@ -862,8 +859,9 @@ def our_ft_2(
         poisoned_trainset,
         poisoned_evalset_loader,
         device,
-        class_num = 0,
-        logger = None):
+        class_num,
+        logger,
+        blank_model = None):
     
     '''1: 先评估一下后门模型的ASR和ACC'''
     logger.info("第1步: 先评估一下后门模型的ASR和ACC")
@@ -901,9 +899,7 @@ def our_ft_2(
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
     '''4:重训练'''
-    num_epoch = 30
-    lr = 1e-3
-    logger.info(f"设置重训练轮次为:{num_epoch},学习率为:{lr}")
+    
 
     # logger.info("train_dynamic_choice")
     # best_defense_model, last_defense_model = train_dynamic(
@@ -921,10 +917,21 @@ def our_ft_2(
     #     num_epoch=30, lr=1e-3, batch_size=64, logger=logger)
     
     logger.info("trainWithSemi")
-    # best_BD_model = unfreeze(best_BD_model)
+    if blank_model is None:
+        best_BD_model = unfreeze(best_BD_model)
+        retrain_model = best_BD_model
+    if blank_model:
+        logger.info("retrain空白模型")
+        retrain_model = blank_model
+    epoch_num = 120
+    batch_num = 1024
+    lr = 2e-3
+    batch_size = 64
+    choice_rate = 0.6
+    logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
     best_defense_model,last_defense_model = train_with_semi(
-        best_BD_model,device,seedSet,seed_sample_id_list, poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
-        class_num, num_epoch=50, lr=1e-3, batch_size=128, logger=logger)
+        retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
+        class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
 
     '''5:评估我们防御后的的ASR和ACC'''
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
@@ -933,6 +940,7 @@ def our_ft_2(
     asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
     logger.info(f"防御后last_model:ASR:{asr}, ACC:{acc}")
 
+    '''
     save_file_name = "best_defense_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(best_defense_model.state_dict(), save_file_path)
@@ -942,6 +950,7 @@ def our_ft_2(
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"防御后的last权重保存在:{save_file_path}")
+    '''
 
 def get_fresh_dataset(poisoned_ids):
     if dataset_name == "CIFAR10":
@@ -1007,7 +1016,50 @@ def _get_logger(log_dir,log_file_name,logger_name):
     logger.addHandler(file_handler)
     return logger
 
-def  scene_single(dataset_name, model_name, attack_name, r_seed=666):
+def try_semi_train(model,train_set,device,logger,class_num,
+                   label_rate = 0.6,batch_size = 64,epoch_num = 120,batch_num = 1024,lr = 2e-3):
+    '''
+    尝试一下半监督训练
+    '''
+    # ==划分数据集==
+    label_num = int(len(train_set)*label_rate)
+    id_list = list(range(len(train_set)))
+    choiced_id_list = random.sample(id_list, label_num)
+    # 0表示在ulabel,1表示在xlabel
+    flag_list = [0] * len(train_set)
+    for choiced_id in choiced_id_list:
+        flag_list[choiced_id] = 1
+    flag_array = np.array(flag_list)
+    xdata = MixMatchDataset(train_set, flag_array, labeled=True)
+    udata = MixMatchDataset(train_set, flag_array, labeled=False)
+    xloader = DataLoader(xdata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
+    uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
+    
+    # ==训练==
+    # 模型训练模式
+    model.train()
+    model.to(device)
+    # 模型参数优化器
+    optimizer = optim.Adam(model.parameters(),lr=lr)
+    # 半监督损失函数
+    semi_criterion = MixMatchLoss(rampup_length=epoch_num, lambda_u=75) # rampup_length = 120  same as epoches
+    # 损失函数对象放到gpu上
+    semi_criterion.to(device)
+    # scheduler = MultiStepLR(optimizer, milestones=[10,20,30,40], gamma=0.1)
+    # 半监督参数配置
+    semi_mixmatch = {"train_iteration": batch_num,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
+    best_loss = float('inf')
+    best_model = None
+    for epoch in range(epoch_num):
+        epoch_loss = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
+        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss}")
+        # scheduler.step()
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            best_model = model
+    return best_model,model
+
+def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
     # 随机数种子
@@ -1027,19 +1079,17 @@ def  scene_single(dataset_name, model_name, attack_name, r_seed=666):
     logger.info(f"进程名称:{proctitle}")
     logger.info(f"实验目录:{exp_dir}")
     logger.info(f"实验时间:{_time}")
-    logger.info("实验主代码：codes/ourMethod/retrain.py")
-    logger.info("="*50)
+    logger.info("实验主代码：codes/ourMethod/retrain.py/scene_single")
     logger.info("实验开始")
-    logger.info("="*50)
-    logger.info(f"随机数种子：{r_seed}")
-    logger.info("函数：our_ft()")
+    logger.info(f"随机数种子:{r_seed}")
     # 加载后门攻击配套数据
-    backdoor_data_path = os.path.join(config.exp_root_dir, 
-                                    "ATTACK",
-                                    dataset_name,
-                                    model_name,
-                                    attack_name,
-                                    "backdoor_data.pth")
+    backdoor_data_path = os.path.join(
+        config.exp_root_dir, 
+        "ATTACK",
+        dataset_name,
+        model_name,
+        attack_name,
+        "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
     # 后门模型
     backdoor_model = backdoor_data["backdoor_model"]
@@ -1049,7 +1099,8 @@ def  scene_single(dataset_name, model_name, attack_name, r_seed=666):
     poisoned_testset = backdoor_data["poisoned_testset"] 
 
     # 空白模型
-    # mutated_model = get_model(dataset_name, model_name)
+    blank_model = get_model(dataset_name, model_name)
+    
     # 某个变异模型
     # mutations_dir = os.path.join(
     #     config.exp_root_dir,
@@ -1131,46 +1182,134 @@ def  scene_single(dataset_name, model_name, attack_name, r_seed=666):
     device = torch.device(f"cuda:{gpu_id}")
 
     # 实验脚本
-    our_ft(
-        backdoor_model,
-        poisoned_testset,
-        filtered_poisoned_testset, 
-        clean_testset,
-        seedSet,
-        exp_dir,
-        poisoned_ids,
-        poisoned_trainset,
-        poisoned_evalset_loader,
-        device,
-        assistant_model = None,
-        defense_model_flag = "backdoor", # str: assistant | backdoor
-        logger = logger)
-    
-    # our_ft_2(
+    # our_ft(
     #     backdoor_model,
     #     poisoned_testset,
     #     filtered_poisoned_testset, 
     #     clean_testset,
     #     seedSet,
-    #     seed_sample_id_list,
     #     exp_dir,
     #     poisoned_ids,
     #     poisoned_trainset,
     #     poisoned_evalset_loader,
     #     device,
-    #     class_num=class_num,
+    #     assistant_model = None,
+    #     defense_model_flag = "backdoor", # str: assistant | backdoor
     #     logger = logger)
+    
+    our_ft_2(
+        backdoor_model,
+        poisoned_testset,
+        filtered_poisoned_testset, 
+        clean_testset,
+        seedSet,
+        seed_sample_id_list,
+        exp_dir,
+        poisoned_ids,
+        poisoned_trainset,
+        poisoned_evalset_loader,
+        device,
+        class_num,
+        logger,
+        blank_model = blank_model)
     logger.info(f"{proctitle}实验场景结束")
+
+
+def get_cleanTrainSet_cleanTestSet(dataset_name, attack_name):
+    clean_trainset = None
+    clean_testset = None
+    if dataset_name == "CIFAR10":
+        if attack_name == "BadNets":
+            clean_trainset, clean_testset = cifar10_BadNets()
+        elif attack_name == "IAD":
+            clean_trainset, _, clean_testset, _ = cifar10_IAD()
+        elif attack_name == "Refool":
+            clean_trainset, clean_testset = cifar10_Refool()
+        elif attack_name == "WaNet":
+            clean_trainset, clean_testset = cifar10_WaNet()
+    elif dataset_name == "GTSRB":
+        if attack_name == "BadNets":
+            clean_trainset, clean_testset = gtsrb_BadNets()
+        elif attack_name == "IAD":
+            clean_trainset, _, clean_testset, _ = gtsrb_IAD()
+        elif attack_name == "Refool":
+            clean_trainset, clean_testset = gtsrb_Refool()
+        elif attack_name == "WaNet":
+            clean_trainset, clean_testset = gtsrb_WaNet()
+    elif dataset_name == "ImageNet2012_subset":
+        if attack_name == "BadNets":
+            clean_trainset, clean_testset = imagenet_BadNets()
+        elif attack_name == "IAD":
+            clean_trainset, _, clean_testset, _ = imagenet_IAD()
+        elif attack_name == "Refool":
+            clean_trainset, clean_testset = imagenet_Refool()
+        elif attack_name == "WaNet":
+            clean_trainset, clean_testset = imagenet_WaNet()
+    return clean_trainset, clean_testset
+
+
+def get_backdoor(dataset_name,model_name,attack_name):
+    backdoor_data_path = os.path.join(
+        config.exp_root_dir, 
+        "ATTACK",
+        dataset_name,
+        model_name,
+        attack_name,
+        "backdoor_data.pth")
+    backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
+    # 后门模型
+    backdoor_model = backdoor_data["backdoor_model"]
+    # 训练数据集中中毒样本id
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # 预制的poisoned_testset
+    poisoned_testset = backdoor_data["poisoned_testset"] 
+    return backdoor_model, poisoned_ids, poisoned_testset
+
+
+def try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed):
+    # 获得实验时间戳年月日时分秒
+    _time = get_formattedDateTime()
+    # 随机数种子
+    np.random.seed(r_seed)
+    # 进程名称
+    proctitle = f"SemiTrain_Test|{dataset_name}|{model_name}|{attack_name}"
+    setproctitle.setproctitle(proctitle)
+    log_test_dir = "log/temp"
+    log_dir = os.path.join(log_test_dir,dataset_name,model_name,attack_name)
+    log_file_name = f"semiTrain_{_time}.log"
+    logger = _get_logger(log_dir,log_file_name,logger_name=_time)
+    logger.info(proctitle)
+    # 获得数据集
+    clean_trainset, clean_testset = get_cleanTrainSet_cleanTestSet(dataset_name,attack_name)
+    # 获得空白模型
+    # model = get_model(dataset_name, model_name)
+    # 获得后门模型
+    backdoor_model, poisoned_ids, poisoned_testset = get_backdoor(dataset_name, model_name, attack_name)
+    model = backdoor_model
+    device = torch.device("cuda:1")
+    # 开始半监督训练
+    best_model,last_model = try_semi_train(model,clean_trainset,device,logger,class_num,
+                   label_rate = 0.6,batch_size = 64,epoch_num = 120,batch_num = 1024,lr = 2e-3)
+    # 评估
+    e = EvalModel(best_model,clean_testset,device)
+    acc = e.eval_acc()
+    logger.info(f"bast_model ACC:{acc}",acc)
+    e = EvalModel(last_model,clean_testset,device)
+    acc = e.eval_acc()
+    logger.info(f"last_model ACC:{acc}")
+
 
 if __name__ == "__main__":
     
     gpu_id = 1
     r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
 
-    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
     attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
-    class_num = 30
+    class_num = 10
+
+    # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
     scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
