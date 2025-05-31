@@ -171,6 +171,7 @@ def train_dynamic(model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned
     return best_model, model
 
 
+
 def train_KFold(model_o,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, num_epoch=30, lr=1e-3, batch_size=64, logger=None):
     choice_rate = 0.6
     choicedSet,choiced_sample_id_list = build_choiced_dataset(model_o,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
@@ -412,16 +413,29 @@ class MixMatchDataset(Dataset):
             # 这里的semi_indice其实就时选择出的带标签或不带标签的样本索引array
             return len(self.semi_indice)
 
-def train_with_semi(model,device,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, logger,
+def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, logger,
                     choice_rate=0.6, epoch_num=120, batch_num = 1024, lr=2e-3, batch_size=64):
-    x_id_set, u_id_set  = split_sample_id_list(model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger)
-    # 0表示在污染池,1表示在clean pool
-    flag_list = [0] * len(poisoned_trainset)
-    for x_id in x_id_set:
-        flag_list[x_id] = 1
+    # x_id_set, u_id_set  = split_sample_id_list(choice_model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger)
+    # # 0表示在污染池,1表示在clean pool
+    # flag_list = [0] * len(poisoned_trainset)
+    # for x_id in x_id_set:
+    #     flag_list[x_id] = 1
+
+    
+    clean_trainset, clean_testset = get_cleanTrainSet_cleanTestSet("CIFAR10","WaNet")
+    label_num = int(len(clean_trainset)*choice_rate)
+    id_list = list(range(len(clean_trainset)))
+    choiced_id_list = random.sample(id_list, label_num)
+    # 0表示在ulabel,1表示在xlabel
+    flag_list = [0] * len(clean_trainset)
+    for choiced_id in choiced_id_list:
+        flag_list[choiced_id] = 1
+
     flag_array = np.array(flag_list)
-    xdata = MixMatchDataset(poisoned_trainset, flag_array, labeled=True)
-    udata = MixMatchDataset(poisoned_trainset, flag_array, labeled=False)
+    train_set = poisoned_trainset
+    model = retrain_model
+    xdata = MixMatchDataset(train_set, flag_array, labeled=True)
+    udata = MixMatchDataset(train_set, flag_array, labeled=False)
     xloader = DataLoader(xdata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
     uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
     model.train()
@@ -899,8 +913,20 @@ def our_ft_2(
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
     '''4:重训练'''
-    
 
+    # logger.info("朴素的retrain")
+    # choice_rate = 0.6
+    # choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+    # availableSet = ConcatDataset([seedSet,choicedSet])
+    # epoch_num = 120
+    # lr = 2e-3
+    # batch_size = 64
+    # # 解冻
+    # best_BD_model = unfreeze(best_BD_model)
+    # last_defense_model,best_defense_model = train(
+    #     best_BD_model,device,availableSet,num_epoch=epoch_num,
+    #     lr=lr, batch_size=batch_size, logger=logger, use_lr_scheduer=False)
+    
     # logger.info("train_dynamic_choice")
     # best_defense_model, last_defense_model = train_dynamic(
     #     best_BD_model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
@@ -915,8 +941,9 @@ def our_ft_2(
     # best_defense_model,last_defense_model = train_with_eval(
     #     best_BD_model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
     #     num_epoch=30, lr=1e-3, batch_size=64, logger=logger)
-    
+
     logger.info("trainWithSemi")
+    choice_model = best_BD_model
     if blank_model is None:
         best_BD_model = unfreeze(best_BD_model)
         retrain_model = best_BD_model
@@ -930,7 +957,7 @@ def our_ft_2(
     choice_rate = 0.6
     logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
     best_defense_model,last_defense_model = train_with_semi(
-        retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
+        None,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
         class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
 
     '''5:评估我们防御后的的ASR和ACC'''
@@ -1211,7 +1238,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
         device,
         class_num,
         logger,
-        blank_model = blank_model)
+        blank_model = None)
     logger.info(f"{proctitle}实验场景结束")
 
 
