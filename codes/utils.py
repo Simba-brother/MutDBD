@@ -101,7 +101,6 @@ def create_dir(dir_path):
     if os.path.exists(dir_path):
         pass
     else:
-        print(f"成功创建文件夹{dir_path}")
         os.makedirs(dir_path)
 
 def random_seed():

@@ -453,6 +453,7 @@ def defence_train(
         
         result_epochs_dir = os.path.join(save_dir, "result_epochs")
         create_dir(result_epochs_dir)
+        logger.info(f"创建文件夹:{result_epochs_dir}")
         save_file_name = f"result_epoch_{epoch}.data"
         save_file_path = os.path.join(result_epochs_dir, save_file_name)
         joblib.dump(result,save_file_path)
@@ -488,7 +489,7 @@ def defence_train(
             # clean testset acc的best model
             best_ckpt_path = os.path.join(ckpt_dir, "best_model.pt")
             torch.save(saved_dict, best_ckpt_path)
-            print("Save the best model to {}".format(best_ckpt_path))
+            logger.info("Save the best model to {}".format(best_ckpt_path))
         # 保存最新一次checkpoint
         latest_ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
         torch.save(saved_dict, latest_ckpt_path)
@@ -497,7 +498,7 @@ def defence_train(
         if epoch == total_epoch-2:
             secondtolast_path = os.path.join(ckpt_dir,"secondtolast.pth")
             torch.save(model.state_dict(),secondtolast_path)
-            print("Save the secondtolast model to {}".format(secondtolast_path))
+            logger.info("Save the secondtolast model to {}".format(secondtolast_path))
         # 保存第第59轮次结束的模型权重
         if epoch == 59:
             epoch_59_path = os.path.join(ckpt_dir,"epoch_59.pth")
