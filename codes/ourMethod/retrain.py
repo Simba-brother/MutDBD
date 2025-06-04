@@ -8,6 +8,7 @@ sys.excepthook = my_excepthook
 from codes.common.time_handler import get_formattedDateTime
 import os
 import time
+from collections import Counter
 import joblib
 import copy
 import queue
@@ -340,12 +341,15 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
         xlogit = logit[0]
         ulogit = torch.cat(logit[1:], dim=0)
         # 计算损失
+        class_weight = torch.FloatTensor([0.1,0.1,0.1,0.3,0.1,0.1,0.1,0.1,0.1,0.1])
+        class_weight = class_weight.to(device)
         Lx, Lu, lambda_u = criterion(
             xlogit,
             mixed_target[:batch_size],
             ulogit,
             mixed_target[batch_size:],
             epoch + batch_idx / kwargs["train_iteration"],
+            class_weight = class_weight
         )
         # 半监督损失
         loss = Lx + lambda_u * Lu
@@ -413,23 +417,63 @@ class MixMatchDataset(Dataset):
             # 这里的semi_indice其实就时选择出的带标签或不带标签的样本索引array
             return len(self.semi_indice)
 
-def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, logger,
-                    choice_rate=0.6, epoch_num=120, batch_num = 1024, lr=2e-3, batch_size=64):
-    # x_id_set, u_id_set  = split_sample_id_list(choice_model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger)
-    # # 0表示在污染池,1表示在clean pool
-    # flag_list = [0] * len(poisoned_trainset)
-    # for x_id in x_id_set:
-    #     flag_list[x_id] = 1
-
-    
+def train_with_subset(model,device,logger,
+                      choice_rate,epoch_num=120,lr=1e-3,batch_size=64):
     clean_trainset, clean_testset = get_cleanTrainSet_cleanTestSet("CIFAR10","WaNet")
     label_num = int(len(clean_trainset)*choice_rate)
     id_list = list(range(len(clean_trainset)))
     choiced_id_list = random.sample(id_list, label_num)
-    # 0表示在ulabel,1表示在xlabel
-    flag_list = [0] * len(clean_trainset)
-    for choiced_id in choiced_id_list:
-        flag_list[choiced_id] = 1
+    subset = Subset(clean_trainset, choiced_id_list)
+    train_loader = DataLoader(subset, batch_size=batch_size, shuffle=True)
+    # 初始优化器
+    optimizer = optim.Adam(model.parameters(),lr=lr)
+    # 初始lr调整器
+    scheduler = MultiStepLR(optimizer, milestones=[10,20], gamma=0.1)
+    # 初始化损失函数
+    loss_function = nn.CrossEntropyLoss()
+    # 训练模型
+    model.train()
+    model.to(device)
+    max_acc = 0
+    for epoch in range(epoch_num):
+        for _, batch in enumerate(train_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+        # 每个轮次的模型评估
+        em = EvalModel(model,clean_testset,device,batch_size=batch_size)
+        acc = em.eval_acc()
+        logger.info(f"Epoch:{epoch+1},clean_ACC:{acc}")
+        if acc > max_acc:
+            max_acc = acc
+            best_model = model
+            best_epoch = epoch
+        scheduler.step()
+    logger.info(f"Best Epoch:{best_epoch}")
+    return best_model,model
+
+def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, logger,
+                    choice_rate=0.6, epoch_num=120, batch_num = 1024, lr=2e-3, batch_size=64):
+
+    x_id_set, u_id_set  = split_sample_id_list(choice_model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger)
+    # 0表示在污染池,1表示在clean pool
+    flag_list = [0] * len(poisoned_trainset)
+    for x_id in x_id_set:
+        flag_list[x_id] = 1
+
+    
+    # clean_trainset, clean_testset = get_cleanTrainSet_cleanTestSet("CIFAR10","WaNet")
+    # label_num = int(len(clean_trainset)*choice_rate)
+    # id_list = list(range(len(clean_trainset)))
+    # choiced_id_list = random.sample(id_list, label_num)
+    # # 0表示在ulabel,1表示在xlabel
+    # flag_list = [0] * len(clean_trainset)
+    # for choiced_id in choiced_id_list:
+    #     flag_list[choiced_id] = 1
 
     flag_array = np.array(flag_list)
     train_set = poisoned_trainset
@@ -457,7 +501,8 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
             best_model = model
     return best_model,model
 
-def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64, logger=None, use_lr_scheduer=False):
+def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64, logger=None,
+          lr_milestones=None, class_weight = None, weight_decay=None):
     model.train()
     model.to(device)
     dataset_loader = DataLoader(
@@ -465,10 +510,16 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64, logger=No
             batch_size=batch_size,
             shuffle=True, # 打乱
             num_workers=4)
-    optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=1e-4)
-    if use_lr_scheduer:
-        scheduler = MultiStepLR(optimizer, milestones=[20,30,40], gamma=0.1)
-    loss_function = nn.CrossEntropyLoss()
+    if weight_decay:
+        optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=weight_decay)
+    else:
+        optimizer = optim.Adam(model.parameters(),lr=lr)
+    if lr_milestones:
+        scheduler = MultiStepLR(optimizer, milestones=lr_milestones, gamma=0.1)
+    if class_weight is None:
+        loss_function = nn.CrossEntropyLoss()
+    else:
+        loss_function = nn.CrossEntropyLoss(class_weight.to(device))
     optimal_loss = float('inf')
     best_model = None
     for epoch in range(num_epoch):
@@ -482,7 +533,7 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64, logger=No
             loss.backward()
             optimizer.step()
             step_loss_list.append(loss.item())
-        if use_lr_scheduer:
+        if lr_milestones:
             scheduler.step()
         epoch_loss = sum(step_loss_list) / len(step_loss_list)
         if epoch_loss < optimal_loss:
@@ -640,7 +691,8 @@ def ft(model,device,dataset,epoch,lr,logger):
     '''
     # 冻结
     freeze_model(model,dataset_name=dataset_name,model_name=model_name)
-    last_ft_model,best_ft_model = train(model,device,dataset,num_epoch=epoch,lr=lr,logger=logger)
+    last_ft_model,best_ft_model = train(model,device,dataset,num_epoch=epoch,lr=lr,
+                                        logger=logger)
     return last_ft_model,best_ft_model
 
 def eval_asr_acc(model,poisoned_set,clean_set,device):
@@ -861,6 +913,20 @@ def split_sample_id_list(ranker_model,seed_sample_id_list,poisoned_ids,poisoned_
     return x_set, u_set
 
 
+def get_class_weights(dataset):
+    label_counts = Counter()
+    for sample_id in range(len(dataset)):
+        label = dataset[sample_id][1]
+        label_counts[label] += 1
+    most_num = label_counts.most_common(1)[0][1]
+    weights = []
+    for cls in range(class_num):
+        num = label_counts[cls]
+        weights.append(round(most_num / num,1))
+    return label_counts, weights
+
+
+
 def our_ft_2(
         backdoor_model,
         poisoned_testset,
@@ -914,18 +980,27 @@ def our_ft_2(
 
     '''4:重训练'''
 
-    # logger.info("朴素的retrain")
-    # choice_rate = 0.6
-    # choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
-    # availableSet = ConcatDataset([seedSet,choicedSet])
-    # epoch_num = 120
-    # lr = 2e-3
-    # batch_size = 64
-    # # 解冻
+    logger.info("朴素的retrain")
+    choice_rate = 0.6
+    choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+    availableSet = ConcatDataset([seedSet,choicedSet])
+    epoch_num = 100
+    lr = 1e-3
+    batch_size = 512
+    weight_decay=1e-3
+    lr_milestones = [30,60,90]
+
+    # 解冻
     # best_BD_model = unfreeze(best_BD_model)
-    # last_defense_model,best_defense_model = train(
-    #     best_BD_model,device,availableSet,num_epoch=epoch_num,
-    #     lr=lr, batch_size=batch_size, logger=logger, use_lr_scheduer=False)
+    label_counter,weights = get_class_weights(availableSet)
+    logger.info(f"label_counter:{label_counter}")
+    logger.info(f"class_weights:{weights}")
+    class_weights = torch.FloatTensor(weights)
+    last_defense_model,best_defense_model = train(
+        best_BD_model,device,availableSet,num_epoch=epoch_num,
+        lr=lr, batch_size=batch_size, logger=logger, 
+        lr_milestones=lr_milestones,
+        class_weight=class_weights,weight_decay=weight_decay)
     
     # logger.info("train_dynamic_choice")
     # best_defense_model, last_defense_model = train_dynamic(
@@ -942,23 +1017,30 @@ def our_ft_2(
     #     best_BD_model,device,seedSet,poisoned_trainset, poisoned_ids, poisoned_evalset_loader,
     #     num_epoch=30, lr=1e-3, batch_size=64, logger=logger)
 
-    logger.info("trainWithSemi")
-    choice_model = best_BD_model
-    if blank_model is None:
-        best_BD_model = unfreeze(best_BD_model)
-        retrain_model = best_BD_model
-    if blank_model:
-        logger.info("retrain空白模型")
-        retrain_model = blank_model
-    epoch_num = 120
-    batch_num = 1024
-    lr = 2e-3
-    batch_size = 64
-    choice_rate = 0.6
-    logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
-    best_defense_model,last_defense_model = train_with_semi(
-        None,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
-        class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
+    # trainwithsubset
+    # logger.info("trainwithsubset")
+    # model = best_BD_model
+    # model = unfreeze(model)
+    # best_defense_model, last_defense_model = train_with_subset(model,device,logger,
+    #                   choice_rate=0.6,epoch_num=120,lr=1e-3,batch_size=64)
+
+    # logger.info("trainWithSemi")
+    # choice_model = best_BD_model
+    # if blank_model is None:
+    #     best_BD_model = unfreeze(best_BD_model)
+    #     retrain_model = best_BD_model
+    # if blank_model:
+    #     logger.info("retrain空白模型")
+    #     retrain_model = blank_model
+    # epoch_num = 120
+    # batch_num = 1024
+    # lr = 2e-3
+    # batch_size = 64
+    # choice_rate = 0.6
+    # logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
+    # best_defense_model,last_defense_model = train_with_semi(
+    #     choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
+    #     class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
 
     '''5:评估我们防御后的的ASR和ACC'''
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
@@ -1331,10 +1413,10 @@ if __name__ == "__main__":
     gpu_id = 1
     r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
 
-    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name = "WaNet" # BadNets, IAD, Refool, WaNet
-    class_num = 10
+    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
+    attack_name ="WaNet" # BadNets, IAD, Refool, WaNet
+    class_num = 30
 
     # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
     scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)

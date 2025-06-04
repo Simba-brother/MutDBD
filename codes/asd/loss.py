@@ -63,10 +63,13 @@ class MixMatchLoss(nn.Module):
             current = np.clip(epoch / self.rampup_length, 0.0, 1.0)
             self.current_lambda_u = float(current) * self.lambda_u
 
-    def forward(self, xoutput, xtarget, uoutput, utarget, epoch):
+    def forward(self, xoutput, xtarget, uoutput, utarget, epoch, class_weight = None):
         self.linear_rampup(epoch)
         uprob = torch.softmax(uoutput, dim=1)
-        Lx = -torch.mean(torch.sum(F.log_softmax(xoutput, dim=1) * xtarget, dim=1))
+        if class_weight is not None:
+            Lx = -torch.mean(torch.sum(F.log_softmax(xoutput, dim=1) * xtarget * class_weight, dim=1))
+        else:
+            Lx = -torch.mean(torch.sum(F.log_softmax(xoutput, dim=1), dim=1))
         Lu = torch.mean((uprob - utarget) ** 2)
 
         return Lx, Lu, self.current_lambda_u

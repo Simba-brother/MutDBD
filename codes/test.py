@@ -5,6 +5,7 @@ import time
 import queue
 import os
 import numpy as np
+import torch
 
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
 
@@ -169,8 +170,15 @@ def test25():
     x = np.nonzero(data==1)
     print(x)
 
+def test26():
+    a = torch.tensor([[1,2,3],[4,5,6],[7,8,9]])
+    b = torch.tensor([[1,3,2],[7,4,3],[5,8,9]])
+    c = a*b
+    print(c)
+
+
 if __name__ == "__main__":
-    test25()
+    test26()
 
 
 
