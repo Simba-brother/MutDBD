@@ -8,7 +8,7 @@ from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
 from codes.core.models.resnet import ResNet
 from prefetch_generator import BackgroundGenerator
 
-def linear_test(model, loader, criterion, device):
+def linear_test(model, loader, criterion, device,logger):
     loss_meter = AverageMeter("loss")
     acc_meter = AverageMeter("acc")
     meter_list = [loss_meter, acc_meter]
@@ -34,10 +34,10 @@ def linear_test(model, loader, criterion, device):
         truth = pred.view_as(target).eq(target)
         acc_meter.update((torch.sum(truth).float() / len(truth)).item())
 
-        tabulate_step_meter(batch_idx, len(loader), 2, meter_list)
+        tabulate_step_meter(batch_idx, len(loader), 2, meter_list,logger)
 
     print("Linear test summary:")
-    tabulate_epoch_meter(time.time() - start_time, meter_list)
+    tabulate_epoch_meter(time.time() - start_time, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}
 
     return result
@@ -126,7 +126,7 @@ def interleave(xy, batch):
 
     return [torch.cat(v, dim=0) for v in xy]
 
-def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device, **kwargs):
+def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,logger, **kwargs):
     loss_meter = AverageMeter("loss")
     xloss_meter = AverageMeter("xloss")
     uloss_meter = AverageMeter("uloss")
@@ -244,10 +244,10 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         xloss_meter.update(Lx.item())
         uloss_meter.update(Lu.item())
         lambda_u_meter.update(lambda_u)
-        tabulate_step_meter(batch_idx, kwargs["train_iteration"], 3, meter_list)
+        tabulate_step_meter(batch_idx, kwargs["train_iteration"], 3, meter_list,logger)
 
     print("MixMatch training summary:")
-    tabulate_epoch_meter(time.time() - start, meter_list)
+    tabulate_epoch_meter(time.time() - start, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}
 
     return result

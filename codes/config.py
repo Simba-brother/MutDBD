@@ -10,7 +10,7 @@ ImageNet2012_subset_dir = "/data/mml/backdoor_detect/dataset/ImageNet2012_subset
 
 
 # 随机种子
-random_seed = 666
+random_seed = 0
 # 4个数据集名字
 dataset_name_list = ["CIFAR10","GTSRB","ImageNet2012_subset"] # , "MNIST"
 cur_dataset_name_list = ["CIFAR10","GTSRB"]

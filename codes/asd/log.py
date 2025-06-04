@@ -16,7 +16,7 @@ def result2csv(result, save_dir):
                 df = df.append(result[k], ignore_index=True)
                 df.to_csv(file_path, index=False)
 
-def tabulate_step_meter(batch_idx, num_batches, num_intervals, meter_list):
+def tabulate_step_meter(batch_idx, num_batches, num_intervals, meter_list,logger):
     """Tabulate current average value of meters every ``step_interval``.
 
     Args:
@@ -37,10 +37,10 @@ def tabulate_step_meter(batch_idx, num_batches, num_intervals, meter_list):
             table = "\n".join([table[1]] + table)
         else:
             table = table.split("\n")[2]
-        print(table)
+        logger.info(table)
 
 
-def tabulate_epoch_meter(elapsed_time, meter_list):
+def tabulate_epoch_meter(elapsed_time, meter_list,logger):
     """Tabulate total average value of meters every epoch.
 
     Args:
@@ -53,7 +53,7 @@ def tabulate_epoch_meter(elapsed_time, meter_list):
     table = tabulate(epoch_meter, headers="keys", tablefmt="github", floatfmt=".5f")
     table = table.split("\n")
     table = "\n".join([table[1]] + table)
-    print(table)
+    logger.info(table)
 
 
 def result2csv(result, log_dir):

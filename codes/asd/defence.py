@@ -258,7 +258,8 @@ def defence_train(
         clean_test_dataset_loader, # 干净的测试集加载器
         poisoned_test_dataset_loader, # 污染的测试集加载器
         device, # GPU设备对象
-        save_dir, # 实验结果存储目录 save_dir = os.path.join(exp_root_dir, "ASD", dataset_name, model_name, attack_name)
+        save_dir, # 实验结果存储目录
+        logger=None,
         **kwargs
         ):
     '''
@@ -313,7 +314,7 @@ def defence_train(
     total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
         epoch_start_time = time.perf_counter()
-        print("===Epoch: {}/{}===".format(epoch+1, total_epoch))
+        logger.info("===Epoch: {}/{}===".format(epoch+1, total_epoch))
         if epoch < 60: # [0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
             # 对全体数据集进行评估（耗时）
@@ -321,16 +322,17 @@ def defence_train(
             if epoch % 5 == 0 and epoch != 0:
                 # 每五个epoch 每个class中选择数量就多加10个
                 choice_num += 10
-            print("Mining clean data by class-aware loss-guided split...")
+            logger.info("Mining clean data by class-aware loss-guided split...")
             # 0表示在污染池,1表示在clean pool
-            split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_ids)
+            split_indice = class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, 
+                                                         choice_num, poisoned_ids,logger)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < 90: # [60,89]
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
-            print("Mining clean data by class-agnostic loss-guided split...")
-            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids)
+            logger.info("Mining clean data by class-agnostic loss-guided split...")
+            split_indice = class_agnostic_loss_guided_split(record_list, 0.5, poisoned_ids,logger)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
         elif epoch < total_epoch:
@@ -395,8 +397,8 @@ def defence_train(
             meta_record_list = poison_linear_record(meta_virtual_model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
 
             # 开始干净样本的挖掘
-            print("Mining clean data by meta-split...")
-            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids)
+            logger.info("Mining clean data by meta-split...")
+            split_indice = meta_split(record_list, meta_record_list, 0.5, poisoned_ids,logger)
 
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
@@ -405,7 +407,7 @@ def defence_train(
         batch_size = 64
         xloader = DataLoader(xdata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
         uloader = DataLoader(udata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
-        print("MixMatch training...")
+        logger.info("MixMatch training...")
         # 半监督训练参数,固定1024个batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
         poison_train_result = mixmatch_train(
@@ -416,6 +418,7 @@ def defence_train(
             optimizer,
             epoch,
             device,
+            logger,
             **semi_mixmatch
         )
         epoch_end_time = time.perf_counter()
@@ -423,15 +426,15 @@ def defence_train(
         hours = int(epcoch_cost_time // 3600)
         minutes = int((epcoch_cost_time % 3600) // 60)
         seconds = epcoch_cost_time % 6
-        print(f"Epoch耗时:{hours}时{minutes}分{seconds:.3f}秒")
-        print("Test model on clean data...")
+        logger.info(f"Epoch耗时:{hours}时{minutes}分{seconds:.3f}秒")
+        logger.info("Test model on clean data...")
         clean_test_result = linear_test(
-            model, clean_test_dataset_loader, criterion,device
+            model, clean_test_dataset_loader, criterion,device,logger
         )
 
-        print("Test model on poison data...")
+        logger.info("Test model on poison data...")
         poison_test_result = linear_test(
-            model, poisoned_test_dataset_loader, criterion,device
+            model, poisoned_test_dataset_loader, criterion,device,logger
         )
 
         # if scheduler is not None:
@@ -453,7 +456,7 @@ def defence_train(
         save_file_name = f"result_epoch_{epoch}.data"
         save_file_path = os.path.join(result_epochs_dir, save_file_name)
         joblib.dump(result,save_file_path)
-        print(f"epoch:{epoch},result: is saved in {save_file_path}")
+        logger.info(f"epoch:{epoch},result: is saved in {save_file_path}")
 
         
         # result2csv(result, save_dir)
@@ -477,7 +480,7 @@ def defence_train(
             "best_acc": best_acc, # clean testset上的acc
             "best_epoch": best_epoch,
         }
-        print("Best test accuaracy {} in epoch {}".format(best_acc, best_epoch))
+        logger.info("Best test accuaracy {} in epoch {}".format(best_acc, best_epoch))
         # 每当best acc更新后，保存checkpoint
         ckpt_dir = os.path.join(save_dir, "ckpt")
         create_dir(ckpt_dir)
@@ -489,7 +492,7 @@ def defence_train(
         # 保存最新一次checkpoint
         latest_ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
         torch.save(saved_dict, latest_ckpt_path)
-        print("Save the latest model to {}".format(latest_ckpt_path))
+        logger.info("Save the latest model to {}".format(latest_ckpt_path))
         # 保存倒数第2轮次的模型权重
         if epoch == total_epoch-2:
             secondtolast_path = os.path.join(ckpt_dir,"secondtolast.pth")
@@ -499,12 +502,12 @@ def defence_train(
         if epoch == 59:
             epoch_59_path = os.path.join(ckpt_dir,"epoch_59.pth")
             torch.save(model.state_dict(),epoch_59_path)
-            print("Save the secondtolast model to {}".format(epoch_59_path))
+            logger.info("Save the secondtolast model to {}".format(epoch_59_path))
     
-    print("asd_train() End")
+    logger.info("ASD_train_End")
     return best_ckpt_path,latest_ckpt_path
 
-def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_indice):
+def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_info, choice_num, poisoned_indice, logger):
     """
     Adaptively split the poisoned dataset by class-aware loss-guided split.
     """
@@ -530,12 +533,12 @@ def class_aware_loss_guided_split(record_list, choice_clean_indice, all_data_inf
     total_indice = np.array(total_indice)
     clean_pool_flag[total_indice] = 1 # 1表示clean
 
-    print(
+    logger.info(
         "{}/{} poisoned samples in clean data pool".format(poisoned_count, clean_pool_flag.sum())
     )
     return clean_pool_flag
 
-def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice):
+def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice,logger):
     """
     Adaptively split the poisoned dataset by class-agnostic loss-guided split.
     """
@@ -548,13 +551,13 @@ def class_agnostic_loss_guided_split(record_list, ratio, poisoned_indice):
     for idx in total_indice:
         if idx in poisoned_indice:
             poisoned_count+=1
-    print(
+    logger.info(
         "{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice))
     )
     clean_pool_flag[total_indice] = 1
     return clean_pool_flag
 
-def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
+def meta_split(record_list, meta_record_list, ratio, poisoned_indice,logger):
     """
     Adaptively split the poisoned dataset by meta-split.
     """
@@ -569,14 +572,14 @@ def meta_split(record_list, meta_record_list, ratio, poisoned_indice):
     for idx in total_indice:
         if idx in poisoned_indice:
             poisoned_count += 1
-    print("{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice)))
+    logger.info("{}/{} poisoned samples in clean data pool".format(poisoned_count, len(total_indice)))
     clean_pool_flag[total_indice] = 1
     predict_p_idx_list = loss.argsort()[int(len(loss) * ratio):]
     tp_num= len(set(predict_p_idx_list) & set(poisoned_indice))
     recall = round(tp_num/len(poisoned_indice),4)
     precision = round(tp_num / len(predict_p_idx_list),4)
     f1 = 2*recall*precision/(precision+recall+1e-10)
-    print(f"recall:{recall},precison:{precision},f1:{f1}")
+    logger.info(f"recall:{recall},precison:{precision},f1:{f1}")
     return clean_pool_flag
 
 def train_the_virtual_model(meta_virtual_model, poison_train_loader, meta_optimizer, meta_criterion, device):
