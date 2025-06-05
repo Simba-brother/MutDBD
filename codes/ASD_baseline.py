@@ -347,27 +347,27 @@ def get_logger():
     return logger
 
 if __name__ == "__main__":
-    baseline_name = "ASD_new"
-    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
-    class_num = 10
-    gpu_id = 0
-    rand_seed = 1
-    main()
-
-    # gpu_id = 0
     # baseline_name = "ASD_new"
-    # for rand_seed in [1,2,3,4,5,6,7,8,9,10]:
-    #     for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-    #         if dataset_name == "CIFAR10":
-    #             class_num = 10
-    #         elif dataset_name == "GTSRB":
-    #             class_num = 43
-    #         else:
-    #             class_num = 30
-    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-    #                 continue
-    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #                 main()
+    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    # attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
+    # class_num = 10
+    # gpu_id = 0
+    # rand_seed = 1
+    # main()
+
+    gpu_id = 0
+    baseline_name = "ASD_new"
+    for rand_seed in [1,2,3,4,5,6,7,8,9,10]:
+        for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+            if dataset_name == "CIFAR10":
+                class_num = 10
+            elif dataset_name == "GTSRB":
+                class_num = 43
+            else:
+                class_num = 30
+            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+                    main()
