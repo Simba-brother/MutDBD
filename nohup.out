@@ -1,6 +1,0 @@
-MixMatch training summary:
-Linear test summary:
-Linear test summary:
-成功创建文件夹/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-04_21:07:50/result_epochs
-成功创建文件夹/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-04_21:07:50/ckpt
-Save the best model to /data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-04_21:07:50/ckpt/best_model.pt

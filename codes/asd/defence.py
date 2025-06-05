@@ -404,7 +404,6 @@ def defence_train(
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
         # 开始半监督训练
         # 开始clean pool进行监督学习,poisoned pool进行半监督学习
-        batch_size = 64
         xloader = DataLoader(xdata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
         uloader = DataLoader(udata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
         logger.info("MixMatch training...")

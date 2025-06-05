@@ -36,7 +36,7 @@ def linear_test(model, loader, criterion, device,logger):
 
         tabulate_step_meter(batch_idx, len(loader), 2, meter_list,logger)
 
-    print("Linear test summary:")
+    logger.info("Linear test summary:")
     tabulate_epoch_meter(time.time() - start_time, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}
 
@@ -246,7 +246,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         lambda_u_meter.update(lambda_u)
         tabulate_step_meter(batch_idx, kwargs["train_iteration"], 3, meter_list,logger)
 
-    print("MixMatch training summary:")
+    logger.info("MixMatch training summary:")
     tabulate_epoch_meter(time.time() - start, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}
 

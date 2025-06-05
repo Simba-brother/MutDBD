@@ -283,34 +283,30 @@ def main():
     logger.info(f"防御式训练完成，共耗时:{hours}时{minutes}分{seconds:.3f}秒")
     # 评估防御结果
     logger.info("开始评估防御结果")
+
     best_model_ckpt = torch.load(best_ckpt_path, map_location="cpu")
     victim_model.load_state_dict(best_model_ckpt["model_state_dict"])
     new_model = victim_model
     # (1) 评估新模型在clean testset上的acc
     em = EvalModel(new_model,clean_testset,device)
     clean_test_acc = em.eval_acc()
-    '''
-    clean_test_acc = model_train_test.test(
-        model = new_model,
-        testset = clean_testset,
-        batch_size = 128,
-        device = device,
-        loss_fn = nn.CrossEntropyLoss()
-        )
-    '''
     # (2) 评估新模型在poisoned testset上的acc
     em = EvalModel(new_model,poisoned_testset,device)
     poisoned_test_acc = em.eval_acc()
-    '''
-    poisoned_test_acc = model_train_test.test(
-        model = new_model,
-        testset = poisoned_testset,
-        batch_size = 128,
-        device = device,
-        loss_fn = nn.CrossEntropyLoss()
-        )
-    '''
-    logger.info({'clean_test_acc':clean_test_acc, 'poisoned_test_acc':poisoned_test_acc})
+    logger.info(f"BestModel: ACC:{clean_test_acc}, ASR:{poisoned_test_acc}")
+
+    last_model_ckpt = torch.load(latest_ckpt_path, map_location="cpu")
+    victim_model.load_state_dict(last_model_ckpt["model_state_dict"])
+    new_model = victim_model
+    # (1) 评估新模型在clean testset上的acc
+    em = EvalModel(new_model,clean_testset,device)
+    clean_test_acc = em.eval_acc()
+    # (2) 评估新模型在poisoned testset上的acc
+    em = EvalModel(new_model,poisoned_testset,device)
+    poisoned_test_acc = em.eval_acc()
+    logger.info(f"LastModel: ACC:{clean_test_acc}, ASR:{poisoned_test_acc}")
+
+
     time_4 = time.perf_counter()
     cost_time = time_4 - time_2
     hours = int(cost_time // 3600)
@@ -351,27 +347,27 @@ def get_logger():
     return logger
 
 if __name__ == "__main__":
-    # baseline_name = "ASD_new"
-    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    # attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
-    # class_num = 10
-    # gpu_id = 0
-    # rand_seed = 1
-    # main()
-
-    gpu_id = 0
     baseline_name = "ASD_new"
-    for rand_seed in [1,2,3,4,5,6,7,8,9,10]:
-        for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-            if dataset_name == "CIFAR10":
-                class_num = 10
-            elif dataset_name == "GTSRB":
-                class_num = 43
-            else:
-                class_num = 30
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                    main()
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
+    class_num = 10
+    gpu_id = 0
+    rand_seed = 1
+    main()
+
+    # gpu_id = 0
+    # baseline_name = "ASD_new"
+    # for rand_seed in [1,2,3,4,5,6,7,8,9,10]:
+    #     for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #         if dataset_name == "CIFAR10":
+    #             class_num = 10
+    #         elif dataset_name == "GTSRB":
+    #             class_num = 43
+    #         else:
+    #             class_num = 30
+    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #                 main()

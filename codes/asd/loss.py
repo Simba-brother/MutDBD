@@ -69,7 +69,7 @@ class MixMatchLoss(nn.Module):
         if class_weight is not None:
             Lx = -torch.mean(torch.sum(F.log_softmax(xoutput, dim=1) * xtarget * class_weight, dim=1))
         else:
-            Lx = -torch.mean(torch.sum(F.log_softmax(xoutput, dim=1), dim=1))
+            Lx = -torch.mean(torch.sum(F.log_softmax(xoutput, dim=1) * xtarget, dim=1))
         Lu = torch.mean((uprob - utarget) ** 2)
 
         return Lx, Lu, self.current_lambda_u
