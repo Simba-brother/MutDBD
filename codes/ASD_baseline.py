@@ -356,17 +356,17 @@ if __name__ == "__main__":
     # rand_seed = 1
     # main()
 
-    gpu_id = 0
+    gpu_id = 1
     baseline_name = "ASD_new"
-    for rand_seed in [1,2,3,4,5,6,7,8,9,10]:
-        for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    for rand_seed in [10,9,8,7,6,5,4,3,2,1]: # [1,2,3,4,5,6,7,8,9,10]:
+        for dataset_name in ["ImageNet2012_subset", "GTSRB", "CIFAR10"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
             if dataset_name == "CIFAR10":
                 class_num = 10
             elif dataset_name == "GTSRB":
                 class_num = 43
             else:
                 class_num = 30
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+            for model_name in ["DenseNet","VGG19","ResNet18"]: # ["ResNet18", "VGG19", "DenseNet"]:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
                 for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
