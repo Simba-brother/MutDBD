@@ -49,8 +49,10 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
     poison_record = Record("poison", num_data) # 是否被污染
     origin_record = Record("origin", num_data) # 原本的target
     loss_record = Record("loss", num_data) # 记录每个样本的loss
+    '''
     dataset_name = kwargs["dataset_name"]
     model_name = kwargs["model_name"]
+    
     if dataset_name in ["CIFAR10","GTSRB"]:
         if model_name == "ResNet18":
             in_features = model.classifier.in_features
@@ -73,14 +75,14 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
             node_str = "flatten"
 
     feature_record = Record("feature", (num_data, in_features))
-    
+    '''
     # feature_record = Record("feature", (num_data, model.backbone.feature_dim))
     record_list = [
         target_record,
         poison_record,
         origin_record,
-        loss_record,
-        feature_record,
+        loss_record
+        # feature_record,
     ]
 
     model.eval()
@@ -91,9 +93,9 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
         data = batch[0].to(device)
         target = batch[1].to(device)
         with torch.no_grad():
-            feature_extractor = create_feature_extractor(model, return_nodes=[node_str])
-            feature_dic = feature_extractor(data)
-            feature = feature_dic[node_str]
+            # feature_extractor = create_feature_extractor(model, return_nodes=[node_str])
+            # feature_dic = feature_extractor(data)
+            # feature = feature_dic[node_str]
             output = model(data)
         criterion.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
         raw_loss = criterion(output, target)
@@ -102,7 +104,7 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
         # poison_record.update(batch["poison"])
         # origin_record.update(batch["origin"])
         loss_record.update(raw_loss.cpu())
-        feature_record.update(feature.cpu())
+        # feature_record.update(feature.cpu())
 
     return record_list
 

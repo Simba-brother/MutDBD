@@ -356,10 +356,10 @@ if __name__ == "__main__":
     # rand_seed = 1
     # main()
 
-    gpu_id = 1
+    gpu_id = 0
     baseline_name = "ASD_new"
-    for rand_seed in [1,2,3,4,5,6,7,8,9,10]:
-        for dataset_name in ["ImageNet2012_subset"]:
+    for rand_seed in [10]:
+        for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
             if dataset_name == "CIFAR10":
                 class_num = 10
             elif dataset_name == "GTSRB":
