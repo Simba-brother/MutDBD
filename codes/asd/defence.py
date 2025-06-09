@@ -409,6 +409,7 @@ def defence_train(
         logger.info("MixMatch training...")
         # 半监督训练参数,固定1024个batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
+        train_start_time = time.perf_counter()
         poison_train_result = mixmatch_train(
             model,
             xloader,
@@ -421,6 +422,12 @@ def defence_train(
             **semi_mixmatch
         )
         epoch_end_time = time.perf_counter()
+        train_cost_time = epoch_end_time - train_start_time
+        hours = int(train_cost_time // 3600)
+        minutes = int((train_cost_time % 3600) // 60)
+        seconds = train_cost_time % 6
+        logger.info(f"Epoch:{epoch},纯训练耗时:{hours}时{minutes}分{seconds:.3f}秒")
+
         epcoch_cost_time = epoch_end_time - epoch_start_time
         hours = int(epcoch_cost_time // 3600)
         minutes = int((epcoch_cost_time % 3600) // 60)

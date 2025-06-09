@@ -143,8 +143,6 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     
     start = time.time()
     for batch_idx in range(kwargs["train_iteration"]): 
-
-        # data_load_start_time = time.perf_counter()
         try:
             
             xbatch = next(xiter) # 带标签中的一个批次
@@ -182,12 +180,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
             1, xtarget.view(-1, 1).long(), 1
         )
-        # data_load_end_time = time.perf_counter()
-        # data_load_cost_time =  data_load_end_time - data_load_start_time
-        # hours = int(data_load_cost_time // 3600)
-        # minutes = int((data_load_cost_time % 3600) // 60)
-        # seconds = data_load_cost_time % 6
-        # print(f"批次数据加载耗时:{hours}时{minutes}分{seconds:.3f}秒")
+
 
         xinput = xinput.to(device) # 带标签批次
         xtarget = xtarget.to(device) 
@@ -247,7 +240,6 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         uloss_meter.update(Lu.item())
         lambda_u_meter.update(lambda_u)
         tabulate_step_meter(batch_idx, kwargs["train_iteration"], 3, meter_list,logger)
-
     logger.info("MixMatch training summary:")
     tabulate_epoch_meter(time.time() - start, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}

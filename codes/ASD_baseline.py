@@ -86,7 +86,7 @@ def get_spec_dataset(dataset_name, model_name, attack_name, poisoned_ids):
 def main():
     logger = get_logger()
     # 进程名称
-    proctitle = f"{baseline_name}|{dataset_name}|{model_name}|{attack_name}"
+    proctitle = f"{baseline_name}|{dataset_name}|{model_name}|{attack_name}|{rand_seed}"
     setproctitle.setproctitle(proctitle)
     logger.info(proctitle)
     logger.info(f"rand_seed:{rand_seed}")
@@ -338,7 +338,8 @@ def _get_logger(log_dir,log_file_name,logger_name):
     return logger
 
 def get_logger():
-    log_base_dir = f"log/{baseline_name}/"
+    log_base_dir = "log/temp/"
+    # log_base_dir = f"log/{baseline_name}/"
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
@@ -346,28 +347,47 @@ def get_logger():
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
     return logger
 
+
+def get_classNum(dataset_name):
+    class_num = None
+    if dataset_name == "CIFAR10":
+        class_num = 10
+    elif dataset_name == "GTSRB":
+        class_num = 43
+    elif dataset_name == "ImageNet2012_subset":
+        class_num = 30
+    return class_num
+
 if __name__ == "__main__":
+    # gpu_id = 1
+    # rand_seed = 3
+
     # baseline_name = "ASD_new"
     # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
     # attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
     # class_num = 10
-    # gpu_id = 0
-    # rand_seed = 1
+
     # main()
 
     gpu_id = 0
     baseline_name = "ASD_new"
-    for rand_seed in [10]:
-        for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-            if dataset_name == "CIFAR10":
-                class_num = 10
-            elif dataset_name == "GTSRB":
-                class_num = 43
-            else:
-                class_num = 30
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                    main()
+    rand_seed = 10
+    dataset_name = "GTSRB"
+    class_num = get_classNum(dataset_name)
+    model_name = "ResNet18"
+    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+        main()
+    # for rand_seed in [10]:
+    #     for dataset_name in ["CIFAR10"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #         if dataset_name == "CIFAR10":
+    #             class_num = 10
+    #         elif dataset_name == "GTSRB":
+    #             class_num = 43
+    #         else:
+    #             class_num = 30
+    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #                 main()
