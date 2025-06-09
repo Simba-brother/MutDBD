@@ -1410,19 +1410,19 @@ def try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed
 
 if __name__ == "__main__":
     
-    # gpu_id = 1
-    # r_seed = 666 # exp_1:666,exp_2:667,exp_3:668
+    # gpu_id = 0
+    # r_seed = 9
 
-    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    # attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
-    # class_num = 30
+    # dataset_name= "GTSRB" # CIFAR10, GTSRB, ImageNet2012_subset
+    # model_name= "DenseNet" # ResNet18, VGG19, DenseNet
+    # attack_name ="WaNet" # BadNets, IAD, Refool, WaNet
+    # class_num = 43
 
     # # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
-    gpu_id = 1
-    for r_seed in [4,5,6,7,8]:
+    gpu_id = 0
+    for r_seed in [7,8]:
         for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
             if dataset_name == "CIFAR10":
                 class_num = 10
