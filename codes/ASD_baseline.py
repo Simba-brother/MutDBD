@@ -108,13 +108,13 @@ def main():
     
 
     # 提前把poisoned_trainset加载到内存中
-    extract_time_start = time.perf_counter()
-    extracted_poisoned_trainset_1 = ExtractDataset(poisoned_trainset)
-    extracted_poisoned_trainset_2 = ExtractDataset(poisoned_trainset)
-    extract_time_end = time.perf_counter()
-    extract_cost_seconds = extract_time_end - extract_time_start
-    hours, minutes, seconds = convert_to_hms(extract_cost_seconds)
-    logger.info(f"抽取2份训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
+    # extract_time_start = time.perf_counter()
+    # extracted_poisoned_trainset_1 = ExtractDataset(poisoned_trainset)
+    # extracted_poisoned_trainset_2 = ExtractDataset(poisoned_trainset)
+    # extract_time_end = time.perf_counter()
+    # extract_cost_seconds = extract_time_end - extract_time_start
+    # hours, minutes, seconds = convert_to_hms(extract_cost_seconds)
+    # logger.info(f"抽取2份训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
     # dataset_list = []
@@ -323,8 +323,8 @@ def _get_logger(log_dir,log_file_name,logger_name):
     return logger
 
 def get_logger():
-    log_base_dir = "log/temp/"
-    # log_base_dir = f"log/{baseline_name}/"
+    # log_base_dir = "log/temp/"
+    log_base_dir = f"log/{baseline_name}/"
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
@@ -344,24 +344,25 @@ def get_classNum(dataset_name):
     return class_num
 
 if __name__ == "__main__":
-    gpu_id = 1
-    rand_seed = 3
 
-    baseline_name = "ASD_new"
-    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
-    class_num = get_classNum(dataset_name)
-    main()
-
-    # gpu_id = 0
+    # gpu_id = 1
+    # rand_seed = 1
     # baseline_name = "ASD_new"
-    # rand_seed = 10
-    # dataset_name = "GTSRB"
+    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    # attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
     # class_num = get_classNum(dataset_name)
-    # model_name = "ResNet18"
-    # for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #     main()
+    # main()
+
+    gpu_id = 0
+    baseline_name = "ASD_new"
+    rand_seed = 10
+    dataset_name = "GTSRB"
+    class_num = get_classNum(dataset_name)
+    model_name = "ResNet18"
+    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+        main()
+
     # for rand_seed in [10]:
     #     for dataset_name in ["CIFAR10"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
     #         if dataset_name == "CIFAR10":
