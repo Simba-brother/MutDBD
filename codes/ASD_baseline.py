@@ -14,6 +14,7 @@ from codes.scripts.dataset_constructor import *
 from codes.common.time_handler import get_formattedDateTime
 from codes.models import get_model
 from codes.common.eval_model import EvalModel
+from codes.utils import convert_to_hms
 from codes.scripts.dataset_constructor import ExtractDataset,ExtractDataset_NormalPattern
 
 # cifar10
@@ -107,15 +108,13 @@ def main():
     
 
     # 提前把poisoned_trainset加载到内存中
-    # extract_time_start = time.perf_counter()
-    # extracted_poisoned_trainset_1 = ExtractDataset(poisoned_trainset)
-    # extracted_poisoned_trainset_2 = ExtractDataset(poisoned_trainset)
-    # extract_time_end = time.perf_counter()
-    # extract_cost_seconds = extract_time_end - extract_time_start
-    # hours = int(extract_cost_seconds // 3600)
-    # minutes = int((extract_cost_seconds % 3600) // 60)
-    # seconds = extract_cost_seconds % 6
-    # print(f"抽取2份训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
+    extract_time_start = time.perf_counter()
+    extracted_poisoned_trainset_1 = ExtractDataset(poisoned_trainset)
+    extracted_poisoned_trainset_2 = ExtractDataset(poisoned_trainset)
+    extract_time_end = time.perf_counter()
+    extract_cost_seconds = extract_time_end - extract_time_start
+    hours, minutes, seconds = convert_to_hms(extract_cost_seconds)
+    logger.info(f"抽取2份训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
     # dataset_list = []
@@ -125,9 +124,7 @@ def main():
     #     dataset_list.append((x,y,flag))
     # end_time = time.perf_counter()
     # cost_time = end_time - start_time
-    # hours = int(cost_time // 3600)
-    # minutes = int((cost_time % 3600) // 60)
-    # seconds = cost_time % 6
+    # hours, minutes, seconds = convert_to_hms(cost_time)
     # print(f"遍历被提前抽取耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
@@ -140,10 +137,7 @@ def main():
     #     Y = batch[1]
     # loder_time_end = time.perf_counter()
     # loader_cost_time = loder_time_end - loder_time_start
-
-    # hours = int(loader_cost_time // 3600)
-    # minutes = int((loader_cost_time % 3600) // 60)
-    # seconds = loader_cost_time % 6
+    # hours, minutes, seconds = convert_to_hms(loader_cost_time)
     # print(f"loader遍历一遍新鲜训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
@@ -155,10 +149,7 @@ def main():
     #     Y = batch[1]
     # loder_time_end = time.perf_counter()
     # loader_cost_time = loder_time_end - loder_time_start
-
-    # hours = int(loader_cost_time // 3600)
-    # minutes = int((loader_cost_time % 3600) // 60)
-    # seconds = loader_cost_time % 6
+    # hours, minutes, seconds = convert_to_hms(loader_cost_time)
     # print(f"loader遍历一遍提前抽取训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
     # def PreloadedDataset(Dataset):
@@ -176,9 +167,7 @@ def main():
     # extracted_clean_trainset = ExtractDataset_NormalPattern(clean_trainset)
     # extract_time_end = time.perf_counter()
     # extract_cost_seconds = extract_time_end - extract_time_start
-    # hours = int(extract_cost_seconds // 3600)
-    # minutes = int((extract_cost_seconds % 3600) // 60)
-    # seconds = extract_cost_seconds % 6
+    # hours,minutes,seconds = convert_to_hms(extract_cost_seconds)
     # print(f"抽取干净训练集耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
     # # 提前抽取之前遍历一遍数据集耗时
@@ -187,9 +176,7 @@ def main():
     #     x,y,flag = poisoned_trainset[i]
     # end_time = time.perf_counter()
     # cost_time = end_time - start_time
-    # hours = int(cost_time // 3600)
-    # minutes = int((cost_time % 3600) // 60)
-    # seconds = cost_time % 6
+    # hours, minutes, seconds = convert_to_hms(cost_time)
     # print(f"遍历新鲜耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
@@ -273,13 +260,13 @@ def main():
             logger=logger,
             dataset_name = dataset_name,
             model_name = model_name,
-            rand_seed = rand_seed
+            rand_seed = rand_seed,
+            # extracted_poisoned_trainset_1 = extracted_poisoned_trainset_1,
+            # extracted_poisoned_trainset_2 = extracted_poisoned_trainset_2
             )
     time_2 = time.perf_counter()
     cost_time = time_2 - time_1
-    hours = int(cost_time // 3600)
-    minutes = int((cost_time % 3600) // 60)
-    seconds = cost_time % 6
+    hours, minutes, seconds = convert_to_hms(cost_time)
     logger.info(f"防御式训练完成，共耗时:{hours}时{minutes}分{seconds:.3f}秒")
     # 评估防御结果
     logger.info("开始评估防御结果")
@@ -309,9 +296,7 @@ def main():
 
     time_4 = time.perf_counter()
     cost_time = time_4 - time_2
-    hours = int(cost_time // 3600)
-    minutes = int((cost_time % 3600) // 60)
-    seconds = cost_time % 6
+    hours, minutes, seconds = convert_to_hms(cost_time)
     logger.info(f"评估防御结果结束，共耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
@@ -359,25 +344,24 @@ def get_classNum(dataset_name):
     return class_num
 
 if __name__ == "__main__":
-    # gpu_id = 1
-    # rand_seed = 3
+    gpu_id = 1
+    rand_seed = 3
 
-    # baseline_name = "ASD_new"
-    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    # attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
-    # class_num = 10
-
-    # main()
-
-    gpu_id = 0
     baseline_name = "ASD_new"
-    rand_seed = 10
-    dataset_name = "GTSRB"
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
     class_num = get_classNum(dataset_name)
-    model_name = "ResNet18"
-    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-        main()
+    main()
+
+    # gpu_id = 0
+    # baseline_name = "ASD_new"
+    # rand_seed = 10
+    # dataset_name = "GTSRB"
+    # class_num = get_classNum(dataset_name)
+    # model_name = "ResNet18"
+    # for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #     main()
     # for rand_seed in [10]:
     #     for dataset_name in ["CIFAR10"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
     #         if dataset_name == "CIFAR10":

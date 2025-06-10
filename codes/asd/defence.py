@@ -5,6 +5,7 @@ import setproctitle
 import os
 import time
 from copy import deepcopy
+from codes.utils import convert_to_hms
 import cv2
 import numpy as np
 import torch
@@ -328,6 +329,10 @@ def defence_train(
                                                          choice_num, poisoned_ids,logger)
             xdata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=True)
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)
+            # extracted_poisoned_trainset_1 = kwargs["extracted_poisoned_trainset_1"]
+            # extracted_poisoned_trainset_2 = kwargs["extracted_poisoned_trainset_2"]
+            # xdata = MixMatchDataset(extracted_poisoned_trainset_1,extracted_poisoned_trainset_2, split_indice, labeled=True)
+            # udata = MixMatchDataset(extracted_poisoned_trainset_1,extracted_poisoned_trainset_2, split_indice, labeled=False)
         elif epoch < 90: # [60,89]
             # 使用此时训练状态的model对数据集进行record(记录下样本的loss,feature,label,方便进行clean数据的挖掘)
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device,dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"])
@@ -423,15 +428,11 @@ def defence_train(
         )
         epoch_end_time = time.perf_counter()
         train_cost_time = epoch_end_time - train_start_time
-        hours = int(train_cost_time // 3600)
-        minutes = int((train_cost_time % 3600) // 60)
-        seconds = train_cost_time % 6
+        hours, minutes, seconds = convert_to_hms(train_cost_time)
         logger.info(f"Epoch:{epoch},纯训练耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
         epcoch_cost_time = epoch_end_time - epoch_start_time
-        hours = int(epcoch_cost_time // 3600)
-        minutes = int((epcoch_cost_time % 3600) // 60)
-        seconds = epcoch_cost_time % 6
+        hours, minutes, seconds = convert_to_hms(epcoch_cost_time)
         logger.info(f"Epoch耗时:{hours}时{minutes}分{seconds:.3f}秒")
         logger.info("Test model on clean data...")
         clean_test_result = linear_test(

@@ -160,6 +160,14 @@ def my_excepthook(exctype, value, traceback):
     logging.critical("Uncaught exception", exc_info=(exctype, value, traceback))
     # 调用默认的异常钩子，以防程序意外退出
     sys.__excepthook__(exctype, value, traceback)
+
+def convert_to_hms(seconds):
+    hours = int(seconds // 3600)
+    remaining_seconds = seconds % 3600
+    minutes = int(remaining_seconds // 60)
+    seconds = remaining_seconds % 60
+    return hours, minutes, seconds
+
 if __name__ == "__main__":
     pass
     # makdir("experiments/test")

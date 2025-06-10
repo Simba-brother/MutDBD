@@ -7,6 +7,7 @@ from codes.utils import my_excepthook
 sys.excepthook = my_excepthook
 from codes.common.time_handler import get_formattedDateTime
 import os
+from codes.utils import convert_to_hms
 import time
 from collections import Counter
 import joblib
@@ -1169,6 +1170,7 @@ def try_semi_train(model,train_set,device,logger,class_num,
     return best_model,model
 
 def scene_single(dataset_name, model_name, attack_name, r_seed):
+    start_time = time.perf_counter()
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
     # 随机数种子
@@ -1322,6 +1324,10 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
         logger,
         blank_model = None)
     logger.info(f"{proctitle}实验场景结束")
+    end_time = time.perf_counter()
+    cost_time = end_time - start_time
+    hours, minutes, seconds = convert_to_hms(cost_time)
+    logger.info(f"共耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 
 def get_cleanTrainSet_cleanTestSet(dataset_name, attack_name):
@@ -1407,6 +1413,15 @@ def try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed
     acc = e.eval_acc()
     logger.info(f"last_model ACC:{acc}")
 
+def get_classNum(dataset_name):
+    class_num = None
+    if dataset_name == "CIFAR10":
+        class_num = 10
+    elif dataset_name == "GTSRB":
+        class_num = 43
+    elif dataset_name == "ImageNet2012_subset":
+        class_num = 30
+    return class_num
 
 if __name__ == "__main__":
     
@@ -1421,17 +1436,27 @@ if __name__ == "__main__":
     # # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
+
     gpu_id = 0
-    for r_seed in [7,8]:
-        for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-            if dataset_name == "CIFAR10":
-                class_num = 10
-            elif dataset_name == "GTSRB":
-                class_num = 43
-            else:
-                class_num = 30
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                    scene_single(dataset_name,model_name,attack_name,r_seed)
+    r_seed = 5
+    dataset_name = "ImageNet2012_subset"
+    class_num = get_classNum(dataset_name)
+    model_name = "DenseNet"
+    for attack_name in ["IAD", "Refool", "WaNet"]:
+        scene_single(dataset_name,model_name,attack_name,r_seed)
+
+
+    # gpu_id = 0
+    # for r_seed in [7,8]:
+    #     for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #         if dataset_name == "CIFAR10":
+    #             class_num = 10
+    #         elif dataset_name == "GTSRB":
+    #             class_num = 43
+    #         else:
+    #             class_num = 30
+    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #                 scene_single(dataset_name,model_name,attack_name,r_seed)

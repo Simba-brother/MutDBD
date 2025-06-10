@@ -6,6 +6,7 @@ from torchvision.models.feature_extraction import create_feature_extractor
 from codes.asd.log import Record,AverageMeter,tabulate_step_meter,tabulate_epoch_meter
 from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
 from codes.core.models.resnet import ResNet
+from codes.utils import convert_to_hms
 from prefetch_generator import BackgroundGenerator
 
 def linear_test(model, loader, criterion, device,logger):
@@ -142,7 +143,8 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     model.train()
     
     start = time.time()
-    for batch_idx in range(kwargs["train_iteration"]): 
+    for batch_idx in range(kwargs["train_iteration"]):
+        batch_start_time = time.perf_counter()
         try:
             
             xbatch = next(xiter) # 带标签中的一个批次
@@ -155,9 +157,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             xinput, xtarget = xbatch["img"], xbatch["target"]
             # iter_xbatch_end_time = time.perf_counter()
             # iter_xbatch_cost_time = iter_xbatch_end_time - iter_xbatch_start_time
-            # hours = int(iter_xbatch_cost_time // 3600)
-            # minutes = int((iter_xbatch_cost_time % 3600) // 60)
-            # seconds = iter_xbatch_cost_time % 6
+            # hours, minutes, seconds = convert_to_hms(iter_xbatch_cost_time)
             # print(f"iter_xbatch耗时:{hours}时{minutes}分{seconds:.3f}秒")
         try:
             # 无标签batch
@@ -171,17 +171,16 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
             # iter_ubatch_end_time = time.perf_counter()
             # iter_ubatch_cost_time = iter_ubatch_end_time - iter_ubatch_start_time
-            # hours = int(iter_ubatch_cost_time // 3600)
-            # minutes = int((iter_ubatch_cost_time % 3600) // 60)
-            # seconds = iter_ubatch_cost_time % 6
+            # hours, minutes, seconds = convert_to_hms(iter_ubatch_cost_time)
             # print(f"iter_ubatch耗时:{hours}时{minutes}分{seconds:.3f}秒")
-
+        data_end_time = time.perf_counter()
+        data_cost_time = data_end_time - batch_start_time
+        hours, minutes, seconds = convert_to_hms(data_cost_time)
+        logger.info(f"每个批次数据加载耗时:{hours}时{minutes}分{seconds:.3f}秒")
         batch_size = xinput.size(0)
         xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
             1, xtarget.view(-1, 1).long(), 1
         )
-
-
         xinput = xinput.to(device) # 带标签批次
         xtarget = xtarget.to(device) 
         uinput1 = uinput1.to(device) # 不带标签批次
@@ -234,12 +233,15 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         optimizer.zero_grad()
         loss.backward() # 该批次反向传播
         optimizer.step()
-
         loss_meter.update(loss.item())
         xloss_meter.update(Lx.item())
         uloss_meter.update(Lu.item())
         lambda_u_meter.update(lambda_u)
         tabulate_step_meter(batch_idx, kwargs["train_iteration"], 3, meter_list,logger)
+        batch_end_time = time.perf_counter()
+        batch_cost_time = batch_end_time - batch_start_time
+        hours, minutes, seconds = convert_to_hms(batch_cost_time)
+        logger.info(f"每个批次耗时:{hours}时{minutes}分{seconds:.3f}秒")
     logger.info("MixMatch training summary:")
     tabulate_epoch_meter(time.time() - start, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}

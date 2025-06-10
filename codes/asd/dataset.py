@@ -123,9 +123,11 @@ class MixMatchDataset(Dataset):
 
     def __init__(self, dataset, semi_idx, labeled=True):
         super(MixMatchDataset, self).__init__()
+        self.dataset = dataset
+        # self.dataset_2 = dataset_2
         # self.dataset = copy.deepcopy(dataset)
         # self.dataset_2 = copy.deepcopy(dataset_2)
-        self.dataset = dataset
+        # self.dataset_2 = copy.deepcopy(dataset_2)
         # self.dataset_2 = dataset_2
         if labeled:
             # 有标签的情况，从semi_id array中找到对应的索引
