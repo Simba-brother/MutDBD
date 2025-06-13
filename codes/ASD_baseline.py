@@ -357,7 +357,7 @@ if __name__ == "__main__":
 
     gpu_id = 1
     baseline_name = "ASD_new"
-    rand_seed = 9
+    rand_seed = 1
     dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
     model_name = "ResNet18"
