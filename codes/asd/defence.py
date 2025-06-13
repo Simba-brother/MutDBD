@@ -291,12 +291,23 @@ def defence_train(
         clean_data_info[class_idx] = []
         all_data_info[class_idx] = []
     # 遍历poisoned_trainset(新鲜的)
+    idx = 0 # sample_idx
+    for batch in poisoned_eval_dataset_loader:
+        label_batch = batch[1]
+        for i in range(label_batch.shape[0]):
+            label = label_batch[i].item()
+            if idx not in poisoned_ids:
+                clean_data_info[label].append(idx)
+            all_data_info[label].append(idx)    
+            idx += 1
+    '''
     for idx, item in enumerate(poisoned_train_dataset):
         sample = item[0]
         label = item[1]
         if idx not in poisoned_ids:
             clean_data_info[label].append(idx)
         all_data_info[label].append(idx)
+    '''
     # 选出的clean seed idx，每个类别选10个样本
     choice_clean_indice = []
     for class_idx, idx_list in clean_data_info.items():
@@ -409,8 +420,8 @@ def defence_train(
             udata = MixMatchDataset(poisoned_train_dataset, split_indice, labeled=False)  
         # 开始半监督训练
         # 开始clean pool进行监督学习,poisoned pool进行半监督学习
-        xloader = DataLoader(xdata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
-        uloader = DataLoader(udata, batch_size=64, num_workers=16, pin_memory=True, shuffle=True, drop_last=True)
+        xloader = DataLoader(xdata, batch_size=64, num_workers=8, pin_memory=True, shuffle=True, drop_last=True)
+        uloader = DataLoader(udata, batch_size=64, num_workers=8, pin_memory=True, shuffle=True, drop_last=True)
         logger.info("MixMatch training...")
         # 半监督训练参数,固定1024个batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}

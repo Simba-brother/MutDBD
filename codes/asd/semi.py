@@ -8,6 +8,7 @@ from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
 from codes.core.models.resnet import ResNet
 from codes.utils import convert_to_hms
 from prefetch_generator import BackgroundGenerator
+from itertools import cycle
 
 def linear_test(model, loader, criterion, device,logger):
     loss_meter = AverageMeter("loss")
@@ -46,9 +47,9 @@ def linear_test(model, loader, criterion, device,logger):
 def poison_linear_record(model, loader, criterion, device, **kwargs):
     # 数据集数量
     num_data = len(loader.dataset)
-    target_record = Record("target", num_data) # 记录标签 
-    poison_record = Record("poison", num_data) # 是否被污染
-    origin_record = Record("origin", num_data) # 原本的target
+    # target_record = Record("target", num_data) # 记录标签 
+    # poison_record = Record("poison", num_data) # 是否被污染
+    # origin_record = Record("origin", num_data) # 原本的target
     loss_record = Record("loss", num_data) # 记录每个样本的loss
     '''
     dataset_name = kwargs["dataset_name"]
@@ -79,9 +80,9 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
     '''
     # feature_record = Record("feature", (num_data, model.backbone.feature_dim))
     record_list = [
-        target_record,
-        poison_record,
-        origin_record,
+        # target_record,
+        # poison_record,
+        # origin_record,
         loss_record
         # feature_record,
     ]
@@ -101,7 +102,7 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
         criterion.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
         raw_loss = criterion(output, target)
 
-        target_record.update(target)
+        # target_record.update(target)
         # poison_record.update(batch["poison"])
         # origin_record.update(batch["origin"])
         loss_record.update(raw_loss.cpu())
@@ -137,16 +138,20 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     meter_list = [loss_meter, xloss_meter, uloss_meter, lambda_u_meter]
 
     # 数据加载器转化成迭代器
-    xiter = iter(xloader) # 有监督
-    uiter = iter(uloader) # 无监督
+    xiter = cycle(xloader) # 有监督
+    uiter = cycle(uloader) # 无监督
 
     model.train()
-    
     start = time.time()
     for batch_idx in range(kwargs["train_iteration"]):
-        batch_start_time = time.perf_counter()
+         # 加载batch data
+        xbatch = next(xiter)
+        xinput, xtarget = xbatch["img"], xbatch["target"]
+    
+        ubatch = next(uiter)
+        uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+        '''
         try:
-            
             xbatch = next(xiter) # 带标签中的一个批次
             xinput, xtarget = xbatch["img"], xbatch["target"]
         except:
@@ -172,11 +177,8 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             # iter_ubatch_end_time = time.perf_counter()
             # iter_ubatch_cost_time = iter_ubatch_end_time - iter_ubatch_start_time
             # hours, minutes, seconds = convert_to_hms(iter_ubatch_cost_time)
-            # print(f"iter_ubatch耗时:{hours}时{minutes}分{seconds:.3f}秒")
-        data_end_time = time.perf_counter()
-        data_cost_time = data_end_time - batch_start_time
-        hours, minutes, seconds = convert_to_hms(data_cost_time)
-        logger.info(f"每个批次数据加载耗时:{hours}时{minutes}分{seconds:.3f}秒")
+            # print(f"iter_ubatch耗时:{hours}时{minutes}分{seconds:.3f}秒")'
+        '''
         batch_size = xinput.size(0)
         xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
             1, xtarget.view(-1, 1).long(), 1
@@ -238,10 +240,6 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         uloss_meter.update(Lu.item())
         lambda_u_meter.update(lambda_u)
         tabulate_step_meter(batch_idx, kwargs["train_iteration"], 3, meter_list,logger)
-        batch_end_time = time.perf_counter()
-        batch_cost_time = batch_end_time - batch_start_time
-        hours, minutes, seconds = convert_to_hms(batch_cost_time)
-        logger.info(f"每个批次耗时:{hours}时{minutes}分{seconds:.3f}秒")
     logger.info("MixMatch training summary:")
     tabulate_epoch_meter(time.time() - start, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}
