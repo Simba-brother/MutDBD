@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
+from itertools import cycle
 # import torch.nn.functional as F
 from torch.utils.data import DataLoader # 用于批量加载训练集的
 
@@ -422,6 +423,55 @@ def defence_train(
         # 开始clean pool进行监督学习,poisoned pool进行半监督学习
         xloader = DataLoader(xdata, batch_size=64, num_workers=8, pin_memory=True, shuffle=True, drop_last=True)
         uloader = DataLoader(udata, batch_size=64, num_workers=8, pin_memory=True, shuffle=True, drop_last=True)
+        '''
+        iter_start_time = time.perf_counter()
+        for _ in range(1024):
+            try:
+                
+                xbatch = next(xiter) # 带标签中的一个批次
+                xinput, xtarget = xbatch["img"], xbatch["target"]
+            except:
+                # 如果迭代器走到最后无了,则从头再来迭代
+                # iter_xbatch_start_time = time.perf_counter()
+                xiter = iter(xloader) # 这是一个小耗时操作
+                xbatch = next(xiter)
+                xinput, xtarget = xbatch["img"], xbatch["target"]
+                # iter_xbatch_end_time = time.perf_counter()
+                # iter_xbatch_cost_time = iter_xbatch_end_time - iter_xbatch_start_time
+                # hours, minutes, seconds = convert_to_hms(iter_xbatch_cost_time)
+                # print(f"iter_xbatch耗时:{hours}时{minutes}分{seconds:.3f}秒")
+            try:
+                # 无标签batch
+                ubatch = next(uiter) # 不带标签中的一个批次
+                uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+            except:
+                # 如果迭代器走到最后无了,则从头再来迭代
+                # iter_ubatch_start_time = time.perf_counter()
+                uiter = iter(uloader) # 这是一个小耗时操作
+                ubatch = next(uiter)
+                uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+                # iter_ubatch_end_time = time.perf_counter()
+                # iter_ubatch_cost_time = iter_ubatch_end_time - iter_ubatch_start_time
+                # hours, minutes, seconds = convert_to_hms(iter_ubatch_cost_time)
+                # print(f"iter_ubatch耗时:{hours}时{minutes}分{seconds:.3f}秒")'
+        iter_end_time = time.perf_counter()
+        iter_cost_time = iter_end_time - iter_start_time
+        hours, minutes, seconds = convert_to_hms(iter_cost_time)
+        logger.info(f"iter_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
+
+        cycle_start_time = time.perf_counter()
+        xiter = cycle(xloader)
+        uiter = cycle(uloader)
+        for _ in range(1024):
+            xbatch = next(xiter)
+            xinput, xtarget = xbatch["img"], xbatch["target"]
+            ubatch = next(uiter)
+            uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+        cycle_end_time = time.perf_counter()
+        cycle_cost_time = cycle_end_time - cycle_start_time
+        hours, minutes, seconds = convert_to_hms(itecycle_cost_timer_cost_time)
+        logger.info(f"cycle_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
+        '''
         logger.info("MixMatch training...")
         # 半监督训练参数,固定1024个batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
