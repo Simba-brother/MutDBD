@@ -183,9 +183,11 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
             1, xtarget.view(-1, 1).long(), 1
         )
-        xinput = xinput.to(device) # 带标签批次
+
+        # batch数据放到gpu上
+        xinput = xinput.to(device)
         xtarget = xtarget.to(device) 
-        uinput1 = uinput1.to(device) # 不带标签批次
+        uinput1 = uinput1.to(device)
         uinput2 = uinput2.to(device)
         # uinput2 = uinput2.cuda(gpu, non_blocking=True)
 
@@ -232,9 +234,9 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         )
         # 半监督损失
         loss = Lx + lambda_u * Lu
-        optimizer.zero_grad()
-        loss.backward() # 该批次反向传播
-        optimizer.step()
+        optimizer.zero_grad() # 优化器梯度清0
+        loss.backward() # 基于loss函数求梯度值
+        optimizer.step() # 优化器优化基于损失函数求的梯度优化模型参数
         loss_meter.update(loss.item())
         xloss_meter.update(Lx.item())
         uloss_meter.update(Lu.item())
