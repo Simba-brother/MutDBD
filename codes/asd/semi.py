@@ -88,25 +88,25 @@ def poison_linear_record(model, loader, criterion, device, **kwargs):
     ]
 
     model.eval()
-    # 判断模型是在CPU还是GPU上
-    for _, batch in enumerate(loader): # 分批次遍历数据加载器
-        # data = batch["img"].to(device)
-        # target = batch["target"].to(device)
-        data = batch[0].to(device)
-        target = batch[1].to(device)
-        with torch.no_grad():
-            # feature_extractor = create_feature_extractor(model, return_nodes=[node_str])
-            # feature_dic = feature_extractor(data)
-            # feature = feature_dic[node_str]
-            output = model(data)
-        criterion.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
-        raw_loss = criterion(output, target)
+    with torch.no_grad():
+        for _, batch in enumerate(loader): # 分批次遍历数据加载器
+            # data = batch["img"].to(device)
+            # target = batch["target"].to(device)
+            data = batch[0].to(device)
+            target = batch[1].to(device)
+            with torch.no_grad():
+                # feature_extractor = create_feature_extractor(model, return_nodes=[node_str])
+                # feature_dic = feature_extractor(data)
+                # feature = feature_dic[node_str]
+                output = model(data)
+            criterion.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
+            raw_loss = criterion(output, target)
 
-        # target_record.update(target)
-        # poison_record.update(batch["poison"])
-        # origin_record.update(batch["origin"])
-        loss_record.update(raw_loss.cpu())
-        # feature_record.update(feature.cpu())
+            # target_record.update(target)
+            # poison_record.update(batch["poison"])
+            # origin_record.update(batch["origin"])
+            loss_record.update(raw_loss.cpu())
+            # feature_record.update(feature.cpu())
 
     return record_list
 

@@ -331,7 +331,12 @@ def defence_train(
         if epoch < 60: # [0,59]
             # 记录下样本的loss,feature,label,方便进行clean数据的挖掘
             # 对全体数据集进行评估（耗时）
+            record_start_time = time.perf_counter()
             record_list = poison_linear_record(model, poisoned_eval_dataset_loader, split_criterion, device, dataset_name=kwargs["dataset_name"], model_name =kwargs["model_name"] )
+            record_end_time = time.perf_counter()
+            record_cost_time = record_end_time - record_start_time
+            hours, minutes, seconds = convert_to_hms(record_cost_time)
+            logger.info(f"record耗时:{hours}时{minutes}分{seconds:.3f}秒")
             if epoch % 5 == 0 and epoch != 0:
                 # 每五个epoch 每个class中选择数量就多加10个
                 choice_num += 10
