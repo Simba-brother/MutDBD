@@ -357,10 +357,10 @@ if __name__ == "__main__":
 
     gpu_id = 1
     baseline_name = "ASD_new"
-    rand_seed = 2
+    rand_seed = 5
     dataset_name = "GTSRB"
     class_num = get_classNum(dataset_name)
-    model_name = "ResNet18"
+    model_name = "DenseNet"
     for attack_name in ["BadNets","IAD", "Refool", "WaNet"]:
         main()
 
