@@ -481,7 +481,8 @@ def defence_train(
         # 半监督训练参数,固定1024个batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
         train_start_time = time.perf_counter()
-        poison_train_result = mixmatch_train(
+        # poison_train_result = 
+        mixmatch_train(
             model,
             xloader,
             uloader,
@@ -509,6 +510,9 @@ def defence_train(
         poison_test_result = linear_test(
             model, poisoned_test_dataset_loader, criterion,device,logger
         )
+        clean_acc = clean_test_result["acc"]
+        asr = poison_test_result["acc"]
+        logger.info(f"Epoch:{epoch},Clean ACC:{clean_acc},ASR:{asr}")
 
         # if scheduler is not None:
         #     scheduler.step()
@@ -518,6 +522,7 @@ def defence_train(
 
         # Save result and checkpoint.
         # 保存结果
+        '''
         result = {
             "poison_train": poison_train_result, # 训练集上结果
             "clean_test": clean_test_result, # 干净测试集上结果
@@ -531,7 +536,7 @@ def defence_train(
         save_file_path = os.path.join(result_epochs_dir, save_file_name)
         joblib.dump(result,save_file_path)
         logger.info(f"epoch:{epoch},result: is saved in {save_file_path}")
-
+        '''
         
         # result2csv(result, save_dir)
        
@@ -548,7 +553,7 @@ def defence_train(
          # 每个训练轮次的状态
         saved_dict = {
             "epoch": epoch,
-            "result": result,
+            # "result": result,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
             "best_acc": best_acc, # clean testset上的acc
@@ -576,7 +581,7 @@ def defence_train(
         if epoch == 59:
             epoch_59_path = os.path.join(ckpt_dir,"epoch_59.pth")
             torch.save(model.state_dict(),epoch_59_path)
-            logger.info("Save the secondtolast model to {}".format(epoch_59_path))
+            logger.info("Save the epoch59 model to {}".format(epoch_59_path))
     
     logger.info("ASD_train_End")
     return best_ckpt_path,latest_ckpt_path

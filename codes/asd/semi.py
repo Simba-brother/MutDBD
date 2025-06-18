@@ -131,25 +131,41 @@ def interleave(xy, batch):
     return [torch.cat(v, dim=0) for v in xy]
 
 def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,logger, **kwargs):
+    '''
     loss_meter = AverageMeter("loss")
     xloss_meter = AverageMeter("xloss")
     uloss_meter = AverageMeter("uloss")
     lambda_u_meter = AverageMeter("lambda_u")
     meter_list = [loss_meter, xloss_meter, uloss_meter, lambda_u_meter]
+    '''
 
     # 数据加载器转化成迭代器
     xiter = cycle(xloader) # 有监督
     uiter = cycle(uloader) # 无监督
 
     model.train()
-    start = time.time()
+    '''
+    loss_list = []
+    xloss_list = []
+    uloss_list = []
+    lambda_list = []
+    '''
+    # start = time.time()
     for batch_idx in range(kwargs["train_iteration"]):
+        # batch_start_time = time.perf_counter()
+
+        # load_batch_data_start_time = time.perf_counter()
          # 加载batch data
         xbatch = next(xiter)
         xinput, xtarget = xbatch["img"], xbatch["target"]
     
         ubatch = next(uiter)
         uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+        # load_batch_data_end_time = time.perf_counter()
+        # load_batch_data_cost_time = load_batch_data_end_time - load_batch_data_start_time
+        # hours, minutes, seconds = convert_to_hms(load_batch_data_cost_time) 
+        # logger.info(f"加载一批数据耗时:{hours}时{minutes}分{seconds:.3f}秒")
+
         '''
         try:
             xbatch = next(xiter) # 带标签中的一个批次
@@ -179,6 +195,7 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             # hours, minutes, seconds = convert_to_hms(iter_ubatch_cost_time)
             # print(f"iter_ubatch耗时:{hours}时{minutes}分{seconds:.3f}秒")'
         '''
+        # before_calcu_loss_start_time = time.perf_counter()
         batch_size = xinput.size(0)
         xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
             1, xtarget.view(-1, 1).long(), 1
@@ -223,8 +240,13 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
         logit = interleave(logit, batch_size)
         xlogit = logit[0]
         ulogit = torch.cat(logit[1:], dim=0)
+        # before_calcu_loss_end_time = time.perf_counter()
+        # before_calcu_loss_cost_time = before_calcu_loss_end_time - before_calcu_loss_start_time
+        # hours, minutes, seconds = convert_to_hms(before_calcu_loss_cost_time) 
+        # logger.info(f"计算损失之前的准备工作耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
         # 计算损失
+        # calcu_loss_start_time = time.perf_counter()
         Lx, Lu, lambda_u = criterion(
             xlogit,
             mixed_target[:batch_size],
@@ -232,18 +254,54 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
             mixed_target[batch_size:],
             epoch + batch_idx / kwargs["train_iteration"],
         )
-        # 半监督损失
         loss = Lx + lambda_u * Lu
+        # calcu_loss_end_time = time.perf_counter()
+        # calcu_loss_cost_time = calcu_loss_end_time - calcu_loss_start_time 
+        # hours, minutes, seconds = convert_to_hms(calcu_loss_cost_time)
+        # logger.info(f"计算损失耗时:{hours}时{minutes}分{seconds:.3f}秒")
+
+        # BP_start_time = time.perf_counter()
         optimizer.zero_grad() # 优化器梯度清0
         loss.backward() # 基于loss函数求梯度值
         optimizer.step() # 优化器优化基于损失函数求的梯度优化模型参数
+        # BP_end_time = time.perf_counter()
+        # BP_cost_time = BP_end_time - BP_start_time
+        # hours, minutes, seconds = convert_to_hms(BP_cost_time)
+        # logger.info(f"反向传播耗时:{hours}时{minutes}分{seconds:.3f}秒")
+        '''
+        loss_list.append(loss.item())
+        xloss_list.append(Lx.item())
+        uloss_list.append(Lu.item())
+        lambda_list.append(lambda_u)
+        '''
+        '''
+        write_start_time = time.perf_counter()
         loss_meter.update(loss.item())
         xloss_meter.update(Lx.item())
         uloss_meter.update(Lu.item())
         lambda_u_meter.update(lambda_u)
         tabulate_step_meter(batch_idx, kwargs["train_iteration"], 3, meter_list,logger)
+        write_end_time = time.perf_counter()
+        write_cost_time = write_end_time - write_start_time
+        hours, minutes, seconds = convert_to_hms(write_cost_time)
+        logger.info(f"制表写结果耗时:{hours}时{minutes}分{seconds:.3f}秒")
+        '''
+        '''
+        batch_end_time = time.perf_counter()
+        batch_cost_time = batch_end_time -batch_start_time
+        hours, minutes, seconds = convert_to_hms(batch_cost_time)
+        logger.info(f"batch总耗时:{hours}时{minutes}分{seconds:.3f}秒")
+        '''
+    '''
+    avg_loss = round(sum(loss_list) / len(loss_list),4)
+    avg_xloss =round(sum(xloss_list) / len(xloss_list),4)
+    avg_uloss = round(sum(uloss_list) / len(uloss_list),4)
+    avg_lambda = round(sum(lambda_list) / len(lambda_list),4)
+    logger.info(f"Epoch:{epoch}, avg_loss:{avg_loss}, avg_xloss:{avg_xloss}, avg_uloss:{avg_uloss}, avg_lambda:{avg_lambda}")
+    '''
+    '''
     logger.info("MixMatch training summary:")
     tabulate_epoch_meter(time.time() - start, meter_list,logger)
     result = {m.name: m.total_avg for m in meter_list}
-
     return result
+    '''

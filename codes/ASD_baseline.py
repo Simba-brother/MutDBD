@@ -346,23 +346,23 @@ def get_classNum(dataset_name):
 
 if __name__ == "__main__":
 
-    # gpu_id = 1
-    # rand_seed = 1
-    # baseline_name = "ASD_new"
-    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    # attack_name ="IAD" # BadNets, IAD, Refool, WaNet
-    # class_num = get_classNum(dataset_name)
-    # main()
-
-    gpu_id = 1
+    gpu_id = 0
+    rand_seed = 20
     baseline_name = "ASD_new"
-    rand_seed = 5
-    dataset_name = "GTSRB"
+    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="IAD" # BadNets, IAD, Refool, WaNet
     class_num = get_classNum(dataset_name)
-    model_name = "DenseNet"
-    for attack_name in ["BadNets","IAD", "Refool", "WaNet"]:
-        main()
+    main()
+
+    # gpu_id = 0
+    # baseline_name = "ASD_new"
+    # rand_seed = 7
+    # dataset_name = "ImageNet2012_subset"
+    # class_num = get_classNum(dataset_name)
+    # model_name = "ResNet18"
+    # for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #     main()
 
     # for rand_seed in [10]:
     #     for dataset_name in ["CIFAR10"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
