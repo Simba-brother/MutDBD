@@ -1,1643 +1,363 @@
 CIFAR10:
     ResNet18:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-05_12:13:46/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-05_12:13:46/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-05_12:13:46/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-05_12:13:46/ckpt/epoch_59.pth"
-            exp_2:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-09_16:04:11/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-09_16:04:11/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-09_16:04:11/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-09_16:04:11/ckpt/epoch_59.pth"
-            exp_3:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:49:02/ckpt/latest_model.pt"
-                best_model: "/data2/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:49:02/ckpt/best_model.pt"
-                secondTolast_model: "/data2/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:49:02/ckpt/secondtolast.pt"
-                epoch_59_model: "/data2/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:49:02/ckpt/epoch_59.pt"
-            exp_4:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:02/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:02/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:02/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:02/ckpt/epoch_59.pth"
-            exp_5:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:52:30/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:52:30/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:52:30/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-10_19:52:30/ckpt/epoch_59.pth"
+            exp_1: "2025-06-05_12:13:46" # random_seed: 1
+            exp_2: "2025-06-09_16:04:11" 
+            exp_3: "2025-06-10_19:49:02"
+            exp_4: "2025-06-08_21:52:02"
+            exp_5: "2025-06-10_19:52:30"
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_7:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:25/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:25/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:25/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:52:25/ckpt/epoch_59.pth"
+            exp_7: "2025-06-08_21:52:25"
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:53:12/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:53:12/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:53:12/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/BadNets/2025-06-08_21:53:12/ckpt/epoch_59.pth"
+            exp_10: "2025-06-08_21:53:12"
         IAD:
-            exp_1: # random_seed: 1
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-05_18:21:24/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-05_18:21:24/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-05_18:21:24/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-05_18:21:24/ckpt/epoch_59.pth"
+            exp_1: "2025-06-05_18:21:24"
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_02:46:56/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_02:46:56/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_02:46:56/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_02:46:56/ckpt/epoch_59.pth"
+            exp_4: "2025-06-09_02:46:56"
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_7:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:10:33/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:10:33/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:10:33/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:10:33/ckpt/epoch_59.pth"
+            exp_7: "2025-06-09_04:10:33"
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:17:36/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:17:36/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:17:36/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/IAD/2025-06-09_04:17:36/ckpt/epoch_59.pth"
+            exp_10: "2025-06-09_04:17:36"
         Refool:
-            exp_1: # random_seed: 1
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-06_06:32:25/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-06_06:32:25/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-06_06:32:25/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-06_06:32:25/ckpt/epoch_59.pth"
+            exp_1: "2025-06-06_06:32:25"
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_08:05:40/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_08:05:40/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_08:05:40/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_08:05:40/ckpt/epoch_59.pth"
+            exp_4: "2025-06-09_08:05:40"
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_7:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:51:42/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:51:42/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:51:42/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:51:42/ckpt/epoch_59.pth"
+            exp_7: "2025-06-09_09:51:42"
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:53:14/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:53:14/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:53:14/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/Refool/2025-06-09_09:53:14/ckpt/epoch_59.pth"
+            exp_10: "2025-06-09_09:53:14"
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/WaNet/2025-06-09_15:06:46/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/WaNet/2025-06-09_15:06:46/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/WaNet/2025-06-09_15:06:46/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/CIFAR10/ResNet18/WaNet/2025-06-09_15:06:46/ckpt/epoch_59.pth"
+            exp_4: "2025-06-09_15:06:46"
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     VGG19:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_9: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_8: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     DenseNet:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
 GTSRB:
     ResNet18:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: ""
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: ""
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/IAD/2025-06-17_01:42:09/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/IAD/2025-06-17_01:42:09/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/IAD/2025-06-17_01:42:09/ckpt/secondtolast.pth"
-                epoch_59_model: /data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/IAD/2025-06-17_01:42:09/ckpt/epoch_59.pth
+            exp_1:
+            exp_2: "2025-06-17_01:42:09"
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_04:22:15/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_04:22:15/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_04:22:15/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_04:22:15/ckpt/epoch_59.pth"
-            exp_2:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_05:11:11/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_05:11:11/ckpt/latest_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_05:11:11/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/Refool/2025-06-17_05:11:11/ckpt/epoch_59.pth"
+            exp_1: "2025-06-17_04:22:15"
+            exp_2: "2025-06-17_05:11:11"
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/WaNet/2025-06-17_09:03:28/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/WaNet/2025-06-17_09:03:28/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/WaNet/2025-06-17_09:03:28/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/GTSRB/ResNet18/WaNet/2025-06-17_09:03:28/ckpt/epoch_59.pth"
-            exp_3:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_22:13:09/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_22:13:09/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_22:13:09/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_22:13:09/ckpt/epoch_59.pth"
+            exp_1:
+            exp_2: "2025-06-17_09:03:28"
+            exp_3: "2025-06-15_22:13:09"
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     VGG19:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
     DenseNet:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_4: "2025-06-17_12:32:26"
+            exp_5: "2025-06-17_12:32:40"
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10:  
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
 ImageNet2012_subset:
     ResNet18:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-13_23:24:58/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-13_23:24:58/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-13_23:24:58/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-13_23:24:58/ckpt/epoch_59.pth"
-            exp_2:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:40:20/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:40:20/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:40:20/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:40:20/ckpt/epoch_59.pth"
-            exp_3:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:28/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:28/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:28/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:28/ckpt/epoch_59.pth"
-            exp_4:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:35/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:35/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:35/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/BadNets/2025-06-14_15:41:35/ckpt/epoch_59.pth"
+            exp_1: "2025-06-13_23:24:58"
+            exp_2: "2025-06-14_15:40:20"
+            exp_3: "2025-06-14_15:41:28"
+            exp_4: "2025-06-14_15:41:35"
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-14_05:46:34/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-14_05:46:34/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-14_05:46:34/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-14_05:46:34/ckpt/epoch_59.pth"
-            exp_2:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_20:30:58/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_20:30:58/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_20:30:58/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/IAD/2025-06-15_20:30:58/ckpt/epoch_59.pth"
+            exp_1: "2025-06-14_05:46:34"
+            exp_2: "2025-06-15_20:30:58"
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_15:46:49/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_15:46:49/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_15:46:49/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_15:46:49/ckpt/epoch_59.pth"
-            exp_3:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_17:32:41/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_17:32:41/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_17:32:41/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-16_17:32:41/ckpt/epoch_59.pth"
-            exp_4:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-15_17:16:21/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-15_17:16:21/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-15_17:16:21/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/Refool/2025-06-15_17:16:21/ckpt/epoch_59.pth"
+            exp_1:
+            exp_2: "2025-06-16_15:46:49"
+            exp_3: "2025-06-16_17:32:41"
+            exp_4: "2025-06-15_17:16:21"
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/WaNet/2025-06-16_03:01:25/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/WaNet/2025-06-16_03:01:25/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/WaNet/2025-06-16_03:01:25/ckpt/secondtolast.pth"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/ResNet18/WaNet/2025-06-16_03:01:25/ckpt/epoch_59.pth"
+            exp_4: "2025-06-16_03:01:25"
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     DenseNet:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/DenseNet/BadNets/2025-06-05_20:51:56/ckpt/latest_model.pt"
-                best_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/DenseNet/BadNets/2025-06-05_20:51:56/ckpt/best_model.pt"
-                secondTolast_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/DenseNet/BadNets/2025-06-05_20:51:56/ckpt/secondtolast.pt"
-                epoch_59_model: "/data/mml/backdoor_detect/experiments/ASD_new/ImageNet2012_subset/DenseNet/BadNets/2025-06-05_20:51:56/ckpt/epoch_59.pt"
+            exp_10: "2025-06-05_20:51:56"
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
