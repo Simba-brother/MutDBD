@@ -1,1643 +1,363 @@
 CIFAR10:
     ResNet18:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
+            exp_2:  
+            exp_3: 
+            exp_4: 
+            exp_5: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_7: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_4: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_7: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_4: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_7: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_4: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     VGG19:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_9: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_8: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     DenseNet:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
 GTSRB:
     ResNet18:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
+            exp_2: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
+            exp_2: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
+            exp_2: 
+            exp_3: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     VGG19:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
     DenseNet:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_4: 
+            exp_5: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10:  
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
 ImageNet2012_subset:
     ResNet18:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
+            exp_2: 
+            exp_3: 
+            exp_4: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1: 
+            exp_2: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
+            exp_2: 
+            exp_3: 
+            exp_4: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_4: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
     DenseNet:
         BadNets:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         IAD:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
         Refool:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
         WaNet:
-            exp_1: # random_seed: 1
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_1:
             exp_2:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_3:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_4:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_5:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_6:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_7:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_8:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
             exp_9:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
-            exp_10:
-                last_model: 
-                best_model: 
-                secondTolast_model: 
-                epoch_59_model: 
+            exp_10: 
