@@ -1,5 +1,6 @@
 # ASD baseline mian file
 
+from memory_profiler import profile
 import joblib
 import setproctitle
 import os
@@ -10,7 +11,7 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-from itertools import cycle
+from itertools import cycle,islice
 # import torch.nn.functional as F
 from torch.utils.data import DataLoader # 用于批量加载训练集的
 
@@ -463,20 +464,10 @@ def defence_train(
         iter_cost_time = iter_end_time - iter_start_time
         hours, minutes, seconds = convert_to_hms(iter_cost_time)
         logger.info(f"iter_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
-
-        cycle_start_time = time.perf_counter()
-        xiter = cycle(xloader)
-        uiter = cycle(uloader)
-        for _ in range(1024):
-            xbatch = next(xiter)
-            xinput, xtarget = xbatch["img"], xbatch["target"]
-            ubatch = next(uiter)
-            uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
-        cycle_end_time = time.perf_counter()
-        cycle_cost_time = cycle_end_time - cycle_start_time
-        hours, minutes, seconds = convert_to_hms(itecycle_cost_timer_cost_time)
-        logger.info(f"cycle_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
         '''
+        temp_1(xloader,uloader,logger)
+        temp_2(xloader,uloader,logger)
+    
         logger.info("MixMatch training...")
         # 半监督训练参数,固定1024个batch
         semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
@@ -681,6 +672,36 @@ def train_the_virtual_model(meta_virtual_model, poison_train_loader, meta_optimi
         loss.backward()
         # 优化器中的参数更新
         meta_optimizer.step()
+@profile
+def temp_1(xloader,uloader,logger):
+    cycle_start_time = time.perf_counter()
+    xiter = cycle(xloader)
+    uiter = cycle(uloader)
+    for _ in range(1024):
+        xbatch = next(xiter)
+        xinput, xtarget = xbatch["img"], xbatch["target"]
+        ubatch = next(uiter)
+        uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+    cycle_end_time = time.perf_counter()
+    cycle_cost_time = cycle_end_time - cycle_start_time
+    hours, minutes, seconds = convert_to_hms(cycle_cost_time)
+    logger.info(f"cycle_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
+
+@profile
+def temp_2(xloader,uloader,logger):
+    cycle_start_time = time.perf_counter()
+    xiter = cycle(xloader)
+    uiter = cycle(uloader)
+    xlimited_cycled_data = islice(xiter,0,1024)
+    ulimited_cycled_data = islice(uiter,0,1024)
+    for xbatch,ubatch in zip(xlimited_cycled_data,ulimited_cycled_data):
+        xinput, xtarget = xbatch["img"], xbatch["target"]
+        uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+    cycle_end_time = time.perf_counter()
+    cycle_cost_time = cycle_end_time - cycle_start_time
+    hours, minutes, seconds = convert_to_hms(cycle_cost_time)
+    logger.info(f"cycle_islice_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
+    
 
 if __name__ == "__main__":
     main_test()
