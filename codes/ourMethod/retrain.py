@@ -1050,7 +1050,7 @@ def our_ft_2(
     asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
     logger.info(f"防御后last_model:ASR:{asr}, ACC:{acc}")
 
-    '''
+    
     save_file_name = "best_defense_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(best_defense_model.state_dict(), save_file_path)
@@ -1060,7 +1060,7 @@ def our_ft_2(
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"防御后的last权重保存在:{save_file_path}")
-    '''
+    
 
 def get_fresh_dataset(poisoned_ids):
     if dataset_name == "CIFAR10":
@@ -1178,14 +1178,14 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 进程名称
     proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
-    log_base_dir = "log/OurMethod/defence_train/retrain"
+    log_base_dir = "log/OurMethod_new/"
     # log_test_dir = "log/temp"
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_r_seed_{r_seed}_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
     
     logger.info(proctitle)
-    exp_dir = os.path.join(config.exp_root_dir,"OurMethod","Retrain",dataset_name,model_name,attack_name,_time)
+    exp_dir = os.path.join(config.exp_root_dir,"OurMethod_new",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     os.makedirs(exp_dir,exist_ok=True)
     logger.info(f"进程名称:{proctitle}")
     logger.info(f"实验目录:{exp_dir}")
@@ -1208,9 +1208,10 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     poisoned_ids = backdoor_data["poisoned_ids"]
     # 预制的poisoned_testset
     poisoned_testset = backdoor_data["poisoned_testset"] 
-
+    '''
     # 空白模型
     blank_model = get_model(dataset_name, model_name)
+    '''
     
     # 某个变异模型
     # mutations_dir = os.path.join(
@@ -1439,10 +1440,10 @@ if __name__ == "__main__":
 
     gpu_id = 0
     r_seed = 5
-    dataset_name = "ImageNet2012_subset"
+    dataset_name = "CIFAR10"
     class_num = get_classNum(dataset_name)
-    model_name = "DenseNet"
-    for attack_name in ["IAD", "Refool", "WaNet"]:
+    model_name = "ResNet18"
+    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
         scene_single(dataset_name,model_name,attack_name,r_seed)
 
 

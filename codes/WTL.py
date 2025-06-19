@@ -1,9 +1,32 @@
 '''
 统计所有场景的W/T/L
 '''
+import os
+import yaml
 import pandas as pd
 from scipy.stats import wilcoxon
 from cliffs_delta import cliffs_delta
+
+
+# 读取yaml
+yaml_path = "codes/OurMethod_res_config.yaml"
+with open(yaml_path, "r") as file:
+    data = yaml.load(file, Loader=yaml.FullLoader)
+
+dataset_name = "CIFAR10"
+model_name = "ResNet18"
+attack_name = "BadNets"
+exp_id = "exp_1"
+time_str = data[dataset_name][model_name][attack_name][exp_id]
+# 获得模型路径
+base_dir_path = "/data/mml/backdoor_detect/experiments/OurMethod/Retrain"
+os.path.join(base_dir_path,dataset_name,model_name,attack_name,time_str, "last_BD_model.pth")
+print("")
+
+
+
+
+
 # 读取excel
 excel_path = "/data/mml/backdoor_detect/experiments/实验结果/WTL.xlsx"
 PN_dataframe = pd.read_excel(excel_path,sheet_name="PN")

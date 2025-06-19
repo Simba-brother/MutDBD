@@ -1,6 +1,7 @@
 CIFAR10:
     ResNet18:
         BadNets:
+            # /data/mml/backdoor_detect/experiments/OurMethod/Retrain/CIFAR10/ResNet18/BadNets/2025-06-08_23:13:31
             exp_1: "2025-06-04_18:18:26"
             exp_2: "2025-06-05_14:22:41"
             exp_3: "2025-06-06_11:41:25"
