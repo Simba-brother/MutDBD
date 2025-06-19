@@ -1439,7 +1439,7 @@ if __name__ == "__main__":
 
 
     gpu_id = 0
-    r_seed = 5
+    r_seed = 1
     dataset_name = "CIFAR10"
     class_num = get_classNum(dataset_name)
     model_name = "ResNet18"
