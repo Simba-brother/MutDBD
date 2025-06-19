@@ -1176,7 +1176,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 随机数种子
     np.random.seed(r_seed)
     # 进程名称
-    proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}"
+    proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     log_base_dir = "log/OurMethod_new/"
     # log_test_dir = "log/temp"
@@ -1438,26 +1438,23 @@ if __name__ == "__main__":
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
+    # gpu_id = 1
+    # r_seed = 1
+    # dataset_name = "GTSRB"
+    # class_num = get_classNum(dataset_name)
+    # model_name = "ResNet18"
+    # for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #     scene_single(dataset_name,model_name,attack_name,r_seed)
+
+
+
+
     gpu_id = 0
-    r_seed = 1
-    dataset_name = "CIFAR10"
-    class_num = get_classNum(dataset_name)
-    model_name = "ResNet18"
-    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-        scene_single(dataset_name,model_name,attack_name,r_seed)
-
-
-    # gpu_id = 0
-    # for r_seed in [7,8]:
-    #     for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-    #         if dataset_name == "CIFAR10":
-    #             class_num = 10
-    #         elif dataset_name == "GTSRB":
-    #             class_num = 43
-    #         else:
-    #             class_num = 30
-    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-    #                 continue
-    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #                 scene_single(dataset_name,model_name,attack_name,r_seed)
+    for r_seed in [1]:
+        for dataset_name in ["GTSRB", "ImageNet2012_subset"]:
+            class_num = get_classNum(dataset_name)
+            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+                    scene_single(dataset_name,model_name,attack_name,r_seed)

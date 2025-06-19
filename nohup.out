@@ -1,0 +1,33 @@
+CRITICAL:root:Uncaught exception
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ASD_baseline.py", line 365, in <module>
+    main()
+  File "/home/mml/workspace/backdoor_detect/codes/ASD_baseline.py", line 249, in main
+    best_ckpt_path, latest_ckpt_path = defence_train(
+  File "/home/mml/workspace/backdoor_detect/codes/asd/defence.py", line 273, in defence_train
+    model.to(device)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 MiB. GPU 0 has a total capacty of 79.15 GiB of which 3.94 MiB is free. Process 3170600 has 2.60 GiB memory in use. Process 884330 has 9.93 GiB memory in use. Process 1462868 has 65.61 GiB memory in use. Process 2752188 has 414.00 MiB memory in use. Including non-PyTorch memory, this process has 414.00 MiB memory in use. Of the allocated memory 0 bytes is allocated by PyTorch, and 0 bytes is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/codes/ASD_baseline.py", line 365, in <module>
+    main()
+  File "/home/mml/workspace/backdoor_detect/codes/ASD_baseline.py", line 249, in main
+    best_ckpt_path, latest_ckpt_path = defence_train(
+  File "/home/mml/workspace/backdoor_detect/codes/asd/defence.py", line 273, in defence_train
+    model.to(device)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+  File "/home/mml/anaconda3/envs/backdoor_detect/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 MiB. GPU 0 has a total capacty of 79.15 GiB of which 3.94 MiB is free. Process 3170600 has 2.60 GiB memory in use. Process 884330 has 9.93 GiB memory in use. Process 1462868 has 65.61 GiB memory in use. Process 2752188 has 414.00 MiB memory in use. Including non-PyTorch memory, this process has 414.00 MiB memory in use. Of the allocated memory 0 bytes is allocated by PyTorch, and 0 bytes is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
