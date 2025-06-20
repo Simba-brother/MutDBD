@@ -8,7 +8,7 @@ from codes.datasets.GTSRB.models.vgg import VGG as GTSRB_VGG
 from codes.core.models.resnet import ResNet
 from codes.utils import convert_to_hms
 from prefetch_generator import BackgroundGenerator
-from itertools import cycle
+from itertools import cycle,islice
 
 def linear_test(model, loader, criterion, device,logger):
     loss_meter = AverageMeter("loss")
@@ -142,7 +142,8 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     # 数据加载器转化成迭代器
     xiter = cycle(xloader) # 有监督
     uiter = cycle(uloader) # 无监督
-
+    xlimited_cycled_data = islice(xiter,0,1024)
+    ulimited_cycled_data = islice(uiter,0,1024)
     model.train()
     '''
     loss_list = []
@@ -151,6 +152,8 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     lambda_list = []
     '''
     # start = time.time()
+    
+    '''
     for batch_idx in range(kwargs["train_iteration"]):
         # batch_start_time = time.perf_counter()
 
@@ -161,11 +164,15 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     
         ubatch = next(uiter)
         uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+
         # load_batch_data_end_time = time.perf_counter()
         # load_batch_data_cost_time = load_batch_data_end_time - load_batch_data_start_time
         # hours, minutes, seconds = convert_to_hms(load_batch_data_cost_time) 
         # logger.info(f"加载一批数据耗时:{hours}时{minutes}分{seconds:.3f}秒")
-
+    '''
+    for batch_idx,(xbatch,ubatch) in enumerate(zip(xlimited_cycled_data,ulimited_cycled_data)):
+        xinput, xtarget = xbatch["img"], xbatch["target"]
+        uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
         '''
         try:
             xbatch = next(xiter) # 带标签中的一个批次

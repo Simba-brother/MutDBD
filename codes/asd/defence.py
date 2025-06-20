@@ -465,8 +465,10 @@ def defence_train(
         hours, minutes, seconds = convert_to_hms(iter_cost_time)
         logger.info(f"iter_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
         '''
+        '''
         temp_1(xloader,uloader,logger)
         temp_2(xloader,uloader,logger)
+        '''
     
         logger.info("MixMatch training...")
         # 半监督训练参数,固定1024个batch
@@ -672,6 +674,8 @@ def train_the_virtual_model(meta_virtual_model, poison_train_loader, meta_optimi
         loss.backward()
         # 优化器中的参数更新
         meta_optimizer.step()
+
+'''
 @profile
 def temp_1(xloader,uloader,logger):
     cycle_start_time = time.perf_counter()
@@ -701,7 +705,7 @@ def temp_2(xloader,uloader,logger):
     cycle_cost_time = cycle_end_time - cycle_start_time
     hours, minutes, seconds = convert_to_hms(cycle_cost_time)
     logger.info(f"cycle_islice_1024个batch耗时:{hours}时{minutes}分{seconds:.3f}秒")
-    
+'''
 
 if __name__ == "__main__":
     main_test()
