@@ -1450,8 +1450,8 @@ if __name__ == "__main__":
 
 
     gpu_id = 0
-    for r_seed in [1]:
-        for dataset_name in ["GTSRB", "ImageNet2012_subset"]:
+    for r_seed in [4]:
+        for dataset_name in ["CIFAR10","GTSRB", "ImageNet2012_subset"]:
             class_num = get_classNum(dataset_name)
             for model_name in ["ResNet18", "VGG19", "DenseNet"]:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":

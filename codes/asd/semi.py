@@ -142,8 +142,8 @@ def mixmatch_train(model, xloader, uloader, criterion, optimizer, epoch, device,
     # 数据加载器转化成迭代器
     xiter = cycle(xloader) # 有监督
     uiter = cycle(uloader) # 无监督
-    xlimited_cycled_data = islice(xiter,0,1024)
-    ulimited_cycled_data = islice(uiter,0,1024)
+    xlimited_cycled_data = islice(xiter,0,kwargs["train_iteration"])
+    ulimited_cycled_data = islice(uiter,0,kwargs["train_iteration"])
     model.train()
     '''
     loss_list = []
