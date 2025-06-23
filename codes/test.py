@@ -181,7 +181,11 @@ def test27():
     data_list.insert(0,99)
     print(data_list)
 
+def test28():
+    res = 0 % 5
+    print(res)
+
 if __name__ == "__main__":
-    test27()
+    test28()
 
 

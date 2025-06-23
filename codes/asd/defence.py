@@ -279,8 +279,8 @@ def defence_train(
     split_criterion = SCELoss(alpha=0.1, beta=1, num_classes=class_num)
     # 分割损失函数对象放到gpu上
     split_criterion.to(device)
-    # semi 损失函数
-    semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=15) # rampup_length = 120  same as epoches
+    # semi 损失函数 # rampup_length = 120  same as epoches
+    semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=15)
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     # 模型参数的优化器
@@ -339,6 +339,7 @@ def defence_train(
             hours, minutes, seconds = convert_to_hms(record_cost_time)
             logger.info(f"record耗时:{hours}时{minutes}分{seconds:.3f}秒")
             if epoch % 5 == 0 and epoch != 0:
+                # epoch:5,10,15,...,55
                 # 每五个epoch 每个class中选择数量就多加10个
                 choice_num += 10
             logger.info("Mining clean data by class-aware loss-guided split...")
