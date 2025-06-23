@@ -59,6 +59,16 @@ asd_config = {
     },
 }
 
+LC_attack_config = {
+    "CIFAR10":{
+        "ResNet18":{
+            "benign_model_state_dir":"2025-06-23_12:06:52_2025-06-23_12:20:37"
+        }
+    }
+}
+
+
+'''
 asd_result = {
     "CIFAR10":{
         "ResNet18":{
@@ -121,7 +131,7 @@ asd_result = {
         }
     }
 }
-
+'''
 
 
 

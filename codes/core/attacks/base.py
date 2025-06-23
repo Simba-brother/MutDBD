@@ -298,7 +298,7 @@ class Base(object):
                 log(msg)
                 # 评估完后modelj进入train mode
                 self.model.train()
-
+            '''
             if (i + 1) % self.current_schedule['save_epoch_interval'] == 0:
                 ckpt_model_filename = "ckpt_epoch_" + str(i+1) + ".pth"
                 ckpt_model_path = os.path.join(work_dir, ckpt_model_filename)
@@ -307,6 +307,7 @@ class Base(object):
                 torch.save(self.model.state_dict(), ckpt_model_path)
                 # 保存后赶紧训练模式
                 self.model.train()
+            '''
         # epochs完成后model放入cpu返回
         self.model.eval()
         self.model = self.model.cpu()

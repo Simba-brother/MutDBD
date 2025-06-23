@@ -17,7 +17,6 @@ from PIL import Image
 import torchvision.transforms as transforms
 from torchvision.transforms import functional as F
 from torchvision.transforms import Compose
-from tqdm import tqdm
 
 from .base import *
 from ..utils import PGD
@@ -617,7 +616,7 @@ class LabelConsistent(Base):
             perturbed_imgs = []
             targets = []
             # 遍历加载器中的batch
-            for batch in tqdm(data_loader):
+            for batch in data_loader:
                 # Adversarially perturb image. Note that torchattacks will automatically
                 # move `img` and `target` to the gpu where the attacker.model is located.
                 batch_img = batch[0]

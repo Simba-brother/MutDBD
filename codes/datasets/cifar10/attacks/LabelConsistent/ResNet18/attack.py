@@ -5,6 +5,7 @@ This is the test code of poisoned training under LabelConsistent.
 import sys
 sys.path.append("./")
 import os
+import copy
 import os.path as osp
 import time
 import random
@@ -32,16 +33,18 @@ model_name = "ResNet18"
 attack_name = "LabelConsistent"
 global_seed = 0
 deterministic = True
+benign_training_flag = False
+gpu_id = 0
 
 torch.manual_seed(global_seed) # cpu随机数种子
 victim_model = ResNet(18,num_classes=10)
-adv_model = ResNet(18,num_classes=10)
-'''
-# 这个是先通过benign训练得到的clean model weight
-clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign_attack", "best_model.pth")
-adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
-adv_model.load_state_dict(adv_model_weight)
-'''
+adv_model = copy.deepcopy(victim_model)
+
+_time_dir = config.LC_attack_config[dataset_name][model_name]["benign_model_state_dir"]
+benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, _time_dir, "best_model.pth")
+benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
+adv_model.load_state_dict(benign_state_dict)
+
 # 对抗样本保存目录
 # 获得数据集
 transform_train = Compose([
@@ -100,9 +103,9 @@ weight[-3:,-3:] = 1.0
 
 _time = get_formattedDateTime()
 schedule = {
-    'device': 'cuda:0',
+    'device': f'cuda:{gpu_id}',
 
-    'benign_training': True,
+    'benign_training': benign_training_flag,
     'batch_size': 128,
     'num_workers': 4,
 
@@ -161,24 +164,25 @@ def attack():
     print("LabelConsistent开始攻击")
     label_consistent.train()
     backdoor_model = label_consistent.best_model
-    workdir =label_consistent.work_dir
+    # workdir =label_consistent.work_dir
     print("LabelConsistent攻击结束,开始保存攻击数据")
     dict_state = {}
-    clean_testset = testset
     poisoned_testset = label_consistent.poisoned_test_dataset
     poisoned_trainset = label_consistent.poisoned_train_dataset
     poisoned_ids = poisoned_trainset.poisoned_set
-    pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
-    purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
-    dict_state["clean_testset"] = clean_testset
-    dict_state["poisoned_testset"] = poisoned_testset
-    dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
-    dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
-    dict_state["backdoor_model"] = backdoor_model
-    dict_state["poisoned_trainset"] = poisoned_trainset
+    # clean_testset = testset
+    # pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
+    # purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
     dict_state["poisoned_ids"] = poisoned_ids
-    torch.save(dict_state, os.path.join(workdir, "dict_state.pth"))
-    print(f"攻击数据被保存到:{os.path.join(workdir, 'dict_state.pth')}")
+    dict_state["poisoned_testset"] = poisoned_testset
+    dict_state["backdoor_model"] = backdoor_model
+    
+    save_path = os.path.join(
+        config.exp_root_dir, "ATTACK",
+        dataset_name, model_name, attack_name,
+        "backdoor_data.pth")
+    torch.save(dict_state, save_path)
+    print(f"攻击结果保存到:{save_path}")
     print("attack() finished")
 
 def eval(model,testset):
@@ -259,9 +263,14 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
+    '''
     setproctitle.setproctitle(dataset_name+"|"+model_name+"|"+attack_name+"|"+"BenignTrain")
     benign_attack()
-    # attack()
+    '''
+
+    setproctitle.setproctitle(dataset_name+"|"+model_name+"|"+attack_name+"|"+"ATTACK")
+    attack()
+
     # process_eval()
     # get_dict_state()
     # update_dict_state()
