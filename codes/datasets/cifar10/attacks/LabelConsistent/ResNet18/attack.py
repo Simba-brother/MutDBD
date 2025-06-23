@@ -12,35 +12,36 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset
-import torchvision
 from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip
-import torchvision.transforms as transforms
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from codes import core
+from codes import config
 import setproctitle
-from core.models.resnet import ResNet
+from codes.core.models.resnet import ResNet
 from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from codes.common.time_handler import get_formattedDateTime
 
 def _seed_worker(worker_id):
-    worker_seed =666
+    worker_seed =0
     np.random.seed(worker_seed)
     random.seed(worker_seed)
-exp_root_dir = "/data/mml/backdoor_detect/experiments"
+exp_root_dir = config.exp_root_dir
 dataset_name = "CIFAR10"
 model_name = "ResNet18"
 attack_name = "LabelConsistent"
-global_seed = 666
+global_seed = 0
 deterministic = True
 
 torch.manual_seed(global_seed) # cpu随机数种子
 victim_model = ResNet(18,num_classes=10)
 adv_model = ResNet(18,num_classes=10)
+'''
 # 这个是先通过benign训练得到的clean model weight
 clean_adv_model_weight_path = os.path.join(exp_root_dir, "attack", dataset_name, model_name, attack_name, "benign_attack", "best_model.pth")
 adv_model_weight = torch.load(clean_adv_model_weight_path, map_location="cpu")
 adv_model.load_state_dict(adv_model_weight)
+'''
 # 对抗样本保存目录
 # 获得数据集
 transform_train = Compose([
@@ -52,14 +53,14 @@ transform_test = Compose([
     ToTensor()
 ])
 trainset = DatasetFolder(
-    root='/data/mml/backdoor_detect/dataset/cifar10/train',
+    root=os.path.join(config.CIFAR10_dataset_dir,"train"),
     loader=cv2.imread, # ndarray
     extensions=('png',),
     transform=transform_train,
     target_transform=None,
     is_valid_file=None)
 testset = DatasetFolder(
-    root='/data/mml/backdoor_detect/dataset/cifar10/test',
+    root=os.path.join(config.CIFAR10_dataset_dir,"test"),
     loader=cv2.imread,
     extensions=('png',),
     transform=transform_test,
@@ -97,11 +98,11 @@ weight[-3:,-3:] = 1.0
 
 
 
-
+_time = get_formattedDateTime()
 schedule = {
     'device': 'cuda:0',
 
-    'benign_training': False, # 先训练处来一benign model
+    'benign_training': True,
     'batch_size': 128,
     'num_workers': 4,
 
@@ -117,16 +118,16 @@ schedule = {
     'test_epoch_interval': 10,
     'save_epoch_interval': 10,
 
-    'save_dir': osp.join(exp_root_dir, "attack", dataset_name, model_name, attack_name),
-    'experiment_name': 'attack'
+    'save_dir': osp.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
+    'experiment_name': _time
 }
 
 
-eps = 8
-alpha = 1.5
-steps = 100
+eps = 8 # Maximum perturbation for PGD adversarial attack. Default: 8.
+alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
+steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
 max_pixel = 255
-poisoned_rate = 0.1
+poisoned_rate = 0.1 # 目标类别的0.1
 
 label_consistent = core.LabelConsistent(
     train_dataset=trainset,
@@ -134,15 +135,15 @@ label_consistent = core.LabelConsistent(
     model=victim_model,
     adv_model=adv_model,
     # The directory to save adversarial dataset
-    adv_dataset_dir=os.path.join(exp_root_dir,"attack", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
+    adv_dataset_dir=os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
     loss=nn.CrossEntropyLoss(),
-    y_target=1,
+    y_target=config.target_class_idx,
     poisoned_rate=poisoned_rate,
     pattern=pattern,
     weight=weight,
-    eps=eps, # 8
-    alpha=alpha, # 1.5
-    steps=steps, # 100
+    eps=eps,
+    alpha=alpha,
+    steps=steps,
     max_pixel=max_pixel,
     poisoned_transform_train_index=0,
     poisoned_transform_test_index=0,
@@ -258,10 +259,10 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    setproctitle.setproctitle(dataset_name+"_"+model_name+"_"+attack_name+"_eval")
-    # benign_attack()
+    setproctitle.setproctitle(dataset_name+"|"+model_name+"|"+attack_name+"|"+"BenignTrain")
+    benign_attack()
     # attack()
-    process_eval()
+    # process_eval()
     # get_dict_state()
     # update_dict_state()
     pass

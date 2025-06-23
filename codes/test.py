@@ -176,8 +176,12 @@ def test26():
     c = a*b
     print(c)
 
+def test27():
+    data_list = [7,3,4]
+    data_list.insert(0,99)
+    print(data_list)
 
 if __name__ == "__main__":
-    test26()
+    test27()
 
 

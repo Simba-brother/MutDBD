@@ -980,7 +980,6 @@ def our_ft_2(
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
     '''4:重训练'''
-
     logger.info("朴素的retrain")
     choice_rate = 0.6
     choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
@@ -1449,8 +1448,8 @@ if __name__ == "__main__":
 
 
 
-    gpu_id = 0
-    for r_seed in [4]:
+    gpu_id = 1
+    for r_seed in [10]:
         for dataset_name in ["CIFAR10","GTSRB", "ImageNet2012_subset"]:
             class_num = get_classNum(dataset_name)
             for model_name in ["ResNet18", "VGG19", "DenseNet"]:

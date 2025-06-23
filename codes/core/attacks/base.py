@@ -218,10 +218,11 @@ class Base(object):
         self.model.train()
         # target model的参数优化器
         optimizer = torch.optim.SGD(self.model.parameters(), lr=self.current_schedule ['lr'], momentum=self.current_schedule['momentum'], weight_decay=self.current_schedule['weight_decay'])
+        '''
         # 改为我自己benign 训练的优化器
-        # params_1x = [param for name, param in self.model.named_parameters() if 'fc' not in str(name)]
-        # optimizer = torch.optim.Adam([{'params':params_1x}, {'params': self.model.fc.parameters(), 'lr': self.current_schedule['lr']*10}], lr=self.current_schedule['lr'], weight_decay=self.current_schedule['weight_decay'])
-
+        params_1x = [param for name, param in self.model.named_parameters() if 'fc' not in str(name)]
+        optimizer = torch.optim.Adam([{'params':params_1x}, {'params': self.model.fc.parameters(), 'lr': self.current_schedule['lr']*10}], lr=self.current_schedule['lr'], weight_decay=self.current_schedule['weight_decay'])
+        '''
         # 总迭代次数，每个batch,iteration++
         iteration = 0
         last_time = time.time()
