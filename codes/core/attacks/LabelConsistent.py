@@ -525,15 +525,16 @@ class LabelConsistent(Base):
                 y_target=y_target,
                 poisoned_rate=poisoned_rate)
 
+            # 开始方块投毒
             self.poisoned_train_dataset = CreatePoisonedTargetDataset(
-                self.target_adv_dataset,
+                self.target_adv_dataset, # 包含和训练集所有数据，并且poisoned_set样本是被adv的
                 poisoned_set,
                 pattern,
                 weight,
-                poisoned_transform_train_index)
+                poisoned_transform_train_index) # poisoned_transform_train_index = 0
         else:
             self.poisoned_train_dataset = train_dataset
-
+        # 不需要对抗
         self.poisoned_test_dataset = CreatePoisonedDataset(
             test_dataset,
             y_target,
@@ -593,7 +594,7 @@ class LabelConsistent(Base):
             device = torch.device(self.current_schedule['device']) 
             # adv model放入gpu
             adv_model = adv_model.to(device)
-            # copy一份原始数据集的转换器
+            # copy一份原始数据集的通用转换器
             backup_transform = deepcopy(dataset.transform)
             # 将数据集转换器设置为adv转换器
             dataset.transform = adv_transform # Compose([transforms.ToTensor()])
@@ -601,7 +602,7 @@ class LabelConsistent(Base):
             data_loader = DataLoader(
                 dataset,
                 batch_size=self.current_schedule['batch_size'],
-                shuffle=False,
+                shuffle=False, # importent 
                 num_workers=self.current_schedule['num_workers'],
                 drop_last=False,
                 pin_memory=True,
@@ -636,9 +637,9 @@ class LabelConsistent(Base):
             # list中的batch 们cat起来
             original_imgs = torch.cat(original_imgs, dim=0).numpy()
             perturbed_imgs = torch.cat(perturbed_imgs, dim=0).numpy()
-            targets = torch.cat(targets, dim=0).numpy()     
-            # np.squeeze https://blog.csdn.net/fred_18/article/details/92688903
-            # 选择出targets == y_target的index
+            targets = torch.cat(targets, dim=0).numpy() #存储了数据集的全部标签 targets[idx]即为样本idx的标签      
+            # np.squeeze https://blog.csdn.net/fred_18/article/details/92688903(压缩维度)
+            # 选择出targets == y_target的sample index
             y_target_index_list = np.squeeze(np.argwhere(targets == y_target))
             # 攻击类别的总样本数
             total_target_num = len(y_target_index_list)
@@ -649,13 +650,13 @@ class LabelConsistent(Base):
             # poisoned ids
             # poisoned set中的都是y_target
             poisoned_set = frozenset(list(y_target_index_list[:poisoned_num]))
-            # 为label创建下一层文件夹
+            # 创建类别目录
             for target in np.unique(targets):
                 os.makedirs(osp.join(adv_dataset_dir, 'whole_adv_dataset', str(target).zfill(2)), exist_ok=True)
                 os.makedirs(osp.join(adv_dataset_dir, 'target_adv_dataset', str(target).zfill(2)), exist_ok=True)
-
+            # 保存中毒id
             np.save(osp.join(adv_dataset_dir, 'poisoned_set.npy'), y_target_index_list[:poisoned_num])
-
+            # 遍历所有样本（o_img,adv_img,target）
             for index, item in enumerate(zip(original_imgs, perturbed_imgs, targets)):
                 original_img, perturbed_img, target = item
                 cv2.imwrite(osp.join(adv_dataset_dir, 'whole_adv_dataset', str(target).zfill(2), str(index).zfill(8) + '.png'), perturbed_img)
