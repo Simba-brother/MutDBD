@@ -1,3 +1,4 @@
+'''
 ASD = {
     "CIFAR10":{
         "ResNet18":{
@@ -367,7 +368,7 @@ Our = {
         }
     }
 }
-
+'''
 import os
 import torch
 from torch.utils.data import DataLoader,Subset,ConcatDataset
@@ -441,7 +442,7 @@ def get_fresh_dataset(poisoned_ids,dataset_name,attack_name):
             clean_trainset, clean_testset = imagenet_WaNet()
     return poisoned_trainset, clean_trainset, clean_testset
 
-def single_scence(dataset_name, model_name, attack_name):
+def single_scence(dataset_name, model_name, attack_name, defense_model_state_dict_path):
     # 加载后门攻击配套数据
     backdoor_data_path = os.path.join(config.exp_root_dir, 
                                     "ATTACK",
@@ -452,7 +453,7 @@ def single_scence(dataset_name, model_name, attack_name):
     backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
     # 后门模型
     backdoor_model = backdoor_data["backdoor_model"]
-    backdoor_model.load_state_dict(torch.load(ASD[dataset_name][model_name][attack_name][exp_id],map_location="cpu")["model_state_dict"])
+    backdoor_model.load_state_dict(torch.load(defense_model_state_dict_path,map_location="cpu")["model_state_dict"])
     # 训练数据集中中毒样本id
     poisoned_ids = backdoor_data["poisoned_ids"]
     # 预制的poisoned_testset
@@ -489,18 +490,21 @@ def single_scence(dataset_name, model_name, attack_name):
     print(f"dataset_name:{dataset_name}")
     print(f"model_name:{model_name}")
     print(f"attack_name:{attack_name}")
-    print(f"exp_id:{exp_id}")
+    print(f"random_seed:{random_seed}")
     print(f"ASR:{asr}")
     print(f"ACC:{acc}")
 
 
-dataset_name = "ImageNet2012_subset" # ["CIFAR10","GTSRB", "ImageNet2012_subset"]
-model_name = "DenseNet" # ["ResNet18", "VGG19", "DenseNet"]
-attack_name = "IAD" # ["BadNets", "IAD", "Refool", "WaNet"]
-exp_id = "exp_3" # ["exp_1","exp_2","exp_3"]
-gpu_id = 1
+dataset_name = "CIFAR10" # ["CIFAR10","GTSRB", "ImageNet2012_subset"]
+model_name = "ResNet18" # ["ResNet18", "VGG19", "DenseNet"]
+attack_name = "BadNets" # ["BadNets", "IAD", "Refool", "WaNet"]
+random_seed = 2
+exp_id = f"exp_{random_seed}" # ["exp_1","exp_2","exp_3"]
+gpu_id = 0
+_time_dir_name = "2025-06-09_16:04:11"
+defense_model_state_dict_path = os.path.join(config.exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,_time_dir_name,"ckpt","latest_model.pt")
 
-single_scence(dataset_name,model_name,attack_name)
+single_scence(dataset_name,model_name,attack_name,defense_model_state_dict_path)
 print("END")
 
 
