@@ -178,7 +178,7 @@ def test26():
 
 def test27():
     data_list = [7,3,4]
-    data_list.insert(0,99)
+    data_list.insert(-1,99)
     print(data_list)
 
 def test28():
@@ -186,6 +186,6 @@ def test28():
     print(res)
 
 if __name__ == "__main__":
-    test28()
+    test27()
 
 

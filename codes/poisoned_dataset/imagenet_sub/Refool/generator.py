@@ -124,7 +124,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     trainset,testset = imagenet_Refool()
     '''
     transform_train = Compose([
-        ToPILImage(),
+        ToPILImage(), # 在这之前投毒
         Resize((224, 224)),
         RandomHorizontalFlip(p=0.5),
         ToTensor(),
@@ -132,7 +132,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
                             (0.229, 0.224, 0.225))
     ])
     transform_test = Compose([
-        ToPILImage(),
+        ToPILImage(), # 在这之前投毒
         Resize((224, 224)),
         ToTensor(),
         Normalize((0.485, 0.456, 0.406),

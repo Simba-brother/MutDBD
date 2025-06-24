@@ -107,6 +107,23 @@ def main():
         dataset_name, model_name, attack_name, poisoned_ids)
     
     '''
+    print(f"{dataset_name}|{model_name}|{attack_name}")
+    poisoned_id_list = list(poisoned_ids)
+    all_ids_list= list(range(len(clean_trainset)))
+    clean_id_list = list(set(all_ids_list) - set(poisoned_ids))
+    p_img,p_label,p_flag = poisoned_trainset[poisoned_id_list[0]]
+    assert p_flag is True, "中毒索引错误"
+    assert p_label == 3, "中毒标签错误"
+    p_max_v = torch.max(p_img)
+    print(f"poisoned_img_max_v:{p_max_v}")
+
+    c_img,c_label,c_flag = poisoned_trainset[clean_id_list[2]]
+    assert c_flag is False, "中毒索引错误"
+    c_max_v = torch.max(c_img)
+    print(f"clean_img_max_v:{c_max_v}")
+    '''
+
+    '''
     # 提前把poisoned_trainset加载到内存中
     extract_time_start = time.perf_counter()
     extracted_poisoned_trainset_1 = ExtractDataset(poisoned_trainset)
@@ -355,14 +372,16 @@ if __name__ == "__main__":
     # class_num = get_classNum(dataset_name)
     # main()
 
+    
     gpu_id = 0
     baseline_name = "ASD_new"
     rand_seed = 1
-    dataset_name = "CIFAR10"
+    dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
     model_name = "ResNet18"
-    for attack_name in ["BadNets"]:
+    for attack_name in ["WaNet"]:
         main()
+    
 
     # for rand_seed in [10]:
     #     for dataset_name in ["CIFAR10"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:

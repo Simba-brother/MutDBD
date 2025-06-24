@@ -63,7 +63,7 @@ testset = DatasetFolder(
     is_valid_file=None # 图像验证器
     )
 
-# backdoor pattern
+# backdoor pattern, tensor type
 pattern = torch.zeros((32, 32), dtype=torch.uint8)
 pattern[-3:, -3:] = 255
 weight = torch.zeros((32, 32), dtype=torch.float32)

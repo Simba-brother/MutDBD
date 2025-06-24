@@ -126,7 +126,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     transform_train = Compose([
         ToPILImage(),
         # RandomCrop(size=32,padding=4,padding_mode="reflect"), 
-        Resize((32, 32)),
+        Resize((32, 32)), # 在这之前投毒
         RandomHorizontalFlip(p=1),
         ToTensor(),
         Normalize((0.485, 0.456, 0.406),
@@ -134,7 +134,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     ])
     # 测试集transform
     transform_test = Compose([
-        ToPILImage(),
+        ToPILImage(), # 在这之前投毒
         Resize((32, 32)),
         ToTensor(),
         Normalize((0.485, 0.456, 0.406),

@@ -110,13 +110,13 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     trainset,testset = cifar10_WaNet()
     '''
     transform_train = Compose([
-        ToTensor(),
+        ToTensor(), # 在这之前投毒
         RandomCrop(size=32,padding=4,padding_mode="reflect"),
         RandomHorizontalFlip()
     ])
     # 获得测试集transform
     transform_test = Compose([
-        ToTensor()
+        ToTensor() # 在这之前投毒
     ])
     '''
     if model_name == "ResNet18":

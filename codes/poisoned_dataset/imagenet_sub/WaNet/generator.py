@@ -110,14 +110,14 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     trainset,testset = imagenet_WaNet()
     '''
     transform_train = Compose([
-        ToTensor(),
+        ToTensor(), # 在这之前投毒
         RandomHorizontalFlip(),
         ToPILImage(),
         Resize((224, 224)),
         ToTensor()
     ])
     transform_test = Compose([
-        ToTensor(),
+        ToTensor(), # 在这之前投毒
         ToPILImage(),
         Resize((224, 224)),
         ToTensor()

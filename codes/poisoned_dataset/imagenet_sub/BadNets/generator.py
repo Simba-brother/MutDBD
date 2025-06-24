@@ -84,13 +84,13 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     transform_train = Compose([
         ToPILImage(),
         RandomResizedCrop(size=224), 
-        ToTensor()
+        ToTensor() # 在这之前投毒
     ])
     # 测试集transform
     transform_test = Compose([
         ToPILImage(),
         Resize((224, 224)),
-        ToTensor()
+        ToTensor() # 在这之前投毒
     ])
     '''
 

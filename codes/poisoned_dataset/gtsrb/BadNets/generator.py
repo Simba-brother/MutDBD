@@ -83,13 +83,13 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     transform_train = Compose([
         ToPILImage(),
         RandomCrop(size=32,padding=4,padding_mode="reflect"), 
-        ToTensor()
+        ToTensor() # 在这之前投毒
     ])
     # 测试集transform
     transform_test = Compose([
         ToPILImage(),
         Resize((32, 32)),
-        ToTensor()
+        ToTensor() # 在这之前投毒
     ])
     '''
     trainset,testset = gtsrb_BadNets()
