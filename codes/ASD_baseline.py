@@ -375,11 +375,11 @@ if __name__ == "__main__":
     
     gpu_id = 0
     baseline_name = "ASD_new"
-    rand_seed = 1
-    dataset_name = "ImageNet2012_subset"
+    rand_seed = 2
+    dataset_name = "CIFAR10"
     class_num = get_classNum(dataset_name)
     model_name = "ResNet18"
-    for attack_name in ["WaNet"]:
+    for attack_name in ["BadNets"]:
         main()
     
 

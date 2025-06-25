@@ -190,9 +190,10 @@ def test29():
     np.random.seed(2)
     choiced_list = np.random.choice(idx_list, replace=False, size=5).tolist()
     print(choiced_list)
-
-
+def test30():
+    a = torch.tensor([1,2,3])
+    print(type(a))
 if __name__ == "__main__":
-    test29()
+    test30()
 
 

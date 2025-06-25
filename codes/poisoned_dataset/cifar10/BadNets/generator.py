@@ -6,7 +6,7 @@ import copy
 import os
 import cv2
 import torch
-from codes.core.attacks.BadNets import AddDatasetFolderTrigger, ModifyTarget
+from codes.core.attacks.BadNets import AddDatasetFolderTrigger, ASDBadNets, ModifyTarget
 from codes.transform_dataset import cifar10_BadNets
 from torchvision.datasets import DatasetFolder
 from torchvision.transforms import Compose
@@ -42,10 +42,15 @@ class PoisonedDatasetFolder(DatasetFolder):
             self.poisoned_transform = Compose([])
         else:
             self.poisoned_transform = copy.deepcopy(self.transform) # Compose()的深度拷贝
+        
         # 中毒转化器为在普通样本转化器前再加一个AddDatasetFolderTrigger
         self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(pattern, weight))
-        # trigger_path = "codes/core/attacks/BadNets_trigger.png"
-        # self.poisoned_transform.transforms.insert(poisoned_transform_index, BadNets_transform(trigger_path))
+        
+        '''
+        trigger_path = "codes/core/attacks/BadNets_trigger.png"
+        self.poisoned_transform.transforms.insert(poisoned_transform_index, ASDBadNets(trigger_path))
+        '''
+        
         
         # Modify labels
         if self.target_transform is None:
@@ -86,7 +91,7 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     trainset,testset = cifar10_BadNets()
     # backdoor pattern
     pattern = torch.zeros((32, 32), dtype=torch.uint8)
-    pattern[-3:, -3:] = 255
+    pattern[-3:, -3:] = 255 # 用于归一化前
     weight = torch.zeros((32, 32), dtype=torch.float32)
     weight[-3:, -3:] = 1.0
 

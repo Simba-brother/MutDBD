@@ -1175,7 +1175,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 随机数种子
     np.random.seed(r_seed)
     # 进程名称
-    proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}"
+    proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
     setproctitle.setproctitle(proctitle)
     log_base_dir = "log/OurMethod_new/"
     # log_test_dir = "log/temp"
