@@ -373,9 +373,9 @@ if __name__ == "__main__":
     # main()
 
     
-    gpu_id = 0
+    gpu_id = 1
     baseline_name = "ASD_new"
-    rand_seed = 2
+    rand_seed = 4
     dataset_name = "CIFAR10"
     class_num = get_classNum(dataset_name)
     model_name = "ResNet18"

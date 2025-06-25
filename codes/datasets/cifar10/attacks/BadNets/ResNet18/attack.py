@@ -5,6 +5,7 @@ import numpy as np
 import random
 import setproctitle
 import torch
+from PIL import Image
 import torch.nn as nn
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
@@ -119,8 +120,14 @@ def attack():
     work_dir = badnets.work_dir
     # 获得backdoor model weights
     backdoor_model = badnets.best_model
+    '''
     # clean testset
     clean_testset = testset
+    # pure clean trainset
+    pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
+    # pure poisoned trainset
+    purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
+    '''
     # poisoned testset
     poisoned_testset = badnets.poisoned_test_dataset
     # poisoned trainset
@@ -128,18 +135,16 @@ def attack():
     # poisoned_ids
     poisoned_ids = poisoned_trainset.poisoned_set
 
-    # pure clean trainset
-    pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
-    # pure poisoned trainset
-    purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
 
     dict_state = {}
     dict_state["backdoor_model"] = backdoor_model
-    dict_state["poisoned_trainset"]=poisoned_trainset
+    # dict_state["poisoned_trainset"]=poisoned_trainset
     dict_state["poisoned_ids"]=poisoned_ids
+    '''
     dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
     dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
     dict_state["clean_testset"]=clean_testset
+    '''
     dict_state["poisoned_testset"]=poisoned_testset
     dict_state["pattern"] = pattern
     dict_state['weight']=weight
@@ -162,7 +167,7 @@ def main():
     backdoor_data_save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
     create_backdoor_data(attack_dict_path,backdoor_data_save_path)
     # 开始评估
-    eval_backdoor(dataset_name,attack_name,model_name)
+    eval_backdoor(dataset_name,attack_name,model_name,testset)
 
 
 if __name__ == "__main__":

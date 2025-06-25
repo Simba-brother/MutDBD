@@ -31,29 +31,29 @@ def eval_backdoor(dataset_name,attack_name,model_name, clean_testset=None):
     backdoor_data_path = os.path.join(config.exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     backdoor_model = backdoor_data["backdoor_model"]
-    poisoned_trainset = backdoor_data["poisoned_trainset"]
+    # poisoned_trainset = backdoor_data["poisoned_trainset"]
     poisoned_testset = backdoor_data["poisoned_testset"]
-    if clean_testset is None:
-        clean_testset = backdoor_data["clean_testset"]
-    poisoned_ids = backdoor_data["poisoned_ids"]
+    # if clean_testset is None:
+    #     clean_testset = backdoor_data["clean_testset"]
+    # poisoned_ids = backdoor_data["poisoned_ids"]
 
     # eval
     start_time = time.time()
     device = torch.device(f"cuda:{config.gpu_id}")
+    '''
     e =  EvalModel(backdoor_model,poisoned_trainset,device,batch_size=128,num_workers=4)
     acc = e.eval_acc()
     end_time = time.time()
     print(f"poisoned_trainset_acc:{acc},cost time:{end_time-start_time:.1f}")
+    '''
 
     start_time = time.time()
-    device = torch.device(f"cuda:{config.gpu_id}")
     e =  EvalModel(backdoor_model,poisoned_testset,device,batch_size=128,num_workers=4)
     acc = e.eval_acc()
     end_time = time.time()
     print(f"poisoned_testset(ASR):{acc},cost time:{end_time-start_time:.1f}")
 
     start_time = time.time()
-    device = torch.device(f"cuda:{config.gpu_id}")
     e =  EvalModel(backdoor_model,clean_testset,device,batch_size=128,num_workers=4)
     acc = e.eval_acc()
     end_time = time.time()

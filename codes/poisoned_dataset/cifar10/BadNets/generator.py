@@ -42,16 +42,15 @@ class PoisonedDatasetFolder(DatasetFolder):
             self.poisoned_transform = Compose([])
         else:
             self.poisoned_transform = copy.deepcopy(self.transform) # Compose()的深度拷贝
-        
+        '''
         # 中毒转化器为在普通样本转化器前再加一个AddDatasetFolderTrigger
         self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(pattern, weight))
-        
         '''
-        trigger_path = "codes/core/attacks/BadNets_trigger.png"
+
+        trigger_path = "codes/core/attacks/3*3_youxiajiao.png"
         self.poisoned_transform.transforms.insert(poisoned_transform_index, ASDBadNets(trigger_path))
-        '''
-        
-        
+    
+
         # Modify labels
         if self.target_transform is None:
             self.poisoned_target_transform = Compose([])
