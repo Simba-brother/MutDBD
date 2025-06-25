@@ -185,7 +185,14 @@ def test28():
     res = 0 % 5
     print(res)
 
+def test29():
+    idx_list = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+    np.random.seed(2)
+    choiced_list = np.random.choice(idx_list, replace=False, size=5).tolist()
+    print(choiced_list)
+
+
 if __name__ == "__main__":
-    test27()
+    test29()
 
 
