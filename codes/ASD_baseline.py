@@ -375,16 +375,16 @@ if __name__ == "__main__":
     
     gpu_id = 1
     baseline_name = "ASD_new"
-    rand_seed = 4
-    dataset_name = "CIFAR10"
+    rand_seed = 6
+    dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
-    model_name = "ResNet18"
-    for attack_name in ["BadNets"]:
+    model_name = "DenseNet"
+    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
         main()
     
-
+    # gpu_id = 1
     # for rand_seed in [10]:
-    #     for dataset_name in ["CIFAR10"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #     for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
     #         if dataset_name == "CIFAR10":
     #             class_num = 10
     #         elif dataset_name == "GTSRB":
