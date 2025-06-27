@@ -16,6 +16,7 @@ import joblib
 import torch.nn as nn
 import queue
 from codes.asd.log import Record
+from tqdm import tqdm
 
 
 
@@ -89,6 +90,7 @@ def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
 def sort_sample_id(model, device, dataset_loader, class_rank=None):
     loss_fn = nn.CrossEntropyLoss()
     model.to(device)
+    model.eval()
     # 记录每个样本的loss
     loss_record = Record("loss", len(dataset_loader.dataset))
     # 记录每个样本的label
@@ -181,7 +183,7 @@ def asd_method_state(dataset_name, model_name, attack_name, random_seed):
     exp_id = f"exp_{random_seed}"
     time_str = data[dataset_name][model_name][attack_name][exp_id]
     # 获得防御模型路径
-    defensed_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","latest_model.pt")
+    defensed_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","latest_model.pt") # key:"model_state_dict"
     # 获得选择模型路径
     selected_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","secondtolast.pth")
     return defensed_state_dict_path, selected_state_dict_path
@@ -197,7 +199,6 @@ def get_res(
     acc = em.eval_acc()
     em = EvalModel(defence_model, filtered_poisoned_testset, device)
     asr = em.eval_acc()
-
     # 中毒样本切分结果
     p_num, choiced_num, poisoning_rate = split_method(
         select_model,
@@ -238,7 +239,7 @@ def asd_unit_res(dataset_name, model_name, attack_name, random_seed,
     defensed_state_dict_path, selected_state_dict_path = asd_method_state(dataset_name, model_name, attack_name, random_seed)
     defence_model = get_model(dataset_name,model_name)
     select_model = get_model(dataset_name,model_name)
-    defence_model.load_state_dict(torch.load(defensed_state_dict_path,map_location="cpu"))
+    defence_model.load_state_dict(torch.load(defensed_state_dict_path,map_location="cpu")["model_state_dict"])
     select_model.load_state_dict(torch.load(selected_state_dict_path,map_location="cpu"))
 
     ASD_res = get_res(defence_model, select_model, device, 
@@ -325,13 +326,13 @@ def main_scene():
     asd_acc_list = []
     asd_asr_list = []
     asd_p_num_list = []
-    for random_seed in range(1,11): # 1-10
+    for random_seed in tqdm(range(1,11),desc="10次实验结果收集"): # 1-10
         # acc,asr,p_num
-        our_res, = our_unit_res(dataset_name, model_name, attack_name, random_seed, 
+        our_res = our_unit_res(dataset_name, model_name, attack_name, random_seed, 
                 poisoned_trainset, poisoned_ids,
                 filtered_poisoned_testset, clean_testset,
                 device)
-        asd_res, = asd_unit_res(dataset_name, model_name, attack_name, random_seed, 
+        asd_res = asd_unit_res(dataset_name, model_name, attack_name, random_seed, 
                 poisoned_trainset, poisoned_ids,
                 filtered_poisoned_testset, clean_testset,
                 device)
@@ -359,11 +360,32 @@ def main_scene():
     print(f"ASDAvg: ASR:{asd_asr_avg}, ACC:{asd_acc_avg}, PNUM:{asd_pNum_avg}")
     print(f"WTL: ASR:{asr_WTL_res}, ACC:{acc_WTL_res}, PNUM:{p_num_WTL_res}")
 
+
+
+
+def get_classNum(dataset_name):
+    class_num = None
+    if dataset_name == "CIFAR10":
+        class_num = 10
+    elif dataset_name == "GTSRB":
+        class_num = 43
+    elif dataset_name == "ImageNet2012_subset":
+        class_num = 30
+    return class_num
+
 if __name__ == "__main__":
+    '''
     dataset_name = "CIFAR10"
     model_name = "ResNet18"
-    attack_name = "BadNets"
-    device = torch.device("cuda:0")
+    attack_name = "IAD"
     main_scene()
-
+    '''
+    device = torch.device("cuda:0")
+    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+        class_num = get_classNum(dataset_name)
+        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                continue
+            for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+                main_scene()
 
