@@ -103,6 +103,7 @@ def sort_sample_id(model, device, dataset_loader, class_rank=None):
         loss_fn.reduction = "none" # 数据不进行规约,以此来得到每个样本的loss,而不是批次的avg_loss
         loss = loss_fn(P_Y, Y)
         loss_record.update(loss.cpu())
+        label_record.update(Y.cpu())
     # 基于loss排名
     loss_array = loss_record.data.numpy()
     # 基于loss的从小到大的样本本id排序数组
@@ -196,6 +197,7 @@ def get_res(
     acc = em.eval_acc()
     em = EvalModel(defence_model, filtered_poisoned_testset, device)
     asr = em.eval_acc()
+
     # 中毒样本切分结果
     p_num, choiced_num, poisoning_rate = split_method(
         select_model,
@@ -219,8 +221,8 @@ def our_unit_res(dataset_name, model_name, attack_name, random_seed,
     defensed_state_dict_path, selected_state_dict_path = our_method_state(dataset_name, model_name, attack_name, random_seed)
     defence_model = get_model(dataset_name,model_name)
     select_model = get_model(dataset_name,model_name)
-    defence_model.load_state_dict(defensed_state_dict_path)
-    select_model.load_state_dict(selected_state_dict_path)
+    defence_model.load_state_dict(torch.load(defensed_state_dict_path,map_location="cpu"))
+    select_model.load_state_dict(torch.load(selected_state_dict_path,map_location="cpu"))
     # seed微调后排序一下样本
     class_rank = get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)
     our_res = get_res(defence_model, select_model, device, 
@@ -236,8 +238,8 @@ def asd_unit_res(dataset_name, model_name, attack_name, random_seed,
     defensed_state_dict_path, selected_state_dict_path = asd_method_state(dataset_name, model_name, attack_name, random_seed)
     defence_model = get_model(dataset_name,model_name)
     select_model = get_model(dataset_name,model_name)
-    defence_model.load_state_dict(defensed_state_dict_path)
-    select_model.load_state_dict(selected_state_dict_path)
+    defence_model.load_state_dict(torch.load(defensed_state_dict_path,map_location="cpu"))
+    select_model.load_state_dict(torch.load(selected_state_dict_path,map_location="cpu"))
 
     ASD_res = get_res(defence_model, select_model, device, 
         clean_testset, filtered_poisoned_testset, poisoned_trainset, poisoned_ids,
@@ -359,7 +361,7 @@ def main_scene():
 
 if __name__ == "__main__":
     dataset_name = "CIFAR10"
-    model_name = "ResNet18", 
+    model_name = "ResNet18"
     attack_name = "BadNets"
     device = torch.device("cuda:0")
     main_scene()
