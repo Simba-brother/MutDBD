@@ -361,8 +361,6 @@ def main_scene():
     print(f"WTL: ASR:{asr_WTL_res}, ACC:{acc_WTL_res}, PNUM:{p_num_WTL_res}")
 
 
-
-
 def get_classNum(dataset_name):
     class_num = None
     if dataset_name == "CIFAR10":
