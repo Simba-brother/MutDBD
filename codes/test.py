@@ -7,6 +7,7 @@ import os
 import numpy as np
 import torch
 from cliffs_delta import cliffs_delta
+from scipy.stats import wilcoxon
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
 
 def test1():
@@ -211,10 +212,25 @@ def test32():
     # 参数1远远小于参数2的话 d=-1 res=large
     d, res =cliffs_delta(data_2_list, data_1_list)
     print(d,res)
-    
+
+def test33():
+    # Scene:CIFAR10|ResNet18|IAD
+    our_asr_list = [0.017, 0.058, 0.029, 0.046, 0.082, 0.033, 0.082, 0.045, 0.03, 0.102]
+    asd_asr_list = [0.046, 0.048, 0.997, 1.0, 1.0, 0.999, 0.034, 0.996, 0.999, 0.05]
+    '''
+    # Scene:CIFAR10|ResNet18|Refool
+    our_asr_list = [0.792, 0.389, 0.014, 0.002, 0.03, 0.015, 0.104, 0.005, 0.012, 0.029]
+    asd_asr_list = [0.195, 0.302, 0.177, 0.51, 0.149, 0.271, 0.11, 0.688, 0.414, 0.071]
+    '''
+    statistic, p_value = wilcoxon(our_asr_list, asd_asr_list) # statistic:检验统计量
+    # 如果p_value < 0.05则说明分布有显著差异
+    # cliffs_delta：比较大小
+    # 如果参数1较小的话，则d趋近-1,0.147(negligible)
+    d,res = cliffs_delta(our_asr_list, asd_asr_list)
+    print("")
 
     
 if __name__ == "__main__":
-    test32()
+    test33()
 
 
