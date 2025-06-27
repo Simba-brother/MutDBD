@@ -271,7 +271,7 @@ def compare_avg(our_list, baseline_list):
 
 
 def compare_WTL(our_list, baseline_list,expect:str):
-    res = ""
+    ans = ""
     # 计算W/T/L
     # Wilcoxon:https://blog.csdn.net/TUTO_TUTO/article/details/138289291
     # Wilcoxon：主要来判断两组数据是否有显著性差异。
@@ -282,26 +282,27 @@ def compare_WTL(our_list, baseline_list,expect:str):
     d,res = cliffs_delta(our_list, baseline_list)
     if p_value >= 0.05:
         # 值分布没差别
-        res = "Tie"
+        ans = "Tie"
+        return ans
     else:
         # 值分布有差别
         if expect == "small":
             # 指标越小越好，d越接近-1越好
             if d < 0 and res != "negligible":
-                res = "Win"
+                ans = "Win"
             elif d > 0 and res != "negligible":
-                res = "Lose"
+                ans = "Lose"
             else:
-                res = "Tie"
+                ans = "Tie"
         else:
             # 指标越大越好，d越接近1越好
             if d > 0 and res != "negligible":
-                res = "Win"
+                ans = "Win"
             elif d < 0 and res != "negligible":
-                res = "Lose"
+                ans = "Lose"
             else:
-                res = "Tie"
-    return res
+                ans = "Tie"
+    return ans
 
 
 
@@ -356,6 +357,18 @@ def main_scene():
     p_num_WTL_res = compare_WTL(our_p_num_list, asd_p_num_list, expect = "small") # 越小越好
 
     print(f"Scene:{dataset_name}|{model_name}|{attack_name}")
+    print("ACC_list:")
+    print(f"\tOur:{our_acc_list}")
+    print(f"\tASD:{asd_acc_list}")
+
+    print("ASR_list:")
+    print(f"\tOur:{our_asr_list}")
+    print(f"\tASD:{asd_asr_list}")
+
+    print("PNUM_list:")
+    print(f"\tOur:{our_p_num_list}")
+    print(f"\tASD:{asd_p_num_list}")
+
     print(f"OurAvg: ASR:{our_asr_avg}, ACC:{our_acc_avg}, PNUM:{our_pNum_avg}")
     print(f"ASDAvg: ASR:{asd_asr_avg}, ACC:{asd_acc_avg}, PNUM:{asd_pNum_avg}")
     print(f"WTL: ASR:{asr_WTL_res}, ACC:{acc_WTL_res}, PNUM:{p_num_WTL_res}")
