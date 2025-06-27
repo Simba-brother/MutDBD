@@ -384,7 +384,7 @@ if __name__ == "__main__":
     for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
         class_num = get_classNum(dataset_name)
         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+            if dataset_name == "ImageNet2012_subset" and (model_name == "VGG19" or model_name == "DenseNet"):
                 continue
             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
                 main_scene()
