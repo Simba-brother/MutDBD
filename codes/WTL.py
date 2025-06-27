@@ -245,23 +245,68 @@ def asd_unit_res(dataset_name, model_name, attack_name, random_seed,
     return ASD_res
 
 
-def caclu_avg(data_list):
-    return round(sum(data_list)/len(data_list),3)
 
-def caclu_WTL(our_list,baseline_list):
+def compare_avg(our_list, baseline_list):
+    our_avg = round(sum(our_list)/len(our_list),3)
+    baseline_avg = round(sum(baseline_list)/len(baseline_list),3)
+    '''
+    if expect == "small":
+        if our_avg < baseline_avg:  # 满足期盼
+            res = "Win"
+        else:
+            res = "Lose"
+    else:
+        if our_avg > baseline_avg:  # 满足期盼
+            res = "Win"
+        else:
+            res = "Lose"
+    '''
+    return our_avg, baseline_avg
+
+
+
+
+
+def compare_WTL(our_list, baseline_list,expect:str):
+    res = ""
     # 计算W/T/L
-     # Wilcoxon:https://blog.csdn.net/TUTO_TUTO/article/details/138289291
-     # Wilcoxon：主要来判断两组数据是否有显著性差异。
-     statistic, p_value = wilcoxon(our_list, baseline_list) # statistic:检验统计量
-     # cliffs_delta：比较大小
-     d,res = cliffs_delta(our_list, baseline_list)
-    
-def main():
-    dataset_name = "CIFAR10"
-    model_name = "ResNet18", 
-    attack_name = "BadNets"
-    device = torch.device("cuda:0")
-     # 后门信息
+    # Wilcoxon:https://blog.csdn.net/TUTO_TUTO/article/details/138289291
+    # Wilcoxon：主要来判断两组数据是否有显著性差异。
+    statistic, p_value = wilcoxon(our_list, baseline_list) # statistic:检验统计量
+    # 如果p_value < 0.05则说明分布有显著差异
+    # cliffs_delta：比较大小
+    # 如果参数1较小的话，则d趋近-1,0.147(negligible)
+    d,res = cliffs_delta(our_list, baseline_list)
+    if p_value >= 0.05:
+        # 值分布没差别
+        res = "Tie"
+    else:
+        # 值分布有差别
+        if expect == "small":
+            # 指标越小越好，d越接近-1越好
+            if d < 0 and res != "negligible":
+                res = "Win"
+            elif d > 0 and res != "negligible":
+                res = "Lose"
+            else:
+                res = "Tie"
+        else:
+            # 指标越大越好，d越接近1越好
+            if d > 0 and res != "negligible":
+                res = "Win"
+            elif d < 0 and res != "negligible":
+                res = "Lose"
+            else:
+                res = "Tie"
+    return res
+
+
+
+
+
+
+def main_scene():
+    # 后门信息
     backdoor_data = torch.load(os.path.join(exp_root_dir, "ATTACK",
                             dataset_name, model_name, attack_name,
                             "backdoor_data.pth"), map_location="cpu")
@@ -270,10 +315,10 @@ def main():
     # 数据集
     poisoned_trainset, clean_trainset, clean_testset = get_spec_dataset(dataset_name, model_name, attack_name, poisoned_ids)
     filtered_poisoned_testset = filter_poisonedSet(clean_testset,poisoned_testset,target_class_idx)
+    # 10次重复实验记录
     our_acc_list = []
     our_asr_list = []
     our_p_num_list = []
-
 
     asd_acc_list = []
     asd_asr_list = []
@@ -296,21 +341,27 @@ def main():
         asd_asr_list.append(asd_res["asr"])
         asd_p_num_list.append(asd_res["p_num"])
 
-    # 计算均值
-    our_acc_avg = caclu_avg(our_acc_list)
-    our_asr_avg = caclu_avg(our_asr_list)
-    our_p_num_avg = caclu_avg(our_p_num_list)
 
-    asd_acc_avg = caclu_avg(asd_acc_list)
-    asd_asr_avg = caclu_avg(asd_asr_list)
-    asd_p_num_avg = caclu_avg(asd_p_num_list)
+    our_acc_avg, asd_acc_avg = compare_avg(our_acc_list, asd_acc_list)
+    our_asr_avg, asd_asr_avg = compare_avg(our_asr_list, asd_asr_list)
+    our_pNum_avg, asd_pNum_avg = compare_avg(our_p_num_list, asd_p_num_list)
+
 
     # 计算WTL
-    acc_res = caclu_WTL(our_acc_list, asd_acc_list)
-    asr_res = caclu_WTL(our_asr_list, asd_asr_list)
-    p_num_res = caclu_WTL(our_p_num_list, asd_p_num_list)
+    acc_WTL_res = compare_WTL(our_acc_list, asd_acc_list, expect = "big") # 越大越好
+    asr_WTL_res = compare_WTL(our_asr_list, asd_asr_list, expect = "small") # 越小越好
+    p_num_WTL_res = compare_WTL(our_p_num_list, asd_p_num_list, expect = "small") # 越小越好
+
+    print(f"Scene:{dataset_name}|{model_name}|{attack_name}")
+    print(f"OurAvg: ASR:{our_asr_avg}, ACC:{our_acc_avg}, PNUM:{our_pNum_avg}")
+    print(f"ASDAvg: ASR:{asd_asr_avg}, ACC:{asd_acc_avg}, PNUM:{asd_pNum_avg}")
+    print(f"WTL: ASR:{asr_WTL_res}, ACC:{acc_WTL_res}, PNUM:{p_num_WTL_res}")
 
 if __name__ == "__main__":
-    main()
+    dataset_name = "CIFAR10"
+    model_name = "ResNet18", 
+    attack_name = "BadNets"
+    device = torch.device("cuda:0")
+    main_scene()
 
 

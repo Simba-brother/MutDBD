@@ -6,7 +6,7 @@ import setproctitle
 import os
 import time
 from copy import deepcopy
-from codes.bigUtils import convert_to_hms
+from codes.utils import convert_to_hms
 import cv2
 import numpy as np
 import torch

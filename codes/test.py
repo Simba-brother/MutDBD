@@ -6,7 +6,7 @@ import queue
 import os
 import numpy as np
 import torch
-
+from cliffs_delta import cliffs_delta
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
 
 def test1():
@@ -203,8 +203,18 @@ def test31():
             self.sext = sex
     p1 = Person("mml","30","man")
     print(p1)
+
+def test32():
+    data_1_list = list(range(1,10))
+    data_2_list = list(range(10,20))
+
+    # 参数1远远小于参数2的话 d=-1 res=large
+    d, res =cliffs_delta(data_2_list, data_1_list)
+    print(d,res)
+    
+
     
 if __name__ == "__main__":
-    test31()
+    test32()
 
 

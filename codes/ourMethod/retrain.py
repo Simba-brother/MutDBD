@@ -7,7 +7,7 @@ from codes.bigUtils import my_excepthook
 sys.excepthook = my_excepthook
 from codes.common.time_handler import get_formattedDateTime
 import os
-from codes.bigUtils import convert_to_hms
+from codes.utils import convert_to_hms
 import time
 from collections import Counter
 import joblib

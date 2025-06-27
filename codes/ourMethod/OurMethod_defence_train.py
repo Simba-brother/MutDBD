@@ -9,7 +9,7 @@ import torch
 import setproctitle
 from torch.utils.data import DataLoader
 from codes import config
-from codes.bigUtils import convert_to_hms
+from codes.utils import convert_to_hms
 from codes.ourMethod.defence import defence_train
 from codes.scripts.dataset_constructor import *
 from codes.models import get_model

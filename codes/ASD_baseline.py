@@ -14,7 +14,7 @@ from codes.scripts.dataset_constructor import *
 from codes.common.time_handler import get_formattedDateTime
 from codes.models import get_model
 from codes.common.eval_model import EvalModel
-from codes.bigUtils import convert_to_hms
+from codes.utils import convert_to_hms
 from codes.scripts.dataset_constructor import ExtractDataset,ExtractDataset_NormalPattern
 
 # cifar10
