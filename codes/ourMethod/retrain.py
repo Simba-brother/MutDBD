@@ -3,7 +3,7 @@
 '''
 import logging
 import sys
-from codes.bigUtils import my_excepthook
+from codes.utils import my_excepthook
 sys.excepthook = my_excepthook
 from codes.common.time_handler import get_formattedDateTime
 import os

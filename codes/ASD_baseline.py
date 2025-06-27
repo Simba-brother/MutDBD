@@ -1,6 +1,6 @@
 import logging
 import sys
-from codes.bigUtils import my_excepthook
+from codes.utils import my_excepthook
 sys.excepthook = my_excepthook
 import os
 import time
@@ -373,13 +373,13 @@ if __name__ == "__main__":
     # main()
 
     
-    gpu_id = 0
+    gpu_id = 1
     baseline_name = "ASD_new"
-    rand_seed = 6
-    dataset_name = "GTSRB"
+    rand_seed = 8
+    dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
-    model_name = "VGG19"
-    for attack_name in ["Refool"]:
+    model_name = "DenseNet"
+    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
         main()
     
     # gpu_id = 1
