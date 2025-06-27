@@ -10,11 +10,11 @@ import torch
 from scipy import stats
 from cliffs_delta import cliffs_delta
 from codes.common.draw import draw_box, draw_line
-from codes.utils import priorityQueue_2_list, create_dir
+from codes.bigUtils import priorityQueue_2_list, create_dir
 from codes import config
 from codes.common.eval_model import EvalModel
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractTargetClassDataset
-from codes.utils import entropy
+from codes.bigUtils import entropy
 # from scripts.target_class import get_adaptive_rate_of_Hybrid_mutator, get_adaptive_ratio_of_Combin_mutator
 # from codes.ourMethod import TargetClassProcessor
 

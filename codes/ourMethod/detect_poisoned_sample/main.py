@@ -8,7 +8,7 @@ import os
 from codes.scripts.dataset_constructor import *
 import joblib
 import pandas as pd
-from codes.utils import entropy,priorityQueue_2_list
+from codes.bigUtils import entropy,priorityQueue_2_list
 import queue
 from sklearn.metrics import precision_score,recall_score,f1_score
 

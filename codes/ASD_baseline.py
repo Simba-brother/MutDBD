@@ -1,6 +1,6 @@
 import logging
 import sys
-from codes.utils import my_excepthook
+from codes.bigUtils import my_excepthook
 sys.excepthook = my_excepthook
 import os
 import time
@@ -14,7 +14,7 @@ from codes.scripts.dataset_constructor import *
 from codes.common.time_handler import get_formattedDateTime
 from codes.models import get_model
 from codes.common.eval_model import EvalModel
-from codes.utils import convert_to_hms
+from codes.bigUtils import convert_to_hms
 from codes.scripts.dataset_constructor import ExtractDataset,ExtractDataset_NormalPattern
 
 # cifar10

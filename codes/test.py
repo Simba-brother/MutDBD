@@ -190,10 +190,21 @@ def test29():
     np.random.seed(2)
     choiced_list = np.random.choice(idx_list, replace=False, size=5).tolist()
     print(choiced_list)
+
 def test30():
     a = torch.tensor([1,2,3])
     print(type(a))
+
+def test31():
+    class Person:
+        def __init__(self, name, age, sex):
+            self.name = name
+            self.aget = age
+            self.sext = sex
+    p1 = Person("mml","30","man")
+    print(p1)
+    
 if __name__ == "__main__":
-    test30()
+    test31()
 
 

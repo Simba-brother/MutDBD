@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip, ToPILImage, Resize
 
-from codes import utils
+from codes import bigUtils
 
 
 def _seed_worker():
@@ -85,7 +85,7 @@ def get_transform(flag):
 def start_train():
     work_dir = "experiments/CIFAR10/models/resnet18_nopretrain_32_32_3/clean"
     log_path = os.path.join(work_dir, "log.txt")
-    log = utils.Log(log_path)
+    log = bigUtils.Log(log_path)
     # 获得model
     model = ResNet(num=18, num_classes=10)
     # 获得transform

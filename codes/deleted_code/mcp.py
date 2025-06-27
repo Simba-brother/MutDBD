@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 
 from core.models.resnet import ResNet
 from codes.common.eval_model import EvalModel
-from utils import priorityQueue_2_list, create_dir
+from bigUtils import priorityQueue_2_list, create_dir
 from codes.tools.draw import draw_line
 def _seed_worker():
     worker_seed = torch.initial_seed() % 2**32

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from codes import config
 from codes.scripts.dataset_constructor import *
 from codes.common.eval_model import EvalModel
-from codes.utils import entropy
+from codes.bigUtils import entropy
 
 
 

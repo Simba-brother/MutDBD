@@ -8,7 +8,7 @@ import os
 from codes.scripts.dataset_constructor import *
 import joblib
 import pandas as pd
-from codes.utils import entropy
+from codes.bigUtils import entropy
 from codes.common.eval_model import EvalModel
 
 def cal_entropy(df):

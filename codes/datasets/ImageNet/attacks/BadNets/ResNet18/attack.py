@@ -14,7 +14,7 @@ from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPI
 from torchvision.models import resnet18
 
 from codes.core.attacks import BadNets
-from codes.utils import create_dir
+from codes.bigUtils import create_dir
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 from codes import config
 

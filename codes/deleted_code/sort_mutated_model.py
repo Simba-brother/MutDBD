@@ -3,7 +3,7 @@ import random
 from codes import config
 from codes.scripts.dataset_constructor import *
 from codes.tools import EvalModel
-from codes.utils import priorityQueue_2_list
+from codes.bigUtils import priorityQueue_2_list
 
 
 def sort_mutated_models(

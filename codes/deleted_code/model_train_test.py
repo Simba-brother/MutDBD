@@ -3,7 +3,7 @@ import random
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from codes import utils
+from codes import bigUtils
 
 def random_seed():
     worker_seed = 666
@@ -86,7 +86,7 @@ def train(model, trainset, epochs, batch_size, optimizer, init_lr, loss_fn, devi
         if epoch_acc > best_acc:
             best_model = model
             best_acc = epoch_acc
-            utils.create_dir(work_dir)
+            bigUtils.create_dir(work_dir)
             ckpt_model_path = os.path.join(work_dir, "best_model.pth")
             torch.save(model.state_dict(), ckpt_model_path)
             print(f"best model is saved in {ckpt_model_path}")

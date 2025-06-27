@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.metrics import classification_report
 
 from codes import config
-from codes.utils import priorityQueue_2_list
+from codes.bigUtils import priorityQueue_2_list
 
 def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="smaller"):
     # 优先级队列q,值越小优先级越高
