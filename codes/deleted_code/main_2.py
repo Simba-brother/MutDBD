@@ -22,9 +22,9 @@ from asd.loss import SCELoss, MixMatchLoss
 from asd.semi import poison_linear_record, mixmatch_train,linear_test
 from asd.dataset import MixMatchDataset
 from asd.log import result2csv
-from bigUtils import create_dir
+from utils import create_dir
 from asd.models.resnet_cifar import get_model
-from bigUtils import (
+from utils import (
     gen_poison_idx,
     get_bd_transform,
     get_dataset,

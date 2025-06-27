@@ -6,7 +6,7 @@ import numpy as np
 from scipy import stats
 from cliffs_delta import cliffs_delta
 from codes.tools.draw import draw_box
-from codes.bigUtils import create_dir
+from codes.utils import create_dir
 from codes import config
 
 

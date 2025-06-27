@@ -25,7 +25,7 @@ from codes.asd.loss import SCELoss, MixMatchLoss
 from codes.asd.semi import poison_linear_record, mixmatch_train,linear_test
 from codes.asd.dataset import MixMatchDataset
 # from ASD.log import result2csv
-from codes.bigUtils import create_dir
+from codes.utils import create_dir
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
 # from ASD.models.resnet_cifar import get_model
 

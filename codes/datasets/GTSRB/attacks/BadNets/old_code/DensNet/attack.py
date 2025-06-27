@@ -13,7 +13,7 @@ from torchvision.transforms import Compose, ToTensor, ToPILImage, Resize, Random
 from codes.core.attacks import BadNets
 from codes.datasets.GTSRB.models.densenet import DenseNet121
 
-from codes.bigUtils import create_dir
+from codes.utils import create_dir
 
 import setproctitle
 from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset

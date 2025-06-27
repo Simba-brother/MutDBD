@@ -23,7 +23,7 @@ from codes import config
 from codes.asd.loss import SCELoss, MixMatchLoss
 from codes.asd.semi import poison_linear_record, mixmatch_train,linear_test
 from codes.asd.dataset import MixMatchDataset
-from codes.bigUtils import create_dir,priorityQueue_2_list
+from codes.utils import create_dir,priorityQueue_2_list
 
 
 def sampling_analyse(loss_array,poisoned_ids,sample_idx_array,gt_label_array):
