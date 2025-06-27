@@ -373,13 +373,13 @@ if __name__ == "__main__":
     # main()
 
     
-    gpu_id = 1
+    gpu_id = 0
     baseline_name = "ASD_new"
     rand_seed = 6
-    dataset_name = "ImageNet2012_subset"
+    dataset_name = "GTSRB"
     class_num = get_classNum(dataset_name)
-    model_name = "DenseNet"
-    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    model_name = "VGG19"
+    for attack_name in ["Refool"]:
         main()
     
     # gpu_id = 1
