@@ -7,7 +7,7 @@ import os
 import numpy as np
 import torch
 from cliffs_delta import cliffs_delta
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon,ks_2samp,mannwhitneyu
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
 
 def test1():
@@ -214,15 +214,59 @@ def test32():
     print(d,res)
 
 def test33():
+    '''
     # Scene:CIFAR10|ResNet18|IAD
     our_asr_list = [0.017, 0.058, 0.029, 0.046, 0.082, 0.033, 0.082, 0.045, 0.03, 0.102]
     asd_asr_list = [0.046, 0.048, 0.997, 1.0, 1.0, 0.999, 0.034, 0.996, 0.999, 0.05]
     '''
+    
     # Scene:CIFAR10|ResNet18|Refool
     our_asr_list = [0.792, 0.389, 0.014, 0.002, 0.03, 0.015, 0.104, 0.005, 0.012, 0.029]
     asd_asr_list = [0.195, 0.302, 0.177, 0.51, 0.149, 0.271, 0.11, 0.688, 0.414, 0.071]
-    '''
+    
+    s,p =  ks_2samp(our_asr_list, asd_asr_list)
     statistic, p_value = wilcoxon(our_asr_list, asd_asr_list) # statistic:检验统计量
+    # 原假设H0：两个独立样本来自相同的总体（或两个总体的分布相同，没有位置偏移）。
+    s_m,m_p =  mannwhitneyu(our_asr_list,asd_asr_list)
+    print(f"原始：ks:{p}, wil:{p_value}, m:{m_p}")
+
+    data_list_1 = our_asr_list*100
+    data_list_2 = asd_asr_list*100
+
+    s,p =  ks_2samp(data_list_1, data_list_2)
+    statistic, p_value = wilcoxon(data_list_1, data_list_2) # statistic:检验统计量
+    s_m,m_p =  mannwhitneyu(data_list_1,data_list_2)
+    print(f"10*原始：ks:{p}, wil:{p_value}, m:{m_p}")
+
+
+
+    '''
+    data_list_1 = [1,2,3,4,5,6,7,8,9,10]
+    data_list_2 = [1,2,3,4,5,6,7,8,9,10]
+    s,p =  ks_2samp(data_list_1, data_list_2)
+    statistic, p_value = wilcoxon(data_list_1, data_list_2) # statistic:检验统计量
+    print(f"相同：ks:{p}, wil:{p_value}")
+    '''
+
+    '''
+
+    data_list_1 = [1,2,3,4,5,6,7,8,9,10]*10
+    data_list_2 = [1,2,3,4,5,6,7,8,9,10]*10
+    s,p =  ks_2samp(data_list_1, data_list_2)
+    statistic, p_value = wilcoxon(data_list_1, data_list_2) # statistic:检验统计量
+    print(f"10*相同：ks:{p}, wil:{p_value}")
+    '''
+
+    data_list_1 = [1,2,3,4,5,6,7,8,9,10]
+    data_list_2 = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.1]
+
+    s,p =  ks_2samp(data_list_1, data_list_2)
+    statistic, p_value = wilcoxon(data_list_1, data_list_2) # statistic:检验统计量
+    s_m,m_p =  mannwhitneyu(data_list_1,data_list_2)
+    print(f"明显差异：ks:{p}, wil:{p_value}, m:{m_p}")
+
+
+
     # 如果p_value < 0.05则说明分布有显著差异
     # cliffs_delta：比较大小
     # 如果参数1较小的话，则d趋近-1,0.147(negligible)

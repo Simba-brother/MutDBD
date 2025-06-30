@@ -31,6 +31,7 @@ from codes.models import get_model
 from codes.common.eval_model import EvalModel
 from sklearn.model_selection import KFold
 from codes.asd.loss import SCELoss, MixMatchLoss
+from itertools import cycle,islice
 # from codes.tools import model_train_test
 # cifar10
 from codes.poisoned_dataset.cifar10.BadNets.generator import gen_poisoned_dataset as cifar10_badNets_gen_poisoned_dataset
@@ -85,6 +86,7 @@ def sort_sample_id(model,
     # 损失函数
     # loss_fn = SCELoss(num_classes=10, reduction="none") # nn.CrossEntropyLoss()
     loss_fn = nn.CrossEntropyLoss()
+    loss_fn.to(device)
     loss_record = Record("loss", len(dataset_loader.dataset)) # 记录每个样本的loss
     label_record = Record("label", len(dataset_loader.dataset))
     model.eval()
@@ -275,30 +277,16 @@ def interleave(xy, batch):
     return [torch.cat(v, dim=0) for v in xy]
 
 def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, device, **kwargs):
-    xiter = iter(xloader) # 有监督
-    uiter = iter(uloader) # 无监督
+    xiter = cycle(xloader) # 有监督
+    uiter = cycle(uloader) # 无监督
+    xlimited_cycled_data = islice(xiter,0,kwargs["train_iteration"])
+    ulimited_cycled_data = islice(uiter,0,kwargs["train_iteration"])
     model.train()
     batch_loss_list = []
-    for batch_idx in range(kwargs["train_iteration"]):
-        try:
-            # 带标签中的一个批次
-            xbatch = next(xiter) 
-            xinput,xtarget = xbatch["img"], xbatch["target"]
-        except:
-            # 如果迭代器走到最后无了,则从头再来迭代
-            xiter = iter(xloader)
-            xbatch = next(xiter)
-            xinput,xtarget = xbatch["img"], xbatch["target"]
-        try:
-            # 无标签batch
-            ubatch = next(uiter) # 不带标签中的一个批次
-            uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
-        except:
-            # 如果迭代器走到最后无了,则从头再来迭代
-            uiter = iter(uloader)
-            ubatch = next(uiter)
-            uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
-
+    for batch_idx,(xbatch,ubatch) in enumerate(zip(xlimited_cycled_data,ulimited_cycled_data)):
+        xinput, xtarget = xbatch["img"], xbatch["target"]
+        uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
+        
         batch_size = xinput.size(0)
         xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
             1, xtarget.view(-1, 1).long(), 1
@@ -342,15 +330,17 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
         xlogit = logit[0]
         ulogit = torch.cat(logit[1:], dim=0)
         # 计算损失
+        '''
         class_weight = torch.FloatTensor([0.1,0.1,0.1,0.3,0.1,0.1,0.1,0.1,0.1,0.1])
         class_weight = class_weight.to(device)
+        '''
         Lx, Lu, lambda_u = criterion(
             xlogit,
             mixed_target[:batch_size],
             ulogit,
             mixed_target[batch_size:],
             epoch + batch_idx / kwargs["train_iteration"],
-            class_weight = class_weight
+            # class_weight = class_weight
         )
         # 半监督损失
         loss = Lx + lambda_u * Lu
@@ -466,16 +456,6 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
     for x_id in x_id_set:
         flag_list[x_id] = 1
 
-    
-    # clean_trainset, clean_testset = get_cleanTrainSet_cleanTestSet("CIFAR10","WaNet")
-    # label_num = int(len(clean_trainset)*choice_rate)
-    # id_list = list(range(len(clean_trainset)))
-    # choiced_id_list = random.sample(id_list, label_num)
-    # # 0表示在ulabel,1表示在xlabel
-    # flag_list = [0] * len(clean_trainset)
-    # for choiced_id in choiced_id_list:
-    #     flag_list[choiced_id] = 1
-
     flag_array = np.array(flag_list)
     train_set = poisoned_trainset
     model = retrain_model
@@ -485,7 +465,7 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
     uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
     model.train()
     model.to(device)
-    semi_criterion = MixMatchLoss(rampup_length=epoch_num, lambda_u=75) # rampup_length = 120  same as epoches
+    semi_criterion = MixMatchLoss(rampup_length=epoch_num, lambda_u=15) # rampup_length = 120  same as epoches
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     optimizer = optim.Adam(model.parameters(),lr=lr)
@@ -521,6 +501,7 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
         loss_function = nn.CrossEntropyLoss()
     else:
         loss_function = nn.CrossEntropyLoss(class_weight.to(device))
+    loss_function.to(device)
     optimal_loss = float('inf')
     best_model = None
     for epoch in range(num_epoch):
@@ -980,7 +961,10 @@ def our_ft_2(
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
     '''4:重训练'''
+    '''
     logger.info("朴素的retrain")
+    # 解冻
+    # best_BD_model = unfreeze(best_BD_model)
     choice_rate = 0.6
     choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
     availableSet = ConcatDataset([seedSet,choicedSet])
@@ -990,8 +974,6 @@ def our_ft_2(
     weight_decay=1e-3
     lr_milestones = [30,60,90]
 
-    # 解冻
-    # best_BD_model = unfreeze(best_BD_model)
     label_counter,weights = get_class_weights(availableSet)
     logger.info(f"label_counter:{label_counter}")
     logger.info(f"class_weights:{weights}")
@@ -1001,6 +983,7 @@ def our_ft_2(
         lr=lr, batch_size=batch_size, logger=logger, 
         lr_milestones=lr_milestones,
         class_weight=class_weights,weight_decay=weight_decay)
+    '''
     
     # logger.info("train_dynamic_choice")
     # best_defense_model, last_defense_model = train_dynamic(
@@ -1024,23 +1007,25 @@ def our_ft_2(
     # best_defense_model, last_defense_model = train_with_subset(model,device,logger,
     #                   choice_rate=0.6,epoch_num=120,lr=1e-3,batch_size=64)
 
-    # logger.info("trainWithSemi")
-    # choice_model = best_BD_model
-    # if blank_model is None:
-    #     best_BD_model = unfreeze(best_BD_model)
-    #     retrain_model = best_BD_model
-    # if blank_model:
-    #     logger.info("retrain空白模型")
-    #     retrain_model = blank_model
-    # epoch_num = 120
-    # batch_num = 1024
-    # lr = 2e-3
-    # batch_size = 64
-    # choice_rate = 0.6
-    # logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
-    # best_defense_model,last_defense_model = train_with_semi(
-    #     choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
-    #     class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
+    logger.info("trainWithSemi")
+    choice_model = best_BD_model # 使用种子微调后的模型作为选择模型
+    if blank_model is None:
+        # best_BD_model = unfreeze(best_BD_model)
+        retrain_model = best_BD_model
+    '''
+    if blank_model:
+        logger.info("retrain空白模型")
+        retrain_model = blank_model
+    '''
+    epoch_num = 120
+    batch_num = 1024
+    lr = 1e-3
+    batch_size = 512
+    choice_rate = 0.6
+    logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
+    best_defense_model,last_defense_model = train_with_semi(
+        choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
+        class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
 
     '''5:评估我们防御后的的ASR和ACC'''
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
@@ -1176,8 +1161,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 进程名称
     proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
     setproctitle.setproctitle(proctitle)
-    log_base_dir = "log/OurMethod_new/"
-    # log_test_dir = "log/temp"
+    # log_base_dir = "log/OurMethod_new/"
+    log_base_dir = "log/temp"
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_r_seed_{r_seed}_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
@@ -1436,23 +1421,23 @@ if __name__ == "__main__":
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
-    # gpu_id = 1
-    # r_seed = 1
-    # dataset_name = "GTSRB"
-    # class_num = get_classNum(dataset_name)
-    # model_name = "ResNet18"
-    # for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #     scene_single(dataset_name,model_name,attack_name,r_seed)
+    gpu_id = 0
+    r_seed = 1
+    dataset_name = "CIFAR10"
+    class_num = get_classNum(dataset_name)
+    model_name = "VGG19"
+    for attack_name in ["WaNet"]:
+        scene_single(dataset_name,model_name,attack_name,r_seed)
 
 
 
 
-    gpu_id = 1
-    for r_seed in [8]:
-        for dataset_name in ["ImageNet2012_subset"]:
-            class_num = get_classNum(dataset_name)
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                    scene_single(dataset_name,model_name,attack_name,r_seed)
+    # gpu_id = 0
+    # for r_seed in [1]:
+    #     for dataset_name in ["ImageNet2012_subset"]:
+    #         class_num = get_classNum(dataset_name)
+    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #                 scene_single(dataset_name,model_name,attack_name,r_seed)

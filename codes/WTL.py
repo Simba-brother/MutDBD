@@ -5,7 +5,7 @@ import os
 import yaml
 import torch
 import pandas as pd
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon,mannwhitneyu,ks_2samp
 from cliffs_delta import cliffs_delta
 from codes.config import exp_root_dir,target_class_idx
 from codes.models import get_model
@@ -270,12 +270,17 @@ def compare_avg(our_list, baseline_list):
 
 
 
-def compare_WTL(our_list, baseline_list,expect:str):
+def compare_WTL(our_list, baseline_list,expect:str, method:str):
     ans = ""
     # 计算W/T/L
     # Wilcoxon:https://blog.csdn.net/TUTO_TUTO/article/details/138289291
     # Wilcoxon：主要来判断两组数据是否有显著性差异。
-    statistic, p_value = wilcoxon(our_list, baseline_list) # statistic:检验统计量
+    if method == "wilcoxon":
+        statistic, p_value = wilcoxon(our_list, baseline_list) # statistic:检验统计量    
+    elif method == "mannwhitneyu":
+        statistic, p_value = mannwhitneyu(our_list, baseline_list) # statistic:检验统计量
+    elif method == "ks_2samp":
+        statistic, p_value = ks_2samp(our_list, baseline_list) # statistic:检验统计量
     # 如果p_value < 0.05则说明分布有显著差异
     # cliffs_delta：比较大小
     # 如果参数1较小的话，则d趋近-1,0.147(negligible)
@@ -345,16 +350,31 @@ def main_scene():
         asd_asr_list.append(asd_res["asr"])
         asd_p_num_list.append(asd_res["p_num"])
 
+    res_dict = {
+        "our_acc_list":our_acc_list,
+        "our_asr_list":our_asr_list,
+        "our_p_num_list":our_p_num_list,
 
+        "asd_acc_list":asd_acc_list,
+        "asd_asr_list":asd_asr_list,
+        "asd_p_num_list":asd_p_num_list,
+    }
+
+    save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
+    os.makedirs(save_dir,exist_ok=True)
+    save_file_name = "res.pkl"
+    save_path = os.path.join(save_dir, save_file_name)
+    joblib.dump(res_dict,save_path)
+    print("结果保存在:",save_path)
     our_acc_avg, asd_acc_avg = compare_avg(our_acc_list, asd_acc_list)
     our_asr_avg, asd_asr_avg = compare_avg(our_asr_list, asd_asr_list)
     our_pNum_avg, asd_pNum_avg = compare_avg(our_p_num_list, asd_p_num_list)
 
 
     # 计算WTL
-    acc_WTL_res = compare_WTL(our_acc_list, asd_acc_list, expect = "big") # 越大越好
-    asr_WTL_res = compare_WTL(our_asr_list, asd_asr_list, expect = "small") # 越小越好
-    p_num_WTL_res = compare_WTL(our_p_num_list, asd_p_num_list, expect = "small") # 越小越好
+    acc_WTL_res = compare_WTL(our_acc_list, asd_acc_list, expect = "big", method="mannwhitneyu") # 越大越好
+    asr_WTL_res = compare_WTL(our_asr_list, asd_asr_list, expect = "small",method="mannwhitneyu") # 越小越好
+    p_num_WTL_res = compare_WTL(our_p_num_list, asd_p_num_list, expect = "small",method="mannwhitneyu") # 越小越好
 
     print(f"Scene:{dataset_name}|{model_name}|{attack_name}")
     print("ACC_list:")
@@ -372,6 +392,50 @@ def main_scene():
     print(f"OurAvg: ASR:{our_asr_avg}, ACC:{our_acc_avg}, PNUM:{our_pNum_avg}")
     print(f"ASDAvg: ASR:{asd_asr_avg}, ACC:{asd_acc_avg}, PNUM:{asd_pNum_avg}")
     print(f"WTL: ASR:{asr_WTL_res}, ACC:{acc_WTL_res}, PNUM:{p_num_WTL_res}")
+
+
+def look():
+    save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
+    os.makedirs(save_dir,exist_ok=True)
+    save_file_name = "res.pkl"
+    save_path = os.path.join(save_dir, save_file_name)
+    res_dict = joblib.load(save_path)
+    our_acc_list = res_dict["our_acc_list"]
+    our_asr_list = res_dict["our_asr_list"]
+    our_p_num_list = res_dict["our_p_num_list"]
+    
+    asd_acc_list = res_dict["asd_acc_list"]
+    asd_asr_list = res_dict["asd_asr_list"]
+    asd_p_num_list = res_dict["asd_p_num_list"]
+
+
+    our_acc_avg, asd_acc_avg = compare_avg(our_acc_list, asd_acc_list)
+    our_asr_avg, asd_asr_avg = compare_avg(our_asr_list, asd_asr_list)
+    our_pNum_avg, asd_pNum_avg = compare_avg(our_p_num_list, asd_p_num_list)
+
+
+    # 计算WTL
+    acc_WTL_res = compare_WTL(our_acc_list, asd_acc_list, expect = "big", method="mannwhitneyu") # 越大越好
+    asr_WTL_res = compare_WTL(our_asr_list, asd_asr_list, expect = "small", method="mannwhitneyu") # 越小越好
+    p_num_WTL_res = compare_WTL(our_p_num_list, asd_p_num_list, expect = "small", method="mannwhitneyu") # 越小越好
+
+    print(f"Scene:{dataset_name}|{model_name}|{attack_name}")
+    print("ACC_list:")
+    print(f"\tOur:{our_acc_list}")
+    print(f"\tASD:{asd_acc_list}")
+
+    print("ASR_list:")
+    print(f"\tOur:{our_asr_list}")
+    print(f"\tASD:{asd_asr_list}")
+
+    print("PNUM_list:")
+    print(f"\tOur:{our_p_num_list}")
+    print(f"\tASD:{asd_p_num_list}")
+
+    print(f"OurAvg: ASR:{our_asr_avg}, ACC:{our_acc_avg}, PNUM:{our_pNum_avg}")
+    print(f"ASDAvg: ASR:{asd_asr_avg}, ACC:{asd_acc_avg}, PNUM:{asd_pNum_avg}")
+    print(f"WTL: ASR:{asr_WTL_res}, ACC:{acc_WTL_res}, PNUM:{p_num_WTL_res}")
+
 
 
 def get_classNum(dataset_name):
@@ -398,5 +462,6 @@ if __name__ == "__main__":
             if dataset_name == "ImageNet2012_subset" and (model_name == "VGG19" or model_name == "DenseNet"):
                 continue
             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                main_scene()
+                # main_scene()
+                look()
 
