@@ -19,7 +19,7 @@ from codes.ourMethod.loss import SCELoss
 import matplotlib.pyplot as plt
 from codes.asd.log import Record
 import torch
-from torch.optim.lr_scheduler import StepLR,MultiStepLR
+from torch.optim.lr_scheduler import StepLR,MultiStepLR,CosineAnnealingLR
 import setproctitle
 from torch.utils.data import DataLoader,Subset,ConcatDataset,random_split
 import torch.nn as nn
@@ -31,6 +31,7 @@ from codes.models import get_model
 from codes.common.eval_model import EvalModel
 from sklearn.model_selection import KFold
 from codes.asd.loss import SCELoss, MixMatchLoss
+from codes.ourMethod.loss import SimCLRLoss
 from itertools import cycle,islice
 # from codes.tools import model_train_test
 # cifar10
@@ -909,6 +910,67 @@ def get_class_weights(dataset):
 
 
 
+class SelfSupervisedDataset(Dataset):
+        """Semi-supervised MixMatch dataset.
+
+        Args:
+            dataset (Dataset): The dataset to be wrapped.
+            semi_idx (np.array): An 0/1 (labeled/unlabeled) array with shape ``(len(dataset), )``.
+            labeled (bool): If True, creates dataset from labeled set, otherwise creates from unlabeled
+                set (default: True).
+        """
+
+        def __init__(self, dataset, semi_idx, labeled=True):
+            super(MixMatchDataset, self).__init__()
+            self.dataset = dataset
+        def __getitem__(self, index):
+            item1 = self.dataset[index]
+            item2 = self.dataset[index]
+            img1 = item1[0]
+            img2 = item2[0]
+            item = {}
+            item["img1"] = img1
+            item["img2"] = img2
+            item["target"] = item1[1]
+            return item
+
+        def __len__(self):
+            # 这里的semi_indice其实就时选择出的带标签或不带标签的样本索引array
+            return len(self.dataset)
+
+
+def purifing_feature_extractor(model,dataset,device, epoch, batch_size,logger):
+    dataset = SelfSupervisedDataset(dataset)
+    dataset_loader = DataLoader(
+            dataset,
+            batch_size = batch_size,
+            shuffle=True,
+            num_workers=4,
+            drop_last=False,
+            pin_memory=True
+        )
+    
+    optimizer = torch.optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, lr=0.4)
+    scheduler = CosineAnnealingLR(
+            optimizer, T_max=1000)
+    criterion = SimCLRLoss(temperature=0.5)
+    model.train()
+    for epoch in range(epoch):
+        for batch_idx, batch in enumerate(dataset_loader):
+            img1, img2 = batch["img1"], batch["img2"]
+            data = torch.cat([img1.unsqueeze(1), img2.unsqueeze(1)], dim=1)
+            b, c, h, w = img1.size()
+            data = data.view(-1, c, h, w)
+            data = data.cuda(device, non_blocking=True)
+            optimizer.zero_grad()
+            output = model(data).view(b, 2, -1)
+            loss = criterion(output)
+            loss.backward()
+            optimizer.step()
+        scheduler.step()
+        logger.info(f"Epoch:{epoch+1}, 当前学习率为:{optimizer.param_groups[0]["lr"]}")
+    return model
+
 def our_ft_2(
         backdoor_model,
         poisoned_testset,
@@ -1012,11 +1074,24 @@ def our_ft_2(
     if blank_model is None:
         # best_BD_model = unfreeze(best_BD_model)
         retrain_model = best_BD_model
+    else:
+        retrain_model = blank_model
     '''
     if blank_model:
         logger.info("retrain空白模型")
         retrain_model = blank_model
     '''
+
+    # 使用自监督方法纯化特征提取器
+    # 先将retrain model进行自监督学习1000个epoch,旨在进行纯化模型的特征提取器
+    retrain_model = purifing_feature_extractor(
+        model = retrain_model,
+        dataset = poisoned_trainset,
+        device=device, 
+        epoch = 1000, 
+        batch_size = 512,
+        logger=logger)
+    # 使用半监督训练
     epoch_num = 120
     batch_num = 1024
     lr = 1e-3
@@ -1108,12 +1183,12 @@ def _get_logger(log_dir,log_file_name,logger_name):
     # 将处理器添加到日志对象中
     logger.addHandler(file_handler)
     return logger
-
+'''
 def try_semi_train(model,train_set,device,logger,class_num,
                    label_rate = 0.6,batch_size = 64,epoch_num = 120,batch_num = 1024,lr = 2e-3):
-    '''
-    尝试一下半监督训练
-    '''
+    
+    # 尝试一下半监督训练
+    
     # ==划分数据集==
     label_num = int(len(train_set)*label_rate)
     id_list = list(range(len(train_set)))
@@ -1151,6 +1226,7 @@ def try_semi_train(model,train_set,device,logger,class_num,
             best_loss = epoch_loss
             best_model = model
     return best_model,model
+'''
 
 def scene_single(dataset_name, model_name, attack_name, r_seed):
     start_time = time.perf_counter()
@@ -1191,10 +1267,10 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     poisoned_ids = backdoor_data["poisoned_ids"]
     # 预制的poisoned_testset
     poisoned_testset = backdoor_data["poisoned_testset"] 
-    '''
+    
     # 空白模型
     blank_model = get_model(dataset_name, model_name)
-    '''
+    
     
     # 某个变异模型
     # mutations_dir = os.path.join(
@@ -1306,7 +1382,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
         device,
         class_num,
         logger,
-        blank_model = None)
+        blank_model = blank_model)
     logger.info(f"{proctitle}实验场景结束")
     end_time = time.perf_counter()
     cost_time = end_time - start_time
@@ -1364,7 +1440,7 @@ def get_backdoor(dataset_name,model_name,attack_name):
     poisoned_testset = backdoor_data["poisoned_testset"] 
     return backdoor_model, poisoned_ids, poisoned_testset
 
-
+'''
 def try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed):
     # 获得实验时间戳年月日时分秒
     _time = get_formattedDateTime()
@@ -1396,6 +1472,7 @@ def try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed
     e = EvalModel(last_model,clean_testset,device)
     acc = e.eval_acc()
     logger.info(f"last_model ACC:{acc}")
+'''
 
 def get_classNum(dataset_name):
     class_num = None

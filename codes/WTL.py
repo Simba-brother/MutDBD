@@ -436,7 +436,7 @@ def look():
     print(f"ASDAvg: ASR:{asd_asr_avg}, ACC:{asd_acc_avg}, PNUM:{asd_pNum_avg}")
     print(f"WTL: ASR:{asr_WTL_res}, ACC:{acc_WTL_res}, PNUM:{p_num_WTL_res}")
 
-
+    return acc_WTL_res, asr_WTL_res, p_num_WTL_res
 
 def get_classNum(dataset_name):
     class_num = None
@@ -456,6 +456,10 @@ if __name__ == "__main__":
     main_scene()
     '''
     device = torch.device("cuda:0")
+    acc_win_counter = 0
+    asr_win_counter = 0
+    pNum_win_counter = 0
+    total = 0
     for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
         class_num = get_classNum(dataset_name)
         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
@@ -463,5 +467,15 @@ if __name__ == "__main__":
                 continue
             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
                 # main_scene()
-                look()
+                acc_res, asr_res, pNum_res = look()
+                total += 1
+                if acc_res == "Win":
+                    acc_win_counter += 1
+                if asr_res == "Win":
+                    asr_win_counter += 1
+                if pNum_res == "Win":
+                    pNum_win_counter += 1
+    print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
+
+
 
