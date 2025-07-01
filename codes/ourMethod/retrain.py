@@ -33,6 +33,8 @@ from sklearn.model_selection import KFold
 from codes.asd.loss import SCELoss, MixMatchLoss
 from codes.ourMethod.loss import SimCLRLoss
 from itertools import cycle,islice
+from torch.cuda.amp import autocast
+from torch.cuda.amp import GradScaler
 # from codes.tools import model_train_test
 # cifar10
 from codes.poisoned_dataset.cifar10.BadNets.generator import gen_poisoned_dataset as cifar10_badNets_gen_poisoned_dataset
@@ -939,7 +941,7 @@ class SelfSupervisedDataset(Dataset):
             return len(self.dataset)
 
 
-def purifing_feature_extractor(model,dataset,device, epoch, batch_size,logger):
+def purifing_feature_extractor(model,dataset,device, epoch, batch_size,amp,logger):
     dataset = SelfSupervisedDataset(dataset)
     dataset_loader = DataLoader(
             dataset,
@@ -955,18 +957,31 @@ def purifing_feature_extractor(model,dataset,device, epoch, batch_size,logger):
             optimizer, T_max=1000)
     criterion = SimCLRLoss(temperature=0.5)
     model.train()
+    if amp:
+        scaler = GradScaler()
+    
+    
     for epoch in range(epoch):
         for batch_idx, batch in enumerate(dataset_loader):
+            # batch train前优化器先梯度清0
+            optimizer.zero_grad() 
             img1, img2 = batch["img1"], batch["img2"]
             data = torch.cat([img1.unsqueeze(1), img2.unsqueeze(1)], dim=1)
             b, c, h, w = img1.size()
             data = data.view(-1, c, h, w)
             data = data.cuda(device, non_blocking=True)
-            optimizer.zero_grad()
-            output = model(data).view(b, 2, -1)
-            loss = criterion(output)
-            loss.backward()
-            optimizer.step()
+            if amp:
+                with autocast(): # 开启自动精度转换
+                    output = model(data).view(b, 2, -1)
+                    loss = criterion(output)
+                scaler.scale(loss).backward() # loss.backward()
+                scaler.step(optimizer) # optimizer.step()
+                scaler.update() # scaler factor更新
+            else:
+                output = model(data).view(b, 2, -1)
+                loss = criterion(output)
+                loss.backward()
+                optimizer.step()
         scheduler.step()
         logger.info(f"Epoch:{epoch+1}, 当前学习率为:{optimizer.param_groups[0]["lr"]}")
     return model
@@ -1090,6 +1105,7 @@ def our_ft_2(
         device=device, 
         epoch = 1000, 
         batch_size = 512,
+        amp = True,
         logger=logger)
     # 使用半监督训练
     epoch_num = 120
@@ -1351,7 +1367,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
 
     # 获得设备
     device = torch.device(f"cuda:{gpu_id}")
-
+    '''
     # 实验脚本
     # our_ft(
     #     backdoor_model,
@@ -1367,6 +1383,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     #     assistant_model = None,
     #     defense_model_flag = "backdoor", # str: assistant | backdoor
     #     logger = logger)
+    '''
     
     our_ft_2(
         backdoor_model,
