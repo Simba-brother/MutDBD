@@ -922,8 +922,8 @@ class SelfSupervisedDataset(Dataset):
                 set (default: True).
         """
 
-        def __init__(self, dataset, semi_idx, labeled=True):
-            super(MixMatchDataset, self).__init__()
+        def __init__(self, dataset):
+            super(SelfSupervisedDataset, self).__init__()
             self.dataset = dataset
         def __getitem__(self, index):
             item1 = self.dataset[index]
@@ -953,14 +953,12 @@ def purifing_feature_extractor(model,dataset,device, epoch, batch_size,amp,logge
         )
     
     optimizer = torch.optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, lr=0.4)
-    scheduler = CosineAnnealingLR(
-            optimizer, T_max=1000)
+    scheduler = CosineAnnealingLR(optimizer, T_max=1000)
     criterion = SimCLRLoss(temperature=0.5)
     model.train()
     if amp:
         scaler = GradScaler()
-    
-    
+
     for epoch in range(epoch):
         for batch_idx, batch in enumerate(dataset_loader):
             # batch train前优化器先梯度清0
@@ -983,7 +981,7 @@ def purifing_feature_extractor(model,dataset,device, epoch, batch_size,amp,logge
                 loss.backward()
                 optimizer.step()
         scheduler.step()
-        logger.info(f"Epoch:{epoch+1}, 当前学习率为:{optimizer.param_groups[0]["lr"]}")
+        logger.info(f'Epoch:{epoch+1}, 当前学习率为:{optimizer.param_groups[0]["lr"]}')
     return model
 
 def our_ft_2(
@@ -1038,7 +1036,7 @@ def our_ft_2(
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
     '''4:重训练'''
-    '''
+    
     logger.info("朴素的retrain")
     # 解冻
     # best_BD_model = unfreeze(best_BD_model)
@@ -1060,7 +1058,7 @@ def our_ft_2(
         lr=lr, batch_size=batch_size, logger=logger, 
         lr_milestones=lr_milestones,
         class_weight=class_weights,weight_decay=weight_decay)
-    '''
+    
     
     # logger.info("train_dynamic_choice")
     # best_defense_model, last_defense_model = train_dynamic(
@@ -1083,22 +1081,19 @@ def our_ft_2(
     # model = unfreeze(model)
     # best_defense_model, last_defense_model = train_with_subset(model,device,logger,
     #                   choice_rate=0.6,epoch_num=120,lr=1e-3,batch_size=64)
-
-    logger.info("trainWithSemi")
+    '''
+    logger.info("半监督训练-开始")
     choice_model = best_BD_model # 使用种子微调后的模型作为选择模型
     if blank_model is None:
         # best_BD_model = unfreeze(best_BD_model)
         retrain_model = best_BD_model
     else:
-        retrain_model = blank_model
-    '''
-    if blank_model:
         logger.info("retrain空白模型")
         retrain_model = blank_model
-    '''
-
+    
     # 使用自监督方法纯化特征提取器
     # 先将retrain model进行自监督学习1000个epoch,旨在进行纯化模型的特征提取器
+    logger.info("纯化特征训练-开始")
     retrain_model = purifing_feature_extractor(
         model = retrain_model,
         dataset = poisoned_trainset,
@@ -1114,9 +1109,14 @@ def our_ft_2(
     batch_size = 512
     choice_rate = 0.6
     logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
+    logger.info("纯化特征训练-结束")
+
+    
     best_defense_model,last_defense_model = train_with_semi(
         choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
         class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
+    logger.info("半监督训练-结束")
+    '''
 
     '''5:评估我们防御后的的ASR和ACC'''
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
@@ -1515,12 +1515,12 @@ if __name__ == "__main__":
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
-    gpu_id = 0
+    gpu_id = 1
     r_seed = 1
-    dataset_name = "CIFAR10"
+    dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
-    model_name = "VGG19"
-    for attack_name in ["WaNet"]:
+    model_name = "DenseNet"
+    for attack_name in ["BadNets"]:
         scene_single(dataset_name,model_name,attack_name,r_seed)
 
 

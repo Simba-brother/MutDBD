@@ -332,7 +332,7 @@ def main_scene():
     asd_acc_list = []
     asd_asr_list = []
     asd_p_num_list = []
-    for random_seed in tqdm(range(1,11),desc="10次实验结果收集"): # 1-10
+    for random_seed in tqdm(range(1,11),desc="10次实验结果收集"): # tqdm(range(1,11),desc="10次实验结果收集"): # 1-10
         # acc,asr,p_num
         our_res = our_unit_res(dataset_name, model_name, attack_name, random_seed, 
                 poisoned_trainset, poisoned_ids,
@@ -455,27 +455,40 @@ if __name__ == "__main__":
     attack_name = "IAD"
     main_scene()
     '''
-    device = torch.device("cuda:0")
-    acc_win_counter = 0
-    asr_win_counter = 0
-    pNum_win_counter = 0
-    total = 0
-    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+
+    device = torch.device("cuda:1")
+    total = 1
+    for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
         class_num = get_classNum(dataset_name)
-        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-            if dataset_name == "ImageNet2012_subset" and (model_name == "VGG19" or model_name == "DenseNet"):
+        for model_name in ["DenseNet"]: # ["ResNet18", "VGG19", "DenseNet"]:
+            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                 continue
-            for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                # main_scene()
-                acc_res, asr_res, pNum_res = look()
-                total += 1
-                if acc_res == "Win":
-                    acc_win_counter += 1
-                if asr_res == "Win":
-                    asr_win_counter += 1
-                if pNum_res == "Win":
-                    pNum_win_counter += 1
-    print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
+            for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
+                main_scene()
+
+    
+    # device = torch.device("cuda:0")
+    # acc_win_counter = 0
+    # asr_win_counter = 0
+    # pNum_win_counter = 0
+    # total = 0
+    # for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #     class_num = get_classNum(dataset_name)
+    #     for model_name in ["DenseNet"]: # ["ResNet18", "VGG19", "DenseNet"]:
+    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #             continue
+    #         for attack_name in ["BadNets"]: # ["BadNets", "IAD", "Refool", "WaNet"]:
+    #             # main_scene()
+    #             acc_res, asr_res, pNum_res = look()
+    #             total += 1
+    #             if acc_res == "Win":
+    #                 acc_win_counter += 1
+    #             if asr_res == "Win":
+    #                 asr_win_counter += 1
+    #             if pNum_res == "Win":
+    #                 pNum_win_counter += 1
+    # print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
+    
 
 
 

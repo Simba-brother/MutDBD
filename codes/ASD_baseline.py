@@ -379,7 +379,7 @@ if __name__ == "__main__":
     dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
     model_name = "DenseNet"
-    for attack_name in ["BadNets","IAD"]:
+    for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
         main()
     
     # gpu_id = 1
