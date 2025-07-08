@@ -273,8 +273,17 @@ def test33():
     d,res = cliffs_delta(our_asr_list, asd_asr_list)
     print("")
 
-    
+
+def test34():
+
+    s = 0
+    for _ in range(6):
+        b = 9
+        a = 7
+        s += (b-a)
+    print(s)
+
 if __name__ == "__main__":
-    test33()
+    test34()
 
 

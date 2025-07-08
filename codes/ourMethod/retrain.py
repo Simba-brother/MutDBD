@@ -3,6 +3,7 @@
 '''
 import logging
 import sys
+import math
 from codes.utils import my_excepthook
 sys.excepthook = my_excepthook
 from codes.common.time_handler import get_formattedDateTime
@@ -280,13 +281,21 @@ def interleave(xy, batch):
     return [torch.cat(v, dim=0) for v in xy]
 
 def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, device, **kwargs):
+    total_start_time = time.perf_counter()
     xiter = cycle(xloader) # 有监督
     uiter = cycle(uloader) # 无监督
     xlimited_cycled_data = islice(xiter,0,kwargs["train_iteration"])
     ulimited_cycled_data = islice(uiter,0,kwargs["train_iteration"])
     model.train()
+    if kwargs["amp"]:
+        scaler = GradScaler()
     batch_loss_list = []
+    data_cost_time = 0
+    model_cost_time = 0
+    epoch_cost_time = 0
     for batch_idx,(xbatch,ubatch) in enumerate(zip(xlimited_cycled_data,ulimited_cycled_data)):
+        '''数据段开始'''
+        data_start_time = time.perf_counter()
         xinput, xtarget = xbatch["img"], xbatch["target"]
         uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
         
@@ -323,36 +332,78 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
         # interleave labeled and unlabeled samples between batches to get correct batchnorm calculation
         mixed_input = list(torch.split(mixed_input, batch_size))
         mixed_input = interleave(mixed_input, batch_size)
-
-        logit = [model(mixed_input[0])]
-        for input in mixed_input[1:]:
-            logit.append(model(input))
-
-        # put interleaved samples back
-        logit = interleave(logit, batch_size)
-        xlogit = logit[0]
-        ulogit = torch.cat(logit[1:], dim=0)
-        # 计算损失
-        '''
-        class_weight = torch.FloatTensor([0.1,0.1,0.1,0.3,0.1,0.1,0.1,0.1,0.1,0.1])
-        class_weight = class_weight.to(device)
-        '''
-        Lx, Lu, lambda_u = criterion(
-            xlogit,
-            mixed_target[:batch_size],
-            ulogit,
-            mixed_target[batch_size:],
-            epoch + batch_idx / kwargs["train_iteration"],
-            # class_weight = class_weight
-        )
-        # 半监督损失
-        loss = Lx + lambda_u * Lu
+        data_end_time = time.perf_counter()
+        data_cost_time += (data_end_time - data_start_time)
+        '''数据段结束'''
+        '''模型段开始'''
+        model_start_time = time.perf_counter()
         optimizer.zero_grad()
-        loss.backward() # 该批次反向传播
-        optimizer.step()
+        if kwargs["amp"]:
+            with autocast():
+                logit = [model(mixed_input[0])]
+                for input in mixed_input[1:]:
+                    logit.append(model(input))
+
+                # put interleaved samples back
+                logit = interleave(logit, batch_size)
+                xlogit = logit[0]
+                ulogit = torch.cat(logit[1:], dim=0)
+                # 计算损失
+                '''
+                class_weight = torch.FloatTensor([0.1,0.1,0.1,0.3,0.1,0.1,0.1,0.1,0.1,0.1])
+                class_weight = class_weight.to(device)
+                '''
+                Lx, Lu, lambda_u = criterion(
+                    xlogit,
+                    mixed_target[:batch_size],
+                    ulogit,
+                    mixed_target[batch_size:],
+                    epoch + batch_idx / kwargs["train_iteration"],
+                    # class_weight = class_weight
+                )
+                # 半监督损失
+                loss = Lx + lambda_u * Lu
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            logit = [model(mixed_input[0])]
+            for input in mixed_input[1:]:
+                logit.append(model(input))
+            # put interleaved samples back
+            logit = interleave(logit, batch_size)
+            xlogit = logit[0]
+            ulogit = torch.cat(logit[1:], dim=0)
+            # 计算损失
+            '''
+            class_weight = torch.FloatTensor([0.1,0.1,0.1,0.3,0.1,0.1,0.1,0.1,0.1,0.1])
+            class_weight = class_weight.to(device)
+            '''
+            Lx, Lu, lambda_u = criterion(
+                xlogit,
+                mixed_target[:batch_size],
+                ulogit,
+                mixed_target[batch_size:],
+                epoch + batch_idx / kwargs["train_iteration"],
+                # class_weight = class_weight
+            )
+            # 半监督损失
+            loss = Lx + lambda_u * Lu
+            loss.backward() # 该批次反向传播
+            optimizer.step()
+        
         batch_loss_list.append(loss.item())
+        '''模型段结束'''
+        model_end_time = time.perf_counter()
+        model_cost_time += (model_end_time - model_start_time)
+        epoch_cost_time += (model_end_time - data_start_time)
+    avg_start_time = time.perf_counter()
     epoch_avg_loss = round(sum(batch_loss_list) / len(batch_loss_list),5)
-    return epoch_avg_loss
+    avg_end_time = time.perf_counter()
+    avg_cost_time = avg_end_time - avg_start_time
+    total_end_time = time.perf_counter()
+    total_cost_time =  total_end_time - total_start_time
+    return epoch_avg_loss,data_cost_time,model_cost_time,avg_cost_time,epoch_cost_time,total_cost_time
 
 
 class MixMatchDataset(Dataset):
@@ -452,7 +503,7 @@ def train_with_subset(model,device,logger,
 
 def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, logger,
                     choice_rate=0.6, epoch_num=120, batch_num = 1024, lr=2e-3, batch_size=64):
-
+    # 基于选择模型的loss值切分数据集
     x_id_set, u_id_set  = split_sample_id_list(choice_model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger)
     # 0表示在污染池,1表示在clean pool
     flag_list = [0] * len(poisoned_trainset)
@@ -473,12 +524,27 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
     semi_criterion.to(device)
     optimizer = optim.Adam(model.parameters(),lr=lr)
     # scheduler = MultiStepLR(optimizer, milestones=[10,20,30,40], gamma=0.1)
-    semi_mixmatch = {"train_iteration": batch_num,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
+    amp = False
+    semi_mixmatch = {"train_iteration": batch_num,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num, "amp":amp}
     best_loss = float('inf')
     best_model = None
     for epoch in range(epoch_num):
-        epoch_loss = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
-        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss}")
+        epoch_start_time = time.perf_counter()
+        epoch_loss,data_time,model_time,avg_time,cost_time,total_cost_time = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
+        epoch_end_time = time.perf_counter()
+        epoch_cost_time = epoch_end_time - epoch_start_time
+        h,m,s = convert_to_hms(epoch_cost_time)
+        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss},CostTime:{h}:{m}:{s:.3f}")
+        dh,dm,ds = convert_to_hms(data_time)
+        mh,mm,ms = convert_to_hms(model_time)
+        avg_h,avg_m,avg_s = convert_to_hms(avg_time)
+        cost_h,cost_m,cost_s = convert_to_hms(cost_time)
+        th,tm,ts = convert_to_hms(total_cost_time)
+        logger.info(f"DataTime:{dh}:{dm}:{ds:.3f}")
+        logger.info(f"ModelTime:{mh}:{mm}:{ms:.3f}")
+        logger.info(f"AvgTime:{avg_h}:{avg_m}:{avg_s:.3f}")
+        logger.info(f"CostTime:{cost_h}:{cost_m}:{cost_s:.3f}")
+        logger.info(f"TotalTime:{th}:{tm}:{ts:.3f}")
         # scheduler.step()
         if epoch_loss < best_loss:
             best_loss = epoch_loss
@@ -506,7 +572,7 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
         loss_function = nn.CrossEntropyLoss(class_weight.to(device))
     loss_function.to(device)
     optimal_loss = float('inf')
-    best_model = None
+    best_model = model
     for epoch in range(num_epoch):
         step_loss_list = []
         for _, batch in enumerate(dataset_loader):
@@ -969,7 +1035,7 @@ def purifing_feature_extractor(model,dataset,device, epoch, batch_size,amp,logge
             data = data.view(-1, c, h, w)
             data = data.cuda(device, non_blocking=True)
             if amp:
-                with autocast(): # 开启自动精度转换
+                with (): # 开启自动精度转换
                     output = model(data).view(b, 2, -1)
                     loss = criterion(output)
                 scaler.scale(loss).backward() # loss.backward()
@@ -1011,7 +1077,7 @@ def our_ft_2(
     '''2:种子微调模型'''
     logger.info("第2步: 种子微调模型")
     logger.info("种子集: 由每个类别中选择10个干净样本组成")
-    seed_num_epoch = 30
+    seed_num_epoch = 0
     seed_lr = 1e-3
     logger.info(f"种子微调轮次:{seed_num_epoch},学习率:{seed_lr}")
 
@@ -1037,27 +1103,27 @@ def our_ft_2(
 
     '''4:重训练'''
     
-    logger.info("朴素的retrain")
-    # 解冻
-    # best_BD_model = unfreeze(best_BD_model)
-    choice_rate = 0.6
-    choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
-    availableSet = ConcatDataset([seedSet,choicedSet])
-    epoch_num = 100
-    lr = 1e-3
-    batch_size = 512
-    weight_decay=1e-3
-    lr_milestones = [30,60,90]
+    # logger.info("朴素的retrain")
+    # # 解冻
+    # # best_BD_model = unfreeze(best_BD_model)
+    # choice_rate = 0.6
+    # choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+    # availableSet = ConcatDataset([seedSet,choicedSet])
+    # epoch_num = 100
+    # lr = 1e-3
+    # batch_size = 512
+    # weight_decay=1e-3
+    # lr_milestones = [30,60,90]
 
-    label_counter,weights = get_class_weights(availableSet)
-    logger.info(f"label_counter:{label_counter}")
-    logger.info(f"class_weights:{weights}")
-    class_weights = torch.FloatTensor(weights)
-    last_defense_model,best_defense_model = train(
-        best_BD_model,device,availableSet,num_epoch=epoch_num,
-        lr=lr, batch_size=batch_size, logger=logger, 
-        lr_milestones=lr_milestones,
-        class_weight=class_weights,weight_decay=weight_decay)
+    # label_counter,weights = get_class_weights(availableSet)
+    # logger.info(f"label_counter:{label_counter}")
+    # logger.info(f"class_weights:{weights}")
+    # class_weights = torch.FloatTensor(weights)
+    # last_defense_model,best_defense_model = train(
+    #     best_BD_model,device,availableSet,num_epoch=epoch_num,
+    #     lr=lr, batch_size=batch_size, logger=logger, 
+    #     lr_milestones=lr_milestones,
+    #     class_weight=class_weights,weight_decay=weight_decay)
     
     
     # logger.info("train_dynamic_choice")
@@ -1081,7 +1147,7 @@ def our_ft_2(
     # model = unfreeze(model)
     # best_defense_model, last_defense_model = train_with_subset(model,device,logger,
     #                   choice_rate=0.6,epoch_num=120,lr=1e-3,batch_size=64)
-    '''
+    
     logger.info("半监督训练-开始")
     choice_model = best_BD_model # 使用种子微调后的模型作为选择模型
     if blank_model is None:
@@ -1093,30 +1159,31 @@ def our_ft_2(
     
     # 使用自监督方法纯化特征提取器
     # 先将retrain model进行自监督学习1000个epoch,旨在进行纯化模型的特征提取器
-    logger.info("纯化特征训练-开始")
-    retrain_model = purifing_feature_extractor(
-        model = retrain_model,
-        dataset = poisoned_trainset,
-        device=device, 
-        epoch = 1000, 
-        batch_size = 512,
-        amp = True,
-        logger=logger)
+    # logger.info("纯化特征训练-开始")
+    # retrain_model = purifing_feature_extractor(
+    #     model = retrain_model,
+    #     dataset = poisoned_trainset,
+    #     device=device, 
+    #     epoch = 1000, 
+    #     batch_size = 512,
+    #     amp = True,
+    #     logger=logger)
+    # logger.info("纯化特征训练-结束")
+
     # 使用半监督训练
     epoch_num = 120
-    batch_num = 1024
-    lr = 1e-3
     batch_size = 512
+    batch_num = math.ceil(1024 * 64 / batch_size)
+    lr = 1e-3
+    
     choice_rate = 0.6
     logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
-    logger.info("纯化特征训练-结束")
 
-    
     best_defense_model,last_defense_model = train_with_semi(
         choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
         class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
     logger.info("半监督训练-结束")
-    '''
+    
 
     '''5:评估我们防御后的的ASR和ACC'''
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
@@ -1253,8 +1320,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 进程名称
     proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
     setproctitle.setproctitle(proctitle)
-    log_base_dir = "log/OurMethod_new/"
-    # log_base_dir = "log/temp"
+    # log_base_dir = "log/OurMethod_new/"
+    log_base_dir = "log/temp"
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_r_seed_{r_seed}_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
@@ -1313,7 +1380,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
                 pin_memory=True)
     # 不打乱
     poisoned_evalset_loader = DataLoader(
-                poisoned_trainset, # 非预制
+                poisoned_trainset,
                 batch_size=64,
                 shuffle=False,
                 num_workers=4,
@@ -1515,13 +1582,13 @@ if __name__ == "__main__":
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
-    # gpu_id = 1
-    # r_seed = 1
-    # dataset_name = "ImageNet2012_subset"
-    # class_num = get_classNum(dataset_name)
-    # model_name = "DenseNet"
-    # for attack_name in ["IAD","Refool","WaNet"]:
-    #     scene_single(dataset_name,model_name,attack_name,r_seed)
+    gpu_id = 1
+    r_seed = 11
+    dataset_name = "ImageNet2012_subset"
+    class_num = get_classNum(dataset_name)
+    model_name = "ResNet18"
+    for attack_name in ["WaNet"]:
+        scene_single(dataset_name,model_name,attack_name,r_seed)
 
 
 
