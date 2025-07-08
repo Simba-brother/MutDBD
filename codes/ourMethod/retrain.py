@@ -33,6 +33,7 @@ from codes.common.eval_model import EvalModel
 from sklearn.model_selection import KFold
 from codes.asd.loss import SCELoss, MixMatchLoss
 from codes.ourMethod.loss import SimCLRLoss
+from prefetch_generator import BackgroundGenerator
 from itertools import cycle,islice
 from torch.cuda.amp import autocast
 from torch.cuda.amp import GradScaler
@@ -282,6 +283,7 @@ def interleave(xy, batch):
 
 def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, device, **kwargs):
     total_start_time = time.perf_counter()
+    cycle_ready_start_time = time.perf_counter()
     xiter = cycle(xloader) # 有监督
     uiter = cycle(uloader) # 无监督
     xlimited_cycled_data = islice(xiter,0,kwargs["train_iteration"])
@@ -289,11 +291,22 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
     model.train()
     if kwargs["amp"]:
         scaler = GradScaler()
-    batch_loss_list = []
+    cycle_ready_end_time = time.perf_counter()    
+    cycle_cost_time = cycle_ready_end_time - cycle_ready_start_time
+    # batch_loss_list = []
+    sum_batch_loss = 0.0
+    batch_num = 0
     data_cost_time = 0
+    data_stage_1_cost_time = 0
+    data_stage_2_cost_time = 0
+    data_stage_3_cost_time = 0
+    dava_mv_cost_time = 0
     model_cost_time = 0
-    epoch_cost_time = 0
+    append_cost_time = 0
+    enumerate_cost_time = 0
+    enumerate_start_time = time.perf_counter()
     for batch_idx,(xbatch,ubatch) in enumerate(zip(xlimited_cycled_data,ulimited_cycled_data)):
+        batch_num += 1
         '''数据段开始'''
         data_start_time = time.perf_counter()
         xinput, xtarget = xbatch["img"], xbatch["target"]
@@ -303,12 +316,16 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
         xtarget = torch.zeros(batch_size, kwargs["num_classes"]).scatter_(
             1, xtarget.view(-1, 1).long(), 1
         )
-        xinput = xinput.to(device) # 带标签批次
-        xtarget = xtarget.to(device) 
-        uinput1 = uinput1.to(device) # 不带标签批次
-        uinput2 = uinput2.to(device)
+        data_mv_start_time = time.perf_counter()
+        xinput = xinput.to(device,non_blocking=True) # 带标签批次
+        xtarget = xtarget.to(device,non_blocking=True) 
+        uinput1 = uinput1.to(device,non_blocking=True) # 不带标签批次
+        uinput2 = uinput2.to(device,non_blocking=True)
+        data_mv_end_time = time.perf_counter()
+        dava_mv_cost_time += (data_mv_end_time - data_mv_start_time)
         # uinput2 = uinput2.cuda(gpu, non_blocking=True)
-
+        data_stage_1_end_time = time.perf_counter()
+        data_stage_1_cost_time += (data_stage_1_end_time - data_start_time)
         with torch.no_grad():
             # compute guessed labels of unlabel samples
             uoutput1 = model(uinput1)
@@ -317,7 +334,8 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
             pt = p ** (1 / kwargs["temperature"])
             utarget = pt / pt.sum(dim=1, keepdim=True)
             utarget = utarget.detach()
-
+        data_stage_2_end_time = time.perf_counter()
+        data_stage_2_cost_time += (data_stage_2_end_time - data_stage_1_end_time)
 
         all_input = torch.cat([xinput, uinput1, uinput2], dim=0)
         all_target = torch.cat([xtarget, utarget, utarget], dim=0)
@@ -332,6 +350,8 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
         # interleave labeled and unlabeled samples between batches to get correct batchnorm calculation
         mixed_input = list(torch.split(mixed_input, batch_size))
         mixed_input = interleave(mixed_input, batch_size)
+        data_stage_3_end_time = time.perf_counter()
+        data_stage_3_cost_time += (data_stage_3_end_time - data_stage_2_end_time)
         data_end_time = time.perf_counter()
         data_cost_time += (data_end_time - data_start_time)
         '''数据段结束'''
@@ -391,20 +411,39 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
             loss = Lx + lambda_u * Lu
             loss.backward() # 该批次反向传播
             optimizer.step()
-        
-        batch_loss_list.append(loss.item())
         '''模型段结束'''
         model_end_time = time.perf_counter()
         model_cost_time += (model_end_time - model_start_time)
-        epoch_cost_time += (model_end_time - data_start_time)
+        '''append开始'''
+        append_start_time = time.perf_counter()
+        # batch_loss_list.append(loss.item())
+        sum_batch_loss += loss
+        append_end_time = time.perf_counter()
+        append_cost_time += (append_end_time - append_start_time)
+    enumerate_end_time = time.perf_counter()
+    enumerate_cost_time = enumerate_end_time - enumerate_start_time - (model_cost_time+data_cost_time+append_cost_time)
+    # epoch_avg_loss = round(sum(batch_loss_list) / len(batch_loss_list),5)
     avg_start_time = time.perf_counter()
-    epoch_avg_loss = round(sum(batch_loss_list) / len(batch_loss_list),5)
+    epoch_avg_loss = round(sum_batch_loss.item() / batch_num, 5) 
     avg_end_time = time.perf_counter()
     avg_cost_time = avg_end_time - avg_start_time
     total_end_time = time.perf_counter()
     total_cost_time =  total_end_time - total_start_time
-    return epoch_avg_loss,data_cost_time,model_cost_time,avg_cost_time,epoch_cost_time,total_cost_time
 
+    time_dict = {
+        "total_cost_time":total_cost_time,
+        "cycle_cost_time":cycle_cost_time,
+        "data_cost_time":data_cost_time,
+        "model_cost_time":model_cost_time,
+        "append_cost_time":append_cost_time,
+        "enumerate_cost_time":enumerate_cost_time,
+        "avg_cost_time":avg_cost_time,
+        "data_stage_1_cost_time":data_stage_1_cost_time,
+        "data_stage_2_cost_time":data_stage_2_cost_time,
+        "data_stage_3_cost_time":data_stage_3_cost_time,
+        "data_mv_cost_time":dava_mv_cost_time
+    }
+    return epoch_avg_loss,time_dict
 
 class MixMatchDataset(Dataset):
         """Semi-supervised MixMatch dataset.
@@ -501,6 +540,13 @@ def train_with_subset(model,device,logger,
     logger.info(f"Best Epoch:{best_epoch}")
     return best_model,model
 
+class PrefetchDataLoader(DataLoader):
+    '''
+        replace DataLoader with PrefetchDataLoader
+    '''
+    def __iter__(self):
+        return BackgroundGenerator(super().__iter__())
+
 def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset, poisoned_ids, poisoned_evalset_loader, class_num, logger,
                     choice_rate=0.6, epoch_num=120, batch_num = 1024, lr=2e-3, batch_size=64):
     # 基于选择模型的loss值切分数据集
@@ -515,8 +561,12 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
     model = retrain_model
     xdata = MixMatchDataset(train_set, flag_array, labeled=True)
     udata = MixMatchDataset(train_set, flag_array, labeled=False)
-    xloader = DataLoader(xdata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
-    uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
+
+
+    xloader = DataLoader(xdata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=8, pin_memory=True, pin_memory_device="cuda")
+    uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=8, pin_memory=True, pin_memory_device="cuda")
+    # xloader = PrefetchDataLoader(xdata, batch_size=batch_size, drop_last=True, num_workers=4, pin_memory=True)
+    # uloader = PrefetchDataLoader(udata, batch_size=batch_size, drop_last=True, num_workers=4, pin_memory=True)
     model.train()
     model.to(device)
     semi_criterion = MixMatchLoss(rampup_length=epoch_num, lambda_u=15) # rampup_length = 120  same as epoches
@@ -529,22 +579,34 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
     best_loss = float('inf')
     best_model = None
     for epoch in range(epoch_num):
-        epoch_start_time = time.perf_counter()
-        epoch_loss,data_time,model_time,avg_time,cost_time,total_cost_time = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
-        epoch_end_time = time.perf_counter()
-        epoch_cost_time = epoch_end_time - epoch_start_time
-        h,m,s = convert_to_hms(epoch_cost_time)
-        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss},CostTime:{h}:{m}:{s:.3f}")
-        dh,dm,ds = convert_to_hms(data_time)
-        mh,mm,ms = convert_to_hms(model_time)
-        avg_h,avg_m,avg_s = convert_to_hms(avg_time)
-        cost_h,cost_m,cost_s = convert_to_hms(cost_time)
-        th,tm,ts = convert_to_hms(total_cost_time)
-        logger.info(f"DataTime:{dh}:{dm}:{ds:.3f}")
-        logger.info(f"ModelTime:{mh}:{mm}:{ms:.3f}")
-        logger.info(f"AvgTime:{avg_h}:{avg_m}:{avg_s:.3f}")
-        logger.info(f"CostTime:{cost_h}:{cost_m}:{cost_s:.3f}")
+        epoch_loss,time_dict = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
+        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss}")
+        th,tm,ts = convert_to_hms(time_dict["total_cost_time"])
+        ch,cm,cs = convert_to_hms(time_dict["cycle_cost_time"])
+        dh,dm,ds = convert_to_hms(time_dict["data_cost_time"])
+        ds1h,ds1m,ds1s = convert_to_hms(time_dict["data_stage_1_cost_time"]) 
+        mvh,mvm,mvs = convert_to_hms(time_dict["data_mv_cost_time"]) 
+        ds2h,ds2m,ds2s = convert_to_hms(time_dict["data_stage_2_cost_time"]) 
+        ds3h,ds3m,ds3s = convert_to_hms(time_dict["data_stage_3_cost_time"]) 
+        mh,mm,ms = convert_to_hms(time_dict["model_cost_time"])
+        aph,apm,aps = convert_to_hms(time_dict["append_cost_time"])
+        eh,em,es = convert_to_hms(time_dict["enumerate_cost_time"]) 
+        avh,avm,avs = convert_to_hms(time_dict["avg_cost_time"]) 
+        
+        
+        
         logger.info(f"TotalTime:{th}:{tm}:{ts:.3f}")
+        logger.info(f"CycleTime:{ch}:{cm}:{cs:.3f}")
+        logger.info(f"DataTime:{dh}:{dm}:{ds:.3f}")
+        logger.info(f"\tDS1:{ds1h}:{ds1m}:{ds1s:.3f}")
+        logger.info(f"\t\tMv:{mvh}:{mvm}:{mvs:.3f}")
+        logger.info(f"\tDS2:{ds2h}:{ds2m}:{ds2s:.3f}")
+        logger.info(f"\tDS3:{ds3h}:{ds3m}:{ds3s:.3f}")
+        logger.info(f"ModelTime:{mh}:{mm}:{ms:.3f}")
+        logger.info(f"AppendTime:{aph}:{apm}:{aps:.3f}")
+        logger.info(f"EnumTime:{eh}:{em}:{es:.3f}")
+        logger.info(f"AvgTime:{avh}:{avm}:{avs:.3f}")
+        
         # scheduler.step()
         if epoch_loss < best_loss:
             best_loss = epoch_loss

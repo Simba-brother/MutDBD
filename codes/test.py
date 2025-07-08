@@ -275,7 +275,6 @@ def test33():
 
 
 def test34():
-
     s = 0
     for _ in range(6):
         b = 9
@@ -283,7 +282,11 @@ def test34():
         s += (b-a)
     print(s)
 
+def test35():
+    d = torch.stack([1,2,3])
+    print(d)
+
 if __name__ == "__main__":
-    test34()
+    test35()
 
 
