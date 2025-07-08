@@ -1253,8 +1253,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 进程名称
     proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
     setproctitle.setproctitle(proctitle)
-    # log_base_dir = "log/OurMethod_new/"
-    log_base_dir = "log/temp"
+    log_base_dir = "log/OurMethod_new/"
+    # log_base_dir = "log/temp"
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_r_seed_{r_seed}_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
@@ -1515,13 +1515,13 @@ if __name__ == "__main__":
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
-    gpu_id = 1
-    r_seed = 1
-    dataset_name = "ImageNet2012_subset"
-    class_num = get_classNum(dataset_name)
-    model_name = "DenseNet"
-    for attack_name in ["BadNets"]:
-        scene_single(dataset_name,model_name,attack_name,r_seed)
+    # gpu_id = 1
+    # r_seed = 1
+    # dataset_name = "ImageNet2012_subset"
+    # class_num = get_classNum(dataset_name)
+    # model_name = "DenseNet"
+    # for attack_name in ["IAD","Refool","WaNet"]:
+    #     scene_single(dataset_name,model_name,attack_name,r_seed)
 
 
 
@@ -1535,3 +1535,5 @@ if __name__ == "__main__":
     #                 continue
     #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
     #                 scene_single(dataset_name,model_name,attack_name,r_seed)
+
+    pass
