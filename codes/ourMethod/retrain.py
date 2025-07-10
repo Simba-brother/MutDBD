@@ -305,6 +305,7 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
     append_cost_time = 0
     enumerate_cost_time = 0
     enumerate_start_time = time.perf_counter()
+    # torch.cuda.synchronize() 
     for batch_idx,(xbatch,ubatch) in enumerate(zip(xlimited_cycled_data,ulimited_cycled_data)):
         batch_num += 1
         '''数据段开始'''
@@ -317,10 +318,11 @@ def semi_train_epoch(model, xloader, uloader, criterion, optimizer, epoch, devic
             1, xtarget.view(-1, 1).long(), 1
         )
         data_mv_start_time = time.perf_counter()
-        xinput = xinput.to(device,non_blocking=True) # 带标签批次
-        xtarget = xtarget.to(device,non_blocking=True) 
-        uinput1 = uinput1.to(device,non_blocking=True) # 不带标签批次
-        uinput2 = uinput2.to(device,non_blocking=True)
+        # 数据上设备
+        xinput = xinput.to(device)
+        xtarget = xtarget.to(device) 
+        uinput1 = uinput1.to(device)
+        uinput2 = uinput2.to(device)
         data_mv_end_time = time.perf_counter()
         dava_mv_cost_time += (data_mv_end_time - data_mv_start_time)
         # uinput2 = uinput2.cuda(gpu, non_blocking=True)
@@ -563,8 +565,8 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
     udata = MixMatchDataset(train_set, flag_array, labeled=False)
 
 
-    xloader = DataLoader(xdata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=8, pin_memory=True, pin_memory_device="cuda")
-    uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=8, pin_memory=True, pin_memory_device="cuda")
+    xloader = DataLoader(xdata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=8, pin_memory=True)
+    uloader = DataLoader(udata, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=8, pin_memory=True)
     # xloader = PrefetchDataLoader(xdata, batch_size=batch_size, drop_last=True, num_workers=4, pin_memory=True)
     # uloader = PrefetchDataLoader(udata, batch_size=batch_size, drop_last=True, num_workers=4, pin_memory=True)
     model.train()
@@ -580,8 +582,9 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
     best_model = None
     for epoch in range(epoch_num):
         epoch_loss,time_dict = semi_train_epoch(model, xloader, uloader, semi_criterion, optimizer, epoch, device, **semi_mixmatch)
-        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss}")
         th,tm,ts = convert_to_hms(time_dict["total_cost_time"])
+        logger.info(f"Epoch:{epoch+1},loss:{epoch_loss},CostTime:{th}:{tm}:{ts:.3f}")
+        '''
         ch,cm,cs = convert_to_hms(time_dict["cycle_cost_time"])
         dh,dm,ds = convert_to_hms(time_dict["data_cost_time"])
         ds1h,ds1m,ds1s = convert_to_hms(time_dict["data_stage_1_cost_time"]) 
@@ -592,10 +595,7 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
         aph,apm,aps = convert_to_hms(time_dict["append_cost_time"])
         eh,em,es = convert_to_hms(time_dict["enumerate_cost_time"]) 
         avh,avm,avs = convert_to_hms(time_dict["avg_cost_time"]) 
-        
-        
-        
-        logger.info(f"TotalTime:{th}:{tm}:{ts:.3f}")
+        logger.info(f"EpochTime:{th}:{tm}:{ts:.3f}")
         logger.info(f"CycleTime:{ch}:{cm}:{cs:.3f}")
         logger.info(f"DataTime:{dh}:{dm}:{ds:.3f}")
         logger.info(f"\tDS1:{ds1h}:{ds1m}:{ds1s:.3f}")
@@ -606,7 +606,8 @@ def train_with_semi(choice_model,retrain_model,device,seed_sample_id_list,poison
         logger.info(f"AppendTime:{aph}:{apm}:{aps:.3f}")
         logger.info(f"EnumTime:{eh}:{em}:{es:.3f}")
         logger.info(f"AvgTime:{avh}:{avm}:{avs:.3f}")
-        
+        '''
+
         # scheduler.step()
         if epoch_loss < best_loss:
             best_loss = epoch_loss
@@ -1139,7 +1140,7 @@ def our_ft_2(
     '''2:种子微调模型'''
     logger.info("第2步: 种子微调模型")
     logger.info("种子集: 由每个类别中选择10个干净样本组成")
-    seed_num_epoch = 0
+    seed_num_epoch = 30
     seed_lr = 1e-3
     logger.info(f"种子微调轮次:{seed_num_epoch},学习率:{seed_lr}")
 
@@ -1236,7 +1237,7 @@ def our_ft_2(
     epoch_num = 120
     batch_size = 512
     batch_num = math.ceil(1024 * 64 / batch_size)
-    lr = 1e-3
+    lr = 2e-3
     
     choice_rate = 0.6
     logger.info(f"设置重训练轮次为:{epoch_num},学习率为:{lr}")
@@ -1528,7 +1529,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
         device,
         class_num,
         logger,
-        blank_model = blank_model)
+        blank_model = None)
     logger.info(f"{proctitle}实验场景结束")
     end_time = time.perf_counter()
     cost_time = end_time - start_time
@@ -1649,7 +1650,7 @@ if __name__ == "__main__":
     dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
     model_name = "ResNet18"
-    for attack_name in ["WaNet"]:
+    for attack_name in ["BadNets"]:
         scene_single(dataset_name,model_name,attack_name,r_seed)
 
 
