@@ -449,12 +449,13 @@ def get_classNum(dataset_name):
     return class_num
 
 if __name__ == "__main__":
-    '''
-    dataset_name = "CIFAR10"
-    model_name = "ResNet18"
-    attack_name = "IAD"
-    main_scene()
-    '''
+    
+    # device = torch.device("cuda:1")
+    # dataset_name = "CIFAR10"
+    # model_name = "ResNet18"
+    # attack_name = "BadNets"
+    # main_scene()
+    
 
     # device = torch.device("cuda:1")
     # total = 1
@@ -467,28 +468,27 @@ if __name__ == "__main__":
     #             main_scene()
 
     
-    device = torch.device("cuda:0")
-    acc_win_counter = 0
-    asr_win_counter = 0
-    pNum_win_counter = 0
-    total = 0
-    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-        class_num = get_classNum(dataset_name)
-        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                continue
-            for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                # main_scene()
-                acc_res, asr_res, pNum_res = look()
-                total += 1
-                if acc_res == "Win":
-                    acc_win_counter += 1
-                if asr_res == "Win":
-                    asr_win_counter += 1
-                if pNum_res == "Win":
-                    pNum_win_counter += 1
-    print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
-    
+    # device = torch.device("cuda:0")
+    # acc_win_counter = 0
+    # asr_win_counter = 0
+    # pNum_win_counter = 0
+    # total = 0
+    # for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #     class_num = get_classNum(dataset_name)
+    #     for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #             continue
+    #         for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #             # main_scene()
+    #             acc_res, asr_res, pNum_res = look()
+    #             total += 1
+    #             if acc_res == "Win":
+    #                 acc_win_counter += 1
+    #             if asr_res == "Win":
+    #                 asr_win_counter += 1
+    #             if pNum_res == "Win":
+    #                 pNum_win_counter += 1
+    # print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
 
 
-
+    pass
