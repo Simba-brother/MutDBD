@@ -286,7 +286,12 @@ def test35():
     d = torch.stack([1,2,3])
     print(d)
 
+def test36():
+    set_a = {1,2,3}
+    b = set(set_a)
+    print()
+
 if __name__ == "__main__":
-    test35()
+    test36()
 
 
