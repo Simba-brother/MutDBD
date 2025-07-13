@@ -1193,7 +1193,7 @@ def our_ft_2(
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
     '''4:重训练'''
-    
+    '''
     logger.info("朴素的retrain")
     # 解冻
     # best_BD_model = unfreeze(best_BD_model)
@@ -1226,6 +1226,7 @@ def our_ft_2(
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"朴素监督防御后的last权重保存在:{save_file_path}")
+    '''
     
     
     # logger.info("train_dynamic_choice")
@@ -1297,7 +1298,7 @@ def our_ft_2(
     logger.info(f"半监督防御后last_model:ASR:{asr}, ACC:{acc}")
     '''
 
-    '''
+    
     # 半监督+再监督
     logger.info("半监督+再监督训练模式")
     choice_model = best_BD_model # 使用种子微调后的模型作为选择模型
@@ -1392,7 +1393,7 @@ def our_ft_2(
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"防御后的last权重保存在:{save_file_path}")
-    '''
+    
 
 def get_fresh_dataset(poisoned_ids):
     if dataset_name == "CIFAR10":
@@ -1510,14 +1511,14 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 进程名称
     proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
     setproctitle.setproctitle(proctitle)
-    # log_base_dir = "log/OurMethod_new/"
-    log_base_dir = "log/temp"
+    log_base_dir = "log/OurMethod_Semi-sup"
+    # log_base_dir = "log/temp"
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_r_seed_{r_seed}_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
     
     logger.info(proctitle)
-    exp_dir = os.path.join(config.exp_root_dir,"OurMethod_new",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+    exp_dir = os.path.join(config.exp_root_dir,"OurMethod_Semi-sup",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     os.makedirs(exp_dir,exist_ok=True)
     logger.info(f"进程名称:{proctitle}")
     logger.info(f"实验目录:{exp_dir}")
@@ -1772,23 +1773,21 @@ if __name__ == "__main__":
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
+    # gpu_id = 1
+    # r_seed = 11
+    # dataset_name = "GTSRB"
+    # class_num = get_classNum(dataset_name)
+    # model_name = "VGG19"
+    # for attack_name in ["Refool"]:
+    #     scene_single(dataset_name,model_name,attack_name,r_seed)
+
+
     gpu_id = 1
-    r_seed = 11
-    dataset_name = "CIFAR10"
-    class_num = get_classNum(dataset_name)
-    model_name = "VGG19"
-    for attack_name in ["Refool"]:
-        scene_single(dataset_name,model_name,attack_name,r_seed)
-
-
-    # gpu_id = 0
-    # for r_seed in [1]:
-    #     for dataset_name in ["ImageNet2012_subset"]:
-    #         class_num = get_classNum(dataset_name)
-    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-    #                 continue
-    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #                 scene_single(dataset_name,model_name,attack_name,r_seed)
-
-    pass
+    for r_seed in [1]:
+        for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
+            class_num = get_classNum(dataset_name)
+            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+                    scene_single(dataset_name,model_name,attack_name,r_seed)
