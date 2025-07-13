@@ -1342,11 +1342,11 @@ def our_ft_2(
 
     save_file_name = "best_stage1_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
-    torch.save(best_defense_model.state_dict(), save_file_path)
+    torch.save(best_stage1_model.state_dict(), save_file_path)
     logger.info(f"防御后的best权重保存在:{save_file_path}")
     save_file_name = "last_stage1_model.pth"
     save_file_path = os.path.join(exp_dir,save_file_name)
-    torch.save(last_defense_model.state_dict(), save_file_path)
+    torch.save(last_stage1_model.state_dict(), save_file_path)
     logger.info(f"防御后的last权重保存在:{save_file_path}")
 
 
