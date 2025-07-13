@@ -1321,8 +1321,8 @@ def our_ft_2(
     availableSet = ConcatDataset([seedSet,choicedSet])
 
     
-    logger.info("半监督训练-开始")
-    best_defense_model,last_defense_model = train_with_semi(
+    logger.info("半监督训练(stage1)-开始")
+    best_stage1_model,last_stage1_model = train_with_semi(
         choice_model,retrain_model,device,seed_sample_id_list,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,
         class_num,logger,choice_rate=choice_rate, epoch_num=epoch_num, batch_num=batch_num, lr=lr, batch_size=batch_size)
     logger.info("半监督训练-结束")
@@ -1333,21 +1333,28 @@ def our_ft_2(
     # stage_1_model.load_state_dict(torch.load("/data/mml/backdoor_detect/experiments/OurMethod_new/ImageNet2012_subset/ResNet18/BadNets/exp_11/semi120+sft40/best_defense_model.pth",map_location="cpu"))
     # stage_1_model.to(device)
     
-    stage_1_model = best_defense_model
+    stage_1_model = best_stage1_model
 
     asr, acc = eval_asr_acc(stage_1_model,filtered_poisoned_testset,clean_testset,device)
     logger.info(f"半监督防御后best_model:ASR:{asr}, ACC:{acc}")
     asr, acc = eval_asr_acc(stage_1_model,filtered_poisoned_testset,clean_testset,device)
     logger.info(f"半监督防御后last_model:ASR:{asr}, ACC:{acc}")
 
-
+    save_file_name = "best_stage1_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(best_defense_model.state_dict(), save_file_path)
+    logger.info(f"防御后的best权重保存在:{save_file_path}")
+    save_file_name = "last_stage1_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(last_defense_model.state_dict(), save_file_path)
+    logger.info(f"防御后的last权重保存在:{save_file_path}")
 
 
     em = EvalModel(stage_1_model,remainSet,device)
     confidence_list = em.get_confidence_list()
     conf_array = np.array(confidence_list)
     remain_sample_id_list
-    k = max(1,math.ceil(len(conf_array)*1))
+    k = max(1,math.ceil(len(conf_array)*0.3))
     sorted_indices = np.argsort(conf_array)[::-1] # 降序
     pseudo_local_ids = sorted_indices[:k].tolist()
     pseudo_sample_ids = [remain_sample_id_list[p_i] for p_i in pseudo_local_ids]
