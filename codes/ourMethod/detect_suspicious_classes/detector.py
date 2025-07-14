@@ -16,8 +16,9 @@ from codes import config
 # 得到格式化时间串
 from codes.common.time_handler import get_formattedDateTime
 from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
-from codes.bigUtils import entropy,priorityQueue_2_list,calcu_LCR
+from codes.utils import entropy,priorityQueue_2_list,calcu_LCR
 from codes.common.logging_handler import get_Logger
+import matplotlib.pyplot as plt
 
 
 '''
@@ -240,7 +241,7 @@ def detect_by_precision(df:pd.DataFrame,class_num:int,mutated_model_global_id_li
     classes_priority = [priority for priority,class_i in priority_list]
     target_class_ranking_percent = round((classes_rank.index(config.target_class_idx)+1)/len(classes_rank),3)
 
-    return classes_rank, target_class_ranking_percent
+    return classes_rank, target_class_ranking_percent, class_precisionList_dict
 
 def detect_by_recall(df:pd.DataFrame,class_num:int,mutated_model_global_id_list:list[int],stat_name="mean"):
     '''
@@ -328,9 +329,9 @@ def detect_method_pool(
         mutated_model_global_id_list:list[int],
         method:str):
     if method == "Precision_mean":
-        class_rank,rank_rate = detect_by_precision(df_Label,class_num,mutated_model_global_id_list,stat_name="mean")
+        class_rank,rank_rate,class_precisionList_dict = detect_by_precision(df_Label,class_num,mutated_model_global_id_list,stat_name="mean")
     if method == "Precision_var":
-        class_rank,rank_rate = detect_by_precision(df_Label,class_num,mutated_model_global_id_list,stat_name="var")
+        class_rank,rank_rate,class_precisionList_dict = detect_by_precision(df_Label,class_num,mutated_model_global_id_list,stat_name="var")
     if method == "Loss_mean":
         class_rank,rank_rate = detect_by_loss(df_CELoss,class_num,mutated_model_global_id_list,stat_name="mean")
     if method == "Loss_var":
@@ -355,7 +356,7 @@ def detect_method_pool(
         class_rank,rank_rate = detect_by_LCR_sample(df_Label,class_num,mutated_model_global_id_list,stat_name="mean")
     if method == "LCR_sample_var":
         class_rank,rank_rate = detect_by_LCR_sample(df_Label,class_num,mutated_model_global_id_list,stat_name="var")
-    return class_rank,rank_rate
+    return class_rank,rank_rate,class_precisionList_dict
 
 
 
@@ -375,7 +376,7 @@ def f(dataset_name,model_name:str,attack_name:str,class_num:int,mutated_rate,det
     df_Label = load_df(dataset_name,model_name,attack_name,mutated_rate,"preLabel")
     # 选择出top50变异模型
     mutated_model_global_id_list = get_top_k_global_ids(df_Label,top_k=50,trend="bigger")
-    class_rank,target_class_ranking_percent = detect_method_pool(df_Label,None,class_num,mutated_model_global_id_list,detect_method)
+    class_rank,target_class_ranking_percent, class_precisionList_dict = detect_method_pool(df_Label,None,class_num,mutated_model_global_id_list,detect_method)
     print(f"class_rank:{class_rank}")
     print(f"target_class_ranking_percent:{str(target_class_ranking_percent)}")
     data = {
@@ -387,17 +388,18 @@ def f(dataset_name,model_name:str,attack_name:str,class_num:int,mutated_rate,det
 
 def main():
     '''
-
+    CIFAR10|GTSRB
     '''
     data = {}
-    dataset_name_list = config.cur_dataset_name_list
-    model_name_list = config.cur_model_name_list
-    attack_name_list = config.cur_attack_name_list
-    mutation_rate_list = config.fine_mutation_rate_list
-    detect_method_list = ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var",
-                        "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
-                        "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"
-                        ]
+    dataset_name_list = ["CIFAR10"] # config.cur_dataset_name_list
+    model_name_list =  ["ResNet18"] # config.cur_model_name_list
+    attack_name_list = ["BadNets"] # config.cur_attack_name_list
+    mutation_rate_list = [0.01] # config.fine_mutation_rate_list
+    detect_method_list = ["Precision_mean"]
+    # detect_method_list = ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var",
+    #                     "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
+    #                     "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"
+    #                     ]
     for dataset_name in dataset_name_list:
         print(f"dataset_name:{dataset_name}")
         data[dataset_name] = {}
@@ -418,22 +420,27 @@ def main():
                     df_Label = load_df(dataset_name,model_name,attack_name,mutated_rate,"preLabel")
                     # 选择出top50变异模型
                     mutated_model_global_id_list = get_top_k_global_ids(df_Label,top_k=50,trend="bigger")
+                    data[dataset_name][model_name][attack_name][mutated_rate]["top50_model_id_list"] = mutated_model_global_id_list
                     if dataset_name in ["CIFAR10","GTSRB"]:
                         df_CELoss = load_df(dataset_name,model_name,attack_name,mutated_rate,"CELoss")
                     else:
                         df_CELoss = None
                     for detect_method in detect_method_list:
                         print(f"\t\t\t\tdetect_method:{detect_method}")
-                        class_rank,target_class_ranking_percent = detect_method_pool(df_Label,df_CELoss,class_num,mutated_model_global_id_list,detect_method)
+                        class_rank,target_class_ranking_percent,class_dataList_dict = detect_method_pool(df_Label,df_CELoss,class_num,mutated_model_global_id_list,detect_method)
                         print(f"\t\t\t\t\tclass_rank:{class_rank}")
                         print(f"\t\t\t\t\ttarget_class_ranking_percent:{str(target_class_ranking_percent)}")
                         data[dataset_name][model_name][attack_name][mutated_rate][detect_method] = {}
                         data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_rank"] = class_rank
                         data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["target_class_ranking_percent"] = target_class_ranking_percent
-    save_dir = config.exp_root_dir
+                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_dataList_dict"] = class_dataList_dict
+                    
+    save_dir = os.path.join(config.exp_root_dir, "实验结果")
     save_file_name = "grid.joblib"
     save_path = os.path.join(save_dir,save_file_name)
     joblib.dump(data,save_path)
+    print(save_path)
+    print("END")
 
 
 def look_res():
@@ -459,9 +466,8 @@ def look_res_2():
     '''
     根据需要看结果
     '''
-    grid = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
+    data = joblib.load(os.path.join(config.exp_root_dir,"grid.joblib"))
     
-
     threshold = 0.75
     for measure_name in ["Precision_mean","Loss_mean","Recall_mean","Precision_var","Loss_var","Recall_var",
                         "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
@@ -473,30 +479,96 @@ def look_res_2():
             for dataset_name in config.cur_dataset_name_list: # 2个
                 for model_name in config.cur_model_name_list: # 3个
                     for attack_name in config.cur_attack_name_list: # 4个
-                        percent = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["target_class_ranking_percent"]
+                        percent = data[dataset_name][model_name][attack_name][mutated_rate][measure_name]["target_class_ranking_percent"]
                         if percent >= threshold:
                             count += 1
             avg_count = round(count/len(config.fine_mutation_rate_list),3)
         print(f"{avg_count}/{total}")
 
+
+def data_visualization():
+    # 加载数据
+    data = joblib.load(os.path.join(config.exp_root_dir,"实验结果","grid.joblib"))
+    class_datalist_dict = data["CIFAR10"]["ResNet18"]["BadNets"][0.01]["Precision_mean"]["class_dataList_dict"]
+    box_data = []
+    class_i_list = list(range(10))
+    for class_i in class_i_list:
+         box_data.append(class_datalist_dict[class_i])
+    plt.figure(figsize=(10, 6))  # 设置画布大小
+
+    # 绘制箱线图
+    box = plt.boxplot(box_data, 
+                    patch_artist=True,  # 允许填充颜色
+                    showmeans=False,     # 先不显示默认均值标记
+                    labels=class_i_list)
+
+    # 隐藏中位线
+    for element in ['medians']:
+        for line in box[element]:
+            line.set_visible(False)  # 将中位数设置为不可见
+
+    # 自定义箱体颜色 - 类别3为红色，其他为绿色
+    colors = []
+    for i in range(len(box_data)):
+        if i == 3:  # 类别3（索引3）设为红色
+            colors.append('red')
+        else:       # 其他类别设为绿色
+            colors.append('green')
+    # 应用颜色
+    for patch, color in zip(box['boxes'], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.7)  # 设置透明度
+
+    # 设置箱线图线条样式
+    # plt.setp(box['medians'], color='black', linewidth=2)  # 中位数线
+    plt.setp(box['whiskers'], color='gray', linestyle='--') 
+    plt.setp(box['caps'], color='gray', linewidth=2)
+
+    # 计算并添加均值线
+    means = [np.mean(d) for d in box_data]  # 计算每个类别的均值
+    for i, mean in enumerate(means):
+        # 在每个箱线图位置添加均值横线
+        plt.hlines(mean, 
+                xmin=i+0.8, 
+                xmax=i+1.2, 
+                colors='black', 
+                linewidth=3,
+                label='mean' if i == 0 else "")  # 仅添加一次图例
+
+    # 添加标签和标题
+    plt.xlabel('Category', fontsize=12, fontweight='bold')
+    plt.ylabel('Precision (%)', fontsize=12, fontweight='bold')
+    plt.title('Accuracy distribution of different categories', fontsize=14, fontweight='bold')
+    plt.grid(axis='y', linestyle='--', alpha=0.7)  # 添加网格线
+
+    # 添加图例
+    plt.legend(loc="center right")
+
+    # 优化布局并显示
+    plt.tight_layout()
+    plt.show()
+    plt.savefig("imgs/detect_target_class.png")
+
 if __name__ == "__main__":
-    dataset_name = "ImageNet2012_subset"
-    model_name = "DenseNet"
-    attack_name = "BadNets"
-    class_num = 30
-    mutated_rate = 0.01 # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
-    '''
-    ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var" , 
-    "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
-    "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"]
-    '''
-    detect_method = "Precision_mean"
-    if dataset_name in ["CIFAR10","GTSRB"]:
-        main()  
-    elif dataset_name == "ImageNet2012_subset":
-        f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
+    # dataset_name = "ImageNet2012_subset"
+    # model_name = "DenseNet"
+    # attack_name = "BadNets"
+    # class_num = 30
+    # mutated_rate = 0.01 # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1]
+    # '''
+    # ["Precision_mean","Precision_var","Loss_mean","Loss_var","Recall_mean","Recall_var" , 
+    # "Entropy_model_mean","Entropy_model_var","Entropy_sample_mean","Entropy_sample_var",
+    # "LCR_model_mean","LCR_model_var","LCR_sample_mean","LCR_sample_var"]
+    # '''
+    # detect_method = "Precision_mean"
+    # if dataset_name in ["CIFAR10","GTSRB"]:
+    #     main()  
+    # elif dataset_name == "ImageNet2012_subset":
+    #     f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
         
     # look_res()
+    main()
+    # data_visualization()
     
 
 

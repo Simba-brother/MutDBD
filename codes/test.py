@@ -291,7 +291,57 @@ def test36():
     b = set(set_a)
     print()
 
+def test37():
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # 示例数据 - 11个类别，每个类别10个堆叠部分
+    categories = [f'类别 {i}' for i in range(1, 12)]  # 11个类别
+    num_stacks = 10  # 每个柱子的堆叠部分数量
+
+    # 创建随机数据（替换为您的实际数据）
+    # 每个类别有10个堆叠部分的数据
+    np.random.seed(42)  # 确保可重复性
+    stack_data = np.random.randint(5, 25, size=(num_stacks, len(categories)))
+
+    # 创建颜色映射（使用tab10色图，可自定义）
+    colors = plt.cm.tab10(np.linspace(0, 1, num_stacks))
+
+    # 创建图形和坐标轴
+    fig, ax = plt.subplots(figsize=(15, 8))
+
+    # 初始化底部位置（从0开始）
+    bottoms = np.zeros(len(categories))
+
+    # 绘制堆叠柱状图
+    for i in range(num_stacks):
+        ax.bar(categories, stack_data[i], bottom=bottoms, 
+            color=colors[i], label=f'部分 {i+1}')
+        bottoms += stack_data[i]  # 更新底部位置
+
+    # 添加总量标签（每个柱子的顶部）
+    for i, total in enumerate(bottoms):
+        ax.text(i, total + 0.5, f'{int(total)}', 
+                ha='center', va='bottom', fontsize=10, fontweight='bold')
+
+    # 设置图表标题和标签
+    ax.set_title('11个类别的数据分布（10部分堆叠柱状图）', fontsize=16, pad=20)
+    ax.set_xlabel('类别', fontsize=12)
+    ax.set_ylabel('总数量', fontsize=12)
+
+    # 添加图例（放在图表外部右侧）
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), title='堆叠部分')
+
+    # 调整布局
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout(rect=[0, 0, 0.85, 1])  # 为图例留出空间
+    plt.grid(axis='y', alpha=0.3)
+
+    # 显示图表
+    plt.show()
+    plt.savefig("imgs/temp.png")
+
 if __name__ == "__main__":
-    test36()
+    test37()
 
 

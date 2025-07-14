@@ -485,7 +485,7 @@ def detect_poisonedAndclean_from_targetClass(
 
 if __name__ == "__main__":
 
-    # detect_poisonedAndclean_from_targetClass()
+    # qdetect_poisonedAndclean_from_targetClass()
     pass
 
     # is_dif, higher = analysis_clean_poisoned_in_target_class_of_Hybrid_mutator_with_adaptive_rate()
