@@ -16,7 +16,7 @@ from codes import config
 # 得到格式化时间串
 from codes.common.time_handler import get_formattedDateTime
 from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
-from codes.utils import entropy,priorityQueue_2_list,calcu_LCR
+from codes.utils import entropy,priorityQueue_2_list,calcu_LCR, nested_defaultdict, defaultdict_to_dict
 from codes.common.logging_handler import get_Logger
 import matplotlib.pyplot as plt
 
@@ -376,23 +376,35 @@ def f(dataset_name,model_name:str,attack_name:str,class_num:int,mutated_rate,det
     df_Label = load_df(dataset_name,model_name,attack_name,mutated_rate,"preLabel")
     # 选择出top50变异模型
     mutated_model_global_id_list = get_top_k_global_ids(df_Label,top_k=50,trend="bigger")
-    class_rank,target_class_ranking_percent, class_precisionList_dict = detect_method_pool(df_Label,None,class_num,mutated_model_global_id_list,detect_method)
-    print(f"class_rank:{class_rank}")
-    print(f"target_class_ranking_percent:{str(target_class_ranking_percent)}")
-    data = {
-        "class_rank":class_rank,
-        "target_class_ranking_percent":target_class_ranking_percent
-    }
+    data = nested_defaultdict(5)
+    data[dataset_name][model_name][attack_name][mutated_rate]["top50_model_id_list"] = mutated_model_global_id_list
+    data = defaultdict_to_dict(data)
+    save_dir = os.path.join(config.exp_root_dir, "实验结果")
+    os.makedirs(save_dir,exist_ok=True)
+    save_file_name = "ImageNet_grid.joblib"
+    save_path = os.path.join(save_dir,save_file_name)
+    
     joblib.dump(data,save_path)
-    print("save_path",save_path)
+    print(save_path)
+    print("END")
+
+    # class_rank,target_class_ranking_percent, class_precisionList_dict = detect_method_pool(df_Label,None,class_num,mutated_model_global_id_list,detect_method)
+    # print(f"class_rank:{class_rank}")
+    # print(f"target_class_ranking_percent:{str(target_class_ranking_percent)}")
+    # data = {
+    #     "class_rank":class_rank,
+    #     "target_class_ranking_percent":target_class_ranking_percent
+    # }
+    # joblib.dump(data,save_path)
+    # print("save_path",save_path)
 
 def main():
     '''
     CIFAR10|GTSRB
     '''
     data = {}
-    dataset_name_list = ["CIFAR10"] # config.cur_dataset_name_list
-    model_name_list =  ["ResNet18"] # config.cur_model_name_list
+    dataset_name_list = ["CIFAR10","GTSRB"] # config.cur_dataset_name_list
+    model_name_list =  ["ResNet18","VGG19"] # config.cur_model_name_list
     attack_name_list = ["BadNets"] # config.cur_attack_name_list
     mutation_rate_list = [0.01] # config.fine_mutation_rate_list
     detect_method_list = ["Precision_mean"]
@@ -421,19 +433,19 @@ def main():
                     # 选择出top50变异模型
                     mutated_model_global_id_list = get_top_k_global_ids(df_Label,top_k=50,trend="bigger")
                     data[dataset_name][model_name][attack_name][mutated_rate]["top50_model_id_list"] = mutated_model_global_id_list
-                    if dataset_name in ["CIFAR10","GTSRB"]:
-                        df_CELoss = load_df(dataset_name,model_name,attack_name,mutated_rate,"CELoss")
-                    else:
-                        df_CELoss = None
-                    for detect_method in detect_method_list:
-                        print(f"\t\t\t\tdetect_method:{detect_method}")
-                        class_rank,target_class_ranking_percent,class_dataList_dict = detect_method_pool(df_Label,df_CELoss,class_num,mutated_model_global_id_list,detect_method)
-                        print(f"\t\t\t\t\tclass_rank:{class_rank}")
-                        print(f"\t\t\t\t\ttarget_class_ranking_percent:{str(target_class_ranking_percent)}")
-                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method] = {}
-                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_rank"] = class_rank
-                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["target_class_ranking_percent"] = target_class_ranking_percent
-                        data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_dataList_dict"] = class_dataList_dict
+                    # if dataset_name in ["CIFAR10","GTSRB"]:
+                    #     df_CELoss = load_df(dataset_name,model_name,attack_name,mutated_rate,"CELoss")
+                    # else:
+                    #     df_CELoss = None
+                    # for detect_method in detect_method_list:
+                    #     print(f"\t\t\t\tdetect_method:{detect_method}")
+                    #     class_rank,target_class_ranking_percent,class_dataList_dict = detect_method_pool(df_Label,df_CELoss,class_num,mutated_model_global_id_list,detect_method)
+                    #     print(f"\t\t\t\t\tclass_rank:{class_rank}")
+                    #     print(f"\t\t\t\t\ttarget_class_ranking_percent:{str(target_class_ranking_percent)}")
+                    #     data[dataset_name][model_name][attack_name][mutated_rate][detect_method] = {}
+                    #     data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_rank"] = class_rank
+                    #     data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["target_class_ranking_percent"] = target_class_ranking_percent
+                    #     data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_dataList_dict"] = class_dataList_dict
                     
     save_dir = os.path.join(config.exp_root_dir, "实验结果")
     save_file_name = "grid.joblib"
@@ -567,8 +579,17 @@ if __name__ == "__main__":
     #     f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
         
     # look_res()
-    main()
+    # main()
     # data_visualization()
+
+
+    dataset_name = "ImageNet2012_subset"
+    model_name = "DenseNet"
+    attack_name = "IAD"
+    class_num = 30
+    mutated_rate = 0.01
+    detect_method = "Precision_mean"
+    f(dataset_name,model_name,attack_name,class_num,mutated_rate,detect_method)
     
 
 

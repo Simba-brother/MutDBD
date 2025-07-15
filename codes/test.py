@@ -341,7 +341,23 @@ def test37():
     plt.show()
     plt.savefig("imgs/temp.png")
 
+def test38():
+    from collections import defaultdict
+    def nested_defaultdict(depth, default_factory=int):
+        if depth == 1:
+            return defaultdict(default_factory)
+        else:
+            return defaultdict(lambda: nested_defaultdict(depth - 1, default_factory))
+    
+    
+    a = nested_defaultdict(3)
+    print(a)
+
+def test39():
+    a = {{}}
+    print(a)
+
 if __name__ == "__main__":
-    test37()
+    test39()
 
 

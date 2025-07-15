@@ -15,6 +15,7 @@ import queue
 import shutil
 import logging
 import sys
+from collections import defaultdict
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
 begin_time = last_time
@@ -168,8 +169,20 @@ def convert_to_hms(seconds):
     seconds = remaining_seconds % 60
     return hours, minutes, seconds
 
+def nested_defaultdict(depth, default_factory=int):
+    if depth == 1:
+        return defaultdict(default_factory)
+    else:
+        return defaultdict(lambda: nested_defaultdict(depth - 1, default_factory))
 
+def defaultdict_to_dict(d):
+    if isinstance(d, defaultdict):
+        d = dict(d)
+    if isinstance(d, dict):
+        return {k: defaultdict_to_dict(v) for k, v in d.items()}
+    return d
 
 if __name__ == "__main__":
-    pass
+    
+    print()
     # makdir("experiments/test")

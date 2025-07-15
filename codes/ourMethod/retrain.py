@@ -150,7 +150,7 @@ def sort_sample_id(model,
             isPoisoned_list.append(True)
         else:
             isPoisoned_list.append(False)
-    return ranked_sample_id_list, isPoisoned_list
+    return ranked_sample_id_list, isPoisoned_list,loss_array
 
 def draw(isPoisoned_list,file_name):
     # 话图看一下中毒样本在序中的分布
@@ -932,8 +932,6 @@ def our_ft(
     asr,acc = eval_asr_acc(best_BD_model,filtered_poisoned_testset,clean_testset,device)
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
-
-    
     '''4:对样本进行排序，并选择出数据集'''
     logger.info("="*50)
     logger.info("第4步: 对样本进行排序，并选择出重训练数据集")
@@ -1004,10 +1002,33 @@ def our_ft(
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"防御后的last权重保存在:{save_file_path}")
 
+
+
+def visualization_sampling(ranked_sample_id_list:list, poisoned_id_list:list):
+
+    # 记录排名分布，1表示对应该排名位置的样本被采样了，反之不然。例如，如果rank_distribution[0]=1则说明排名第一的样本被采样了。
+    rank_distribution = [0]*len(ranked_sample_id_list)
+    # 遍历每个位次
+    for rank in range(len(ranked_sample_id_list)):
+        # 当前位次的样本索引（item）
+        item = ranked_sample_id_list[rank]
+        # 判断当前位次样本在不在采样list中
+        if item in poisoned_id_list:
+            # 如果该位次的样本被采样了
+            rank_distribution[rank] = 1
+    # 绘制热力图
+    plt.imshow([rank_distribution], aspect='auto', cmap='Reds', interpolation='nearest')
+    plt.title('Heat map distribution of poisoned samples')
+    plt.xlabel('Position Index')
+    plt.colorbar()
+    plt.yticks([])
+    plt.savefig("imgs/sampleing_rank_distribution_ClassRank.png", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.close()
+
 def build_choiced_dataset(ranker_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger):
     # seed微调后排序一下样本
     class_rank = get_classes_rank(dataset_name, model_name, attack_name, config.exp_root_dir)
-    ranked_sample_id_list, isPoisoned_list = sort_sample_id(
+    ranked_sample_id_list, isPoisoned_list,loss_array = sort_sample_id(
                                                 ranker_model,
                                                 device,
                                                 poisoned_evalset_loader,
@@ -1025,6 +1046,8 @@ def build_choiced_dataset(ranker_model,poisoned_trainset,poisoned_ids,poisoned_e
     logger.info(f"污染样本含量:{count}/{choiced_num}")
     choicedSet = Subset(poisoned_trainset,choiced_sample_id_list)
     remainSet = Subset(poisoned_trainset,remain_sample_id_list)
+
+    # visualization_sampling(ranked_sample_id_list,poisoned_ids)
     return choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list
 
 def split_sample_id_list(ranker_model,seed_sample_id_list,poisoned_ids,poisoned_evalset_loader, choice_rate, device,logger):
@@ -1168,7 +1191,7 @@ def our_ft_2(
     '''2:种子微调模型'''
     logger.info("第2步: 种子微调模型")
     logger.info("种子集: 由每个类别中选择10个干净样本组成")
-    seed_num_epoch = 30
+    seed_num_epoch = 2
     seed_lr = 1e-3
     logger.info(f"种子微调轮次:{seed_num_epoch},学习率:{seed_lr}")
 
@@ -1193,7 +1216,7 @@ def our_ft_2(
     logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
 
     '''4:重训练'''
-    '''
+    
     logger.info("朴素的retrain")
     # 解冻
     # best_BD_model = unfreeze(best_BD_model)
@@ -1226,7 +1249,7 @@ def our_ft_2(
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"朴素监督防御后的last权重保存在:{save_file_path}")
-    '''
+    
     
     
     # logger.info("train_dynamic_choice")
@@ -1298,7 +1321,7 @@ def our_ft_2(
     logger.info(f"半监督防御后last_model:ASR:{asr}, ACC:{acc}")
     '''
 
-    
+    '''
     # 半监督+再监督
     logger.info("半监督+再监督训练模式")
     choice_model = best_BD_model # 使用种子微调后的模型作为选择模型
@@ -1400,7 +1423,7 @@ def our_ft_2(
     save_file_path = os.path.join(exp_dir,save_file_name)
     torch.save(last_defense_model.state_dict(), save_file_path)
     logger.info(f"防御后的last权重保存在:{save_file_path}")
-    
+    '''
 
 def get_fresh_dataset(poisoned_ids):
     if dataset_name == "CIFAR10":
@@ -1516,16 +1539,16 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 随机数种子
     np.random.seed(r_seed)
     # 进程名称
-    proctitle = f"OMretrain_new|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
+    proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
     setproctitle.setproctitle(proctitle)
-    log_base_dir = "log/OurMethod_Semi-sup"
-    # log_base_dir = "log/temp"
+    # log_base_dir = "log/OurMethod_Semi-sup"
+    log_base_dir = "log/temp"
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_r_seed_{r_seed}_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
     
     logger.info(proctitle)
-    exp_dir = os.path.join(config.exp_root_dir,"OurMethod_Semi-sup",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+    exp_dir = os.path.join(config.exp_root_dir,"OurMethod_temp",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     os.makedirs(exp_dir,exist_ok=True)
     logger.info(f"进程名称:{proctitle}")
     logger.info(f"实验目录:{exp_dir}")
@@ -1780,21 +1803,21 @@ if __name__ == "__main__":
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
 
+    gpu_id = 0
+    r_seed = 1
+    dataset_name = "CIFAR10"
+    class_num = get_classNum(dataset_name)
+    model_name = "ResNet18"
+    for attack_name in ["BadNets"]:
+        scene_single(dataset_name,model_name,attack_name,r_seed)
+
+
     # gpu_id = 1
-    # r_seed = 11
-    # dataset_name = "GTSRB"
-    # class_num = get_classNum(dataset_name)
-    # model_name = "VGG19"
-    # for attack_name in ["Refool"]:
-    #     scene_single(dataset_name,model_name,attack_name,r_seed)
-
-
-    gpu_id = 1
-    for r_seed in [1]:
-        for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
-            class_num = get_classNum(dataset_name)
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                    scene_single(dataset_name,model_name,attack_name,r_seed)
+    # for r_seed in [1]:
+    #     for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
+    #         class_num = get_classNum(dataset_name)
+    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #                 scene_single(dataset_name,model_name,attack_name,r_seed)
