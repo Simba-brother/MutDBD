@@ -77,6 +77,14 @@ def main():
     joblib.dump(res,save_path)
     print("保存:",save_path)
 
+def look():
+    # 保存数据
+    data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    data = joblib.load(data_path)
+    print(f"{dataset_name}|{model_name}|{attack_name}")
+    print(data)
+    return data
+
 
 def get_classNum(dataset_name):
     class_num = None
@@ -112,6 +120,7 @@ if __name__ == "__main__":
             for attack_name in attack_name_list:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
-                main()
+                # main()
+                look()
     print("END")
 
