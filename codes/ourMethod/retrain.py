@@ -1241,7 +1241,7 @@ def our_ft_2(
     last_defense_model,best_defense_model = train(
         best_BD_model,device,availableSet,num_epoch=epoch_num,
         lr=lr, batch_size=batch_size, logger=logger, 
-        lr_scheduler="MultiStepLR",
+        lr_scheduler="CosineAnnealingLR",
         class_weight=class_weights,weight_decay=weight_decay)
     asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
     logger.info(f"朴素监督防御后best_model:ASR:{asr}, ACC:{acc}")
