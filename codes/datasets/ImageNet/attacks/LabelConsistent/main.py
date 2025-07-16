@@ -13,16 +13,14 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip,Normalize
+from torchvision import transforms
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from codes import core
 from codes import config
 import setproctitle
-from codes.core.models.resnet import ResNet
-from codes.datasets.cifar10.models.vgg import VGG
-from codes.datasets.cifar10.models.densenet import densenet_cifar
-from codes.scripts.dataset_constructor import PureCleanTrainDataset, PurePoisonedTrainDataset, ExtractDataset
+from torchvision.models import resnet18
+from torchvision.models import densenet121
 from codes.common.time_handler import get_formattedDateTime
 
 def _seed_worker(worker_id):
@@ -33,34 +31,45 @@ def _seed_worker(worker_id):
 def get_model(model_name):
     model = None
     if model_name == "ResNet18":
-        model = ResNet(18,num_classes=10)
-    elif model_name == "VGG19":
-        model = VGG("VGG19")
+        model = resnet18(pretrained = True)
+        # 修改最后一个全连接层的输出类别数量
+        num_classes = 30  # 假设我们要改变分类数量为30
+        fc_features = model.fc.in_features
+        model.fc = nn.Linear(fc_features, num_classes)
     elif model_name == "DenseNet":
-        model = densenet_cifar()
+        model = densenet121(pretrained = True)
+        # 修改最后一个全连接层的输出类别数量
+        num_classes = 30  # 假设我们要改变分类数量为30
+        in_features = model.classifier.in_features
+        model.classifier = nn.Linear(in_features, num_classes)
     return model
 
 def get_dataset():
-    transform_train = Compose([
-        ToTensor(),
-        RandomHorizontalFlip(),
-        Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transform_train = transforms.Compose([
+        transforms.ToPILImage(), 
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean = [ 0.485, 0.456, 0.406 ],std = [ 0.229, 0.224, 0.225 ])
     ])
 
-    transform_test = Compose([
-        ToTensor(),
-        Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transform_test = transforms.Compose([
+        transforms.ToPILImage(), 
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean = [ 0.485, 0.456, 0.406 ],std = [ 0.229, 0.224, 0.225 ])
     ])
 
     trainset = DatasetFolder(
-        root=os.path.join(config.CIFAR10_dataset_dir,"train"),
+        root=os.path.join(dataset_dir,"train"),
         loader=cv2.imread, # ndarray
         extensions=('png',),
         transform=transform_train,
         target_transform=None,
         is_valid_file=None)
     testset = DatasetFolder(
-        root=os.path.join(config.CIFAR10_dataset_dir,"test"),
+        root=os.path.join(dataset_dir,"test"),
         loader=cv2.imread,
         extensions=('png',),
         transform=transform_test,
@@ -145,7 +154,6 @@ def bengin_main(model,trainset,testset):
 def attack_main(model,trainset,testset):    
     poisoned_rate = 0.1
     adv_model = copy.deepcopy(model)
-    benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, "benign_train_2025-07-16_17:35:57", "best_model.pth")
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
     adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
@@ -182,16 +190,22 @@ def main(isbenign):
 
 if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    dataset_name = "CIFAR10"
+    dataset_name = "ImageNet2012_subset"
     attack_name = "LabelConsistent"
-    model_name = "DenseNet"
+    model_name = "ResNet18"
+    dataset_dir = config.ImageNet2012_subset_dir
     gpu_id = 0
     target_class = 3
     global_seed = 0
     torch.manual_seed(global_seed) # cpu随机数种子
     deterministic = True
     is_benign = True
+    if is_benign is False:
+        benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, "benign_train_2025-07-16_17:35:57", "best_model.pth")
+    else:
+        benign_state_dict_path = None
     experiment_name = "benign_train" if is_benign else "attack_train"
+    
     schedule = {
         'device': f'cuda:{gpu_id}',
 
