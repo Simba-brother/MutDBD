@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip
+from torchvision.transforms import Compose, ToTensor, PILToTensor, RandomHorizontalFlip,Normalize
 from torchvision.datasets import DatasetFolder
 from torch.utils.data import DataLoader
 from codes import core
@@ -38,10 +38,10 @@ gpu_id = 0
 
 torch.manual_seed(global_seed) # cpu随机数种子
 victim_model = ResNet(18,num_classes=10)
+adv_model = None
+# 攻击时才打开，良性时注释掉
 adv_model = copy.deepcopy(victim_model)
-
-_time_dir = config.LC_attack_config[dataset_name][model_name]["benign_model_state_dir"]
-benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, _time_dir, "best_model.pth")
+benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, "benign_train_2025-07-16_13:17:28", "best_model.pth")
 benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
 adv_model.load_state_dict(benign_state_dict)
 
@@ -49,11 +49,13 @@ adv_model.load_state_dict(benign_state_dict)
 # 获得数据集
 transform_train = Compose([
     ToTensor(),
-    RandomHorizontalFlip()
+    RandomHorizontalFlip(),
+    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
 transform_test = Compose([
-    ToTensor()
+    ToTensor(),
+    Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 trainset = DatasetFolder(
     root=os.path.join(config.CIFAR10_dataset_dir,"train"),
@@ -122,7 +124,7 @@ schedule = {
     'save_epoch_interval': 10,
 
     'save_dir': osp.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name),
-    'experiment_name': _time
+    'experiment_name': "attack_train"
 }
 
 
@@ -130,7 +132,7 @@ eps = 8 # Maximum perturbation for PGD adversarial attack. Default: 8.
 alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
 steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
 max_pixel = 255
-poisoned_rate = 0.1 # 目标类别的0.1
+poisoned_rate = 0.1 # 0.1 # 目标类别的0.1
 
 label_consistent = core.LabelConsistent(
     train_dataset=trainset,
@@ -168,8 +170,8 @@ def attack():
     print("LabelConsistent攻击结束,开始保存攻击数据")
     dict_state = {}
     poisoned_testset = label_consistent.poisoned_test_dataset
-    poisoned_trainset = label_consistent.poisoned_train_dataset
-    poisoned_ids = poisoned_trainset.poisoned_set
+    # poisoned_trainset = label_consistent.poisoned_train_dataset
+    poisoned_ids = label_consistent.poisoned_set
     # clean_testset = testset
     # pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
     # purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
@@ -263,10 +265,11 @@ def update_dict_state():
     print("update_dict_state() successful")
 
 if __name__ == "__main__":
-    '''
-    setproctitle.setproctitle(dataset_name+"|"+model_name+"|"+attack_name+"|"+"BenignTrain")
-    benign_attack()
-    '''
+
+    
+    # setproctitle.setproctitle(dataset_name+"|"+model_name+"|"+attack_name+"|"+"BenignTrain")
+    # benign_attack()
+    
 
     setproctitle.setproctitle(dataset_name+"|"+model_name+"|"+attack_name+"|"+"ATTACK")
     attack()

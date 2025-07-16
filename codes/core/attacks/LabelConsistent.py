@@ -514,7 +514,7 @@ class LabelConsistent(Base):
         
         if poisoned_rate > 0:
             # 开始污染数据集
-            self.whole_adv_dataset, self.target_adv_dataset, poisoned_set = self._get_adv_dataset(
+            self.whole_adv_dataset, self.target_adv_dataset, self.poisoned_set = self._get_adv_dataset(
                 train_dataset,
                 adv_model=adv_model,
                 adv_dataset_dir=adv_dataset_dir,
@@ -528,7 +528,7 @@ class LabelConsistent(Base):
             # 开始方块投毒
             self.poisoned_train_dataset = CreatePoisonedTargetDataset(
                 self.target_adv_dataset, # 包含和训练集所有数据，并且poisoned_set样本是被adv的
-                poisoned_set,
+                self.poisoned_set,
                 pattern,
                 weight,
                 poisoned_transform_train_index) # poisoned_transform_train_index = 0
