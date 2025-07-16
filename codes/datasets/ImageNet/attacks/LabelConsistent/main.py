@@ -79,7 +79,7 @@ def get_dataset():
 
 def get_trigger():
     # 图片四角白点
-    pattern = torch.zeros((32, 32), dtype=torch.uint8)
+    pattern = torch.zeros((224, 224), dtype=torch.uint8)
     pattern[-1, -1] = 255
     pattern[-1, -3] = 255
     pattern[-3, -1] = 255
@@ -130,8 +130,8 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
         alpha=alpha,
         steps=steps,
         max_pixel=max_pixel,
-        poisoned_transform_train_index=0,
-        poisoned_transform_test_index=0,
+        poisoned_transform_train_index=3,
+        poisoned_transform_test_index=3,
         poisoned_target_transform_index=0,
         schedule=schedule,
         seed=global_seed,
