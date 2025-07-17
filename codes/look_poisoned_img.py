@@ -298,9 +298,9 @@ def look_ImageNet():
     from codes.poisoned_dataset.imagenet_sub.BadNets.generator import PoisonedDatasetFolder as BadNetsDataset
     # backdoor pattern
     pattern = torch.zeros((224, 224), dtype=torch.uint8)
-    pattern[-8:, -8:] = 255 # 用于归一化前
+    pattern[-26:-4, -26:-4] = 255 # 用于归一化前
     weight = torch.zeros((224, 224), dtype=torch.float32)
-    weight[-8:, -8:] = 1.0
+    weight[-26:-4, -26:-4] = 1.0
     badnets_dataset = BadNetsDataset(dataset,attack_class,poisoned_ids,pattern,weight,-1,0) # ToTenser前
 
 
