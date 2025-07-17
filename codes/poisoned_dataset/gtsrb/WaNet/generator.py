@@ -105,25 +105,7 @@ class PoisonedDatasetFolder(DatasetFolder):
 
         return sample, target, isPoisoned
 
-def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
-    #  数据集
-    trainset,testset = gtsrb_WaNet()
-    '''
-    # 获得训练集transform
-    transform_train = Compose([
-        ToTensor(), # 在这之前投毒
-        RandomHorizontalFlip(),
-        ToPILImage(),
-        Resize((32, 32)),
-        ToTensor()
-    ])
-    transform_test = Compose([
-        ToTensor(), # 在这之前投毒
-        ToPILImage(),
-        Resize((32, 32)),
-        ToTensor()
-    ])
-    '''
+def get_attack_dict_path(model_name):
     if model_name == "ResNet18":
         attack_dict_path = os.path.join(
             config.exp_root_dir,
@@ -154,6 +136,28 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
             "ATTACK_2024-12-27_13:37:50",
             "dict_state.pth"
         )
+    return attack_dict_path
+
+def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
+    #  数据集
+    trainset,testset = gtsrb_WaNet()
+    '''
+    # 获得训练集transform
+    transform_train = Compose([
+        ToTensor(), # 在这之前投毒
+        RandomHorizontalFlip(),
+        ToPILImage(),
+        Resize((32, 32)),
+        ToTensor()
+    ])
+    transform_test = Compose([
+        ToTensor(), # 在这之前投毒
+        ToPILImage(),
+        Resize((32, 32)),
+        ToTensor()
+    ])
+    '''
+    attack_dict_path = get_attack_dict_path(model_name)
     dict_state = torch.load(attack_dict_path, map_location="cpu")
     # trigger
     identity_grid = dict_state["identity_grid"]

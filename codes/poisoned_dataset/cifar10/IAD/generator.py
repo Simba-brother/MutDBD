@@ -9,7 +9,7 @@ from codes import config
 from codes.core.attacks.IAD import Generator
 from codes.scripts.dataset_constructor import Add_IAD_DatasetFolderTrigger,ModifyTarget
 from codes.poisoned_dataset.utils import filter_class
-from codes.look_poisoned_img import reverse_normalize, tensor_to_PIL
+# from codes.look_poisoned_img import reverse_normalize, tensor_to_PIL
 
 class IADPoisonedDatasetFolder(DatasetFolder):
     def __init__(self,
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     poisoned_trainset = gen_poisoned_dataset(model_name,poisoned_ids,trainOrtest)
     sample_id = 0
     sample, target, isPoisoned = poisoned_trainset[0]
-    sample = reverse_normalize(sample,mean=[0.4914, 0.4822, 0.4465], std=[0.247, 0.243, 0.261])
-    sample = tensor_to_PIL(sample)
+    # sample = reverse_normalize(sample,mean=[0.4914, 0.4822, 0.4465], std=[0.247, 0.243, 0.261])
+    # sample = tensor_to_PIL(sample)
 
 
     

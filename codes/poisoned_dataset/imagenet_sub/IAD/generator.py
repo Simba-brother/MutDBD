@@ -72,7 +72,6 @@ class IADPoisonedDatasetFolder(DatasetFolder):
         return sample, target, isPoisoned
 
 
-
 def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     #  数据集
     trainset,trainset1, testset, testset1 = imagenet_IAD()
