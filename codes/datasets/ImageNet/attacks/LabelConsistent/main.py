@@ -64,14 +64,14 @@ def get_dataset():
     trainset = DatasetFolder(
         root=os.path.join(dataset_dir,"train"),
         loader=cv2.imread, # ndarray
-        extensions=('png',),
+        extensions=('jpeg',),
         transform=transform_train,
         target_transform=None,
         is_valid_file=None)
     testset = DatasetFolder(
         root=os.path.join(dataset_dir,"test"),
         loader=cv2.imread,
-        extensions=('png',),
+        extensions=('jpeg',),
         transform=transform_test,
         target_transform=None,
         is_valid_file=None)
@@ -100,7 +100,7 @@ def get_trigger():
     pattern[-2, 1] = 255
     pattern[-3, 0] = 255
 
-    weight = torch.zeros((32, 32), dtype=torch.float32)
+    weight = torch.zeros((224, 224), dtype=torch.float32)
     weight[:3,:3] = 1.0
     weight[:3,-3:] = 1.0
     weight[-3:,:3] = 1.0
