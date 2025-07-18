@@ -145,7 +145,6 @@ def bengin_main(model,trainset,testset):
 def attack_main(model,trainset,testset):    
     poisoned_rate = 0.1
     adv_model = copy.deepcopy(model)
-    benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, "benign_train_2025-07-16_17:35:57", "best_model.pth")
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
     adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
@@ -190,7 +189,13 @@ if __name__ == "__main__":
     global_seed = 0
     torch.manual_seed(global_seed) # cpu随机数种子
     deterministic = True
-    is_benign = True
+    is_benign = False
+    benign_dict = {
+        "ResNet18":"benign_train_2025-07-16_13:17:28",
+        "VGG19":"benign_train_2025-07-16_17:35:57",
+        "DenseNet":"benign_train_2025-07-16_22:34:07"
+    }
+    benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, benign_dict[model_name], "best_model.pth")
     experiment_name = "benign_train" if is_benign else "attack_train"
     schedule = {
         'device': f'cuda:{gpu_id}',
