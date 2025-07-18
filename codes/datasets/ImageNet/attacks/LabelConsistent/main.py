@@ -192,7 +192,7 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "ImageNet2012_subset"
     attack_name = "LabelConsistent"
-    model_name = "ResNet18"
+    model_name = "DenseNet"
     dataset_dir = config.ImageNet2012_subset_dir
     gpu_id = 0
     target_class = 3
