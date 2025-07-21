@@ -118,6 +118,10 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
         loss=nn.CrossEntropyLoss(),
         y_target=attack_class,
         poisoned_rate=poisoned_rate,
+        adv_transform=transforms.Compose(
+            [transforms.ToPILImage(),transforms.Resize((32, 32)),transforms.ToTensor(),
+             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+        ),
         pattern=pattern,
         weight=weight,
         eps=eps,

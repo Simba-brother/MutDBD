@@ -124,6 +124,13 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
         loss=nn.CrossEntropyLoss(),
         y_target=attack_class,
         poisoned_rate=poisoned_rate,
+        adv_transform=transforms.Compose([
+            transforms.ToPILImage(), 
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean = [ 0.485, 0.456, 0.406 ],std = [ 0.229, 0.224, 0.225 ])
+        ]),
         pattern=pattern,
         weight=weight,
         eps=eps,
@@ -156,7 +163,7 @@ def attack_main(model,trainset,testset):
     adv_model = copy.deepcopy(model)
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
-    adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
+    adv_dataset_dir = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
     attacker = get_attacker(trainset,testset,model,target_class,poisoned_rate,
                             adv_model,adv_dataset_dir)
     attacker.train()
@@ -183,6 +190,7 @@ def main(isbenign):
     victim_model = get_model(model_name)
     # 获得数据集
     trainset,testset = get_dataset()
+
     if isbenign:
         benign_model = bengin_main(victim_model,trainset,testset)
     else:
