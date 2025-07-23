@@ -266,7 +266,7 @@ class Base(object):
             total_num = labels.size(0)
             prec1, prec5 = accuracy(predict_digits, labels, topk=(1, 5))
             save_path = os.path.join(work_dir, "best_model.pth")
-            if prec1 > best_acc:
+            if prec1 >= best_acc:
                 best_acc = prec1
                 self.best_model = self.model
                 torch.save(self.model.state_dict(), save_path)
@@ -298,16 +298,6 @@ class Base(object):
                 log(msg)
                 # 评估完后modelj进入train mode
                 self.model.train()
-            '''
-            if (i + 1) % self.current_schedule['save_epoch_interval'] == 0:
-                ckpt_model_filename = "ckpt_epoch_" + str(i+1) + ".pth"
-                ckpt_model_path = os.path.join(work_dir, ckpt_model_filename)
-                # 保存前进入评估模式
-                self.model.eval()
-                torch.save(self.model.state_dict(), ckpt_model_path)
-                # 保存后赶紧训练模式
-                self.model.train()
-            '''
         # epochs完成后model放入cpu返回
         self.model.eval()
         self.model = self.model.cpu()

@@ -23,6 +23,7 @@ from codes.core.models.resnet import ResNet
 from codes.datasets.GTSRB.models.vgg import VGG
 from codes.datasets.GTSRB.models.densenet import DenseNet121
 from codes.common.time_handler import get_formattedDateTime
+from codes.common.eval_model import EvalModel
 
 def _seed_worker(worker_id):
     worker_seed =0
@@ -44,15 +45,13 @@ def get_dataset():
         transforms.ToPILImage(),
         transforms.Resize((32, 32)),
         transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.ToTensor()
     ])
 
     transform_test = transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize((32, 32)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.ToTensor()
     ])
 
     trainset = DatasetFolder(
@@ -73,39 +72,53 @@ def get_dataset():
 
 def get_trigger():
     # 图片四角白点
+    k = 6
     pattern = torch.zeros((32, 32), dtype=torch.uint8)
-    pattern[-1, -1] = 255
-    pattern[-1, -3] = 255
-    pattern[-3, -1] = 255
-    pattern[-2, -2] = 255
-
-    pattern[0, -1] = 255
-    pattern[1, -2] = 255
-    pattern[2, -3] = 255
-    pattern[2, -1] = 255
-
-    pattern[0, 0] = 255
-    pattern[1, 1] = 255
-    pattern[2, 2] = 255
-    pattern[2, 0] = 255
-
-    pattern[-1, 0] = 255
-    pattern[-1, 2] = 255
-    pattern[-2, 1] = 255
-    pattern[-3, 0] = 255
-
+    pattern[:k,:k] = 255
+    pattern[:k,-k:] = 255
+    pattern[-k:,:k] = 255
+    pattern[-k:,-k:] = 255
+    
     weight = torch.zeros((32, 32), dtype=torch.float32)
-    weight[:3,:3] = 1.0
-    weight[:3,-3:] = 1.0
-    weight[-3:,:3] = 1.0
-    weight[-3:,-3:] = 1.0
+    weight[:k,:k] = 1.0
+    weight[:k,-k:] = 1.0
+    weight[-k:,:k] = 1.0
+    weight[-k:,-k:] = 1.0
+
+    # pattern = torch.zeros((32, 32), dtype=torch.uint8)
+    # pattern[-1, -1] = 255
+    # pattern[-1, -3] = 255
+    # pattern[-3, -1] = 255
+    # pattern[-2, -2] = 255
+
+    # pattern[0, -1] = 255
+    # pattern[1, -2] = 255
+    # pattern[2, -3] = 255
+    # pattern[2, -1] = 255
+
+    # pattern[0, 0] = 255
+    # pattern[1, 1] = 255
+    # pattern[2, 2] = 255
+    # pattern[2, 0] = 255
+
+    # pattern[-1, 0] = 255
+    # pattern[-1, 2] = 255
+    # pattern[-2, 1] = 255
+    # pattern[-3, 0] = 255
+
+    # weight = torch.zeros((32, 32), dtype=torch.float32)
+    # weight[:3,:3] = 1.0
+    # weight[:3,-3:] = 1.0
+    # weight[-3:,:3] = 1.0
+    # weight[-3:,-3:] = 1.0
+
     return pattern,weight
 
 def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
                  adv_model,adv_dataset_dir):
 
     pattern,weight = get_trigger()
-    eps = 8 # Maximum perturbation for PGD adversarial attack. Default: 8.
+    eps = 16 # Maximum perturbation for PGD adversarial attack. Default: 8.
     alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
     steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
     max_pixel = 255
@@ -119,8 +132,7 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
         y_target=attack_class,
         poisoned_rate=poisoned_rate,
         adv_transform=transforms.Compose(
-            [transforms.ToPILImage(),transforms.Resize((32, 32)),transforms.ToTensor(),
-             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+            [transforms.ToPILImage(),transforms.Resize((32, 32)),transforms.ToTensor()]
         ),
         pattern=pattern,
         weight=weight,
@@ -150,10 +162,13 @@ def bengin_main(model,trainset,testset):
     return attacker.best_model
 
 def attack_main(model,trainset,testset):    
-    poisoned_rate = 0.1
+    poisoned_rate = 0.5
     adv_model = copy.deepcopy(model)
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
+    # 评估一下benign model的性能
+    em = EvalModel(adv_model,testset,torch.device("cuda:0"))
+    benign_acc = em.eval_acc()
     adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
     attacker = get_attacker(trainset,testset,model,target_class,poisoned_rate,
                             adv_model,adv_dataset_dir)
@@ -199,7 +214,7 @@ if __name__ == "__main__":
     deterministic = True
     is_benign = False
     benign_dict = {
-        "ResNet18":"benign_train_2025-07-16_23:35:20",
+        "ResNet18":"benign_train_2025-07-23_14:18:04",
         "VGG19":"benign_train_2025-07-16_23:35:40",
         "DenseNet":"benign_train_2025-07-16_23:35:55"
     }
@@ -209,14 +224,14 @@ if __name__ == "__main__":
         'device': f'cuda:{gpu_id}',
 
         'benign_training': is_benign,
-        'batch_size': 128,
+        'batch_size': 256,
         'num_workers': 4,
 
         'lr': 0.1,
         'momentum': 0.9,
         'weight_decay': 5e-4,
         'gamma': 0.1,
-        'schedule': [150, 180],
+        'schedule': [20],
 
         'epochs': 200,
 
