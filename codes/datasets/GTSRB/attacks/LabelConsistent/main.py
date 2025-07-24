@@ -118,9 +118,9 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
                  adv_model,adv_dataset_dir):
 
     pattern,weight = get_trigger()
-    eps = 128 # Maximum perturbation for PGD adversarial attack. Default: 8.
+    eps = 16 # Maximum perturbation for PGD adversarial attack. Default: 8.
     alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
-    steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
+    steps = 300 # Number of steps for PGD adversarial attack. Default: 100.
     max_pixel = 255
     attacker = core.LabelConsistent(
         train_dataset=trainset,
@@ -162,7 +162,7 @@ def bengin_main(model,trainset,testset):
     return attacker.best_model
 
 def attack_main(model,trainset,testset):    
-    poisoned_rate = 0.6
+    poisoned_rate = 0.9
     adv_model = copy.deepcopy(model)
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
@@ -225,7 +225,7 @@ if __name__ == "__main__":
         'device': f'cuda:{gpu_id}',
 
         'benign_training': is_benign,
-        'batch_size': 256,
+        'batch_size': 128,
         'num_workers': 4,
 
         'lr': 0.1,
