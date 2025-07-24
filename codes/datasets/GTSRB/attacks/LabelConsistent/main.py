@@ -118,7 +118,7 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
                  adv_model,adv_dataset_dir):
 
     pattern,weight = get_trigger()
-    eps = 16 # Maximum perturbation for PGD adversarial attack. Default: 8.
+    eps = 128 # Maximum perturbation for PGD adversarial attack. Default: 8.
     alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
     steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
     max_pixel = 255
@@ -162,13 +162,14 @@ def bengin_main(model,trainset,testset):
     return attacker.best_model
 
 def attack_main(model,trainset,testset):    
-    poisoned_rate = 0.5
+    poisoned_rate = 0.6
     adv_model = copy.deepcopy(model)
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
     # 评估一下benign model的性能
     em = EvalModel(adv_model,testset,torch.device("cuda:0"))
     benign_acc = em.eval_acc()
+    print(f"benign模型的acc:{benign_acc}")
     adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
     attacker = get_attacker(trainset,testset,model,target_class,poisoned_rate,
                             adv_model,adv_dataset_dir)
@@ -231,7 +232,7 @@ if __name__ == "__main__":
         'momentum': 0.9,
         'weight_decay': 5e-4,
         'gamma': 0.1,
-        'schedule': [20],
+        'schedule': [150, 180],
 
         'epochs': 200,
 
