@@ -73,45 +73,45 @@ def get_dataset():
 
 def get_trigger():
     # 图片四角白点
-    # k = 6
-    # pattern = torch.zeros((32, 32), dtype=torch.uint8)
-    # pattern[:k,:k] = 255
-    # pattern[:k,-k:] = 255
-    # pattern[-k:,:k] = 255
-    # pattern[-k:,-k:] = 255
-    
-    # weight = torch.zeros((32, 32), dtype=torch.float32)
-    # weight[:k,:k] = 1.0
-    # weight[:k,-k:] = 1.0
-    # weight[-k:,:k] = 1.0
-    # weight[-k:,-k:] = 1.0
-
+    k = 6
     pattern = torch.zeros((32, 32), dtype=torch.uint8)
-    pattern[-1, -1] = 255
-    pattern[-1, -3] = 255
-    pattern[-3, -1] = 255
-    pattern[-2, -2] = 255
-
-    pattern[0, -1] = 255
-    pattern[1, -2] = 255
-    pattern[2, -3] = 255
-    pattern[2, -1] = 255
-
-    pattern[0, 0] = 255
-    pattern[1, 1] = 255
-    pattern[2, 2] = 255
-    pattern[2, 0] = 255
-
-    pattern[-1, 0] = 255
-    pattern[-1, 2] = 255
-    pattern[-2, 1] = 255
-    pattern[-3, 0] = 255
-
+    pattern[:k,:k] = 255
+    pattern[:k,-k:] = 255
+    pattern[-k:,:k] = 255
+    pattern[-k:,-k:] = 255
+    
     weight = torch.zeros((32, 32), dtype=torch.float32)
-    weight[:3,:3] = 1.0
-    weight[:3,-3:] = 1.0
-    weight[-3:,:3] = 1.0
-    weight[-3:,-3:] = 1.0
+    weight[:k,:k] = 1.0
+    weight[:k,-k:] = 1.0
+    weight[-k:,:k] = 1.0
+    weight[-k:,-k:] = 1.0
+
+    # pattern = torch.zeros((32, 32), dtype=torch.uint8)
+    # pattern[-1, -1] = 255
+    # pattern[-1, -3] = 255
+    # pattern[-3, -1] = 255
+    # pattern[-2, -2] = 255
+
+    # pattern[0, -1] = 255
+    # pattern[1, -2] = 255
+    # pattern[2, -3] = 255
+    # pattern[2, -1] = 255
+
+    # pattern[0, 0] = 255
+    # pattern[1, 1] = 255
+    # pattern[2, 2] = 255
+    # pattern[2, 0] = 255
+
+    # pattern[-1, 0] = 255
+    # pattern[-1, 2] = 255
+    # pattern[-2, 1] = 255
+    # pattern[-3, 0] = 255
+
+    # weight = torch.zeros((32, 32), dtype=torch.float32)
+    # weight[:3,:3] = 1.0
+    # weight[:3,-3:] = 1.0
+    # weight[-3:,:3] = 1.0
+    # weight[-3:,-3:] = 1.0
 
     return pattern,weight
 
@@ -163,7 +163,7 @@ def bengin_main(model,trainset,testset):
     return attacker.best_model
 
 def attack_main(model,trainset,testset):    
-    poisoned_rate = 0.7
+    poisoned_rate = 0.8
     adv_model = copy.deepcopy(model)
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
@@ -226,10 +226,10 @@ if __name__ == "__main__":
         'device': f'cuda:{gpu_id}',
 
         'benign_training': is_benign,
-        'batch_size': 64,
+        'batch_size': 16,
         'num_workers': 4,
 
-        'lr': 0.01,
+        'lr': 0.015,
         'momentum': 0.9,
         'weight_decay': 5e-4,
         'gamma': 0.1,
