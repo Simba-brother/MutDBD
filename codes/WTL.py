@@ -171,8 +171,8 @@ def split_method(
 
 
 def our_method_state(dataset_name, model_name, attack_name, random_seed):
-    defensed_state_dict_path = os.path.join(exp_root_dir,"OurMethod_new", dataset_name, model_name, attack_name, f"exp_{random_seed}", "last_defense_model.pth") 
-    selected_state_dict_path = os.path.join(exp_root_dir,"OurMethod_new", dataset_name, model_name, attack_name, f"exp_{random_seed}", "best_BD_model.pth") 
+    defensed_state_dict_path = os.path.join(exp_root_dir,"OurMethod_v2", dataset_name, model_name, attack_name, f"exp_{random_seed}", "last_defense_model.pth") 
+    selected_state_dict_path = os.path.join(exp_root_dir,"OurMethod_v2", dataset_name, model_name, attack_name, f"exp_{random_seed}", "best_BD_model.pth") 
     return defensed_state_dict_path, selected_state_dict_path
 
 def asd_method_state(dataset_name, model_name, attack_name, random_seed):
@@ -457,15 +457,15 @@ if __name__ == "__main__":
     # main_scene()
     
 
-    # device = torch.device("cuda:1")
-    # total = 1
-    # for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-    #     class_num = get_classNum(dataset_name)
-    #     for model_name in ["DenseNet"]: # ["ResNet18", "VGG19", "DenseNet"]:
-    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-    #             continue
-    #         for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
-    #             main_scene()
+    device = torch.device("cuda:1")
+    total = 1
+    for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+        class_num = get_classNum(dataset_name)
+        for model_name in ["DenseNet"]: # ["ResNet18", "VGG19", "DenseNet"]:
+            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                continue
+            for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
+                main_scene()
 
     
     # device = torch.device("cuda:0")
