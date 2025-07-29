@@ -362,7 +362,7 @@ def main_scene():
 
     save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res.pkl"
+    save_file_name = "res_1.pkl"
     save_path = os.path.join(save_dir, save_file_name)
     joblib.dump(res_dict,save_path)
     print("结果保存在:",save_path)
@@ -458,13 +458,13 @@ if __name__ == "__main__":
     
 
     device = torch.device("cuda:1")
-    total = 1
-    for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
         class_num = get_classNum(dataset_name)
-        for model_name in ["DenseNet"]: # ["ResNet18", "VGG19", "DenseNet"]:
+        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                 continue
             for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
+                print(dataset_name,model_name,attack_name)
                 main_scene()
 
     
@@ -479,7 +479,7 @@ if __name__ == "__main__":
     #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
     #             continue
     #         for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #             # main_scene()
+    #             main_scene()
     #             acc_res, asr_res, pNum_res = look()
     #             total += 1
     #             if acc_res == "Win":

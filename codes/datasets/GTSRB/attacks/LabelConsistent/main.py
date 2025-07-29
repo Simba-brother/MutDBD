@@ -163,7 +163,7 @@ def bengin_main(model,trainset,testset):
     return attacker.best_model
 
 def attack_main(model,trainset,testset):    
-    poisoned_rate = 0.7
+    poisoned_rate = 1.0
     adv_model = copy.deepcopy(model)
     benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
     adv_model.load_state_dict(benign_state_dict)
@@ -226,10 +226,10 @@ if __name__ == "__main__":
         'device': f'cuda:{gpu_id}',
 
         'benign_training': is_benign,
-        'batch_size': 32,
+        'batch_size': 64,
         'num_workers': 4,
 
-        'lr': 0.02,
+        'lr': 0.015,
         'momentum': 0.9,
         'weight_decay': 5e-4,
         'gamma': 0.1,
