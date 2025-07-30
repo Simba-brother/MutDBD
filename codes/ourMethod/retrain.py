@@ -1806,22 +1806,22 @@ if __name__ == "__main__":
     # # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
     # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
-    '''
+    
     gpu_id = 0
-    r_seed = 1
-    dataset_name = "CIFAR10"
+    r_seed = 11
+    dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
-    model_name = "ResNet18"
-    for attack_name in ["BadNets"]:
+    model_name = "DenseNet"
+    for attack_name in ["IAD"]:
         scene_single(dataset_name,model_name,attack_name,r_seed)
-    '''
+    
 
-    gpu_id = 1
-    for r_seed in [6,7,8,9,10]:
-        for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
-            class_num = get_classNum(dataset_name)
-            for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                    scene_single(dataset_name,model_name,attack_name,r_seed)
+    # gpu_id = 1
+    # for r_seed in [1,2,3,4,5]:
+    #     for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
+    #         class_num = get_classNum(dataset_name)
+    #         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #                 scene_single(dataset_name,model_name,attack_name,r_seed)

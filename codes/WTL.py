@@ -65,6 +65,11 @@ def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
         raise Exception("数据集名称错误")
     return classes_rank
 
+def get_classes_rank_v2(exp_root_dir,dataset_name,model_name,attack_name):
+    data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    data = joblib.load(data_path)
+    return data["class_rank"]
+
 
 def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
         # 基于class_rank得到每个类别权重，原则是越可疑的类别（索引越小的类别），权（分）越大
@@ -225,7 +230,8 @@ def our_unit_res(dataset_name, model_name, attack_name, random_seed,
     defence_model.load_state_dict(torch.load(defensed_state_dict_path,map_location="cpu"))
     select_model.load_state_dict(torch.load(selected_state_dict_path,map_location="cpu"))
     # seed微调后排序一下样本
-    class_rank = get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)
+    class_rank = get_classes_rank_v2(exp_root_dir,dataset_name, model_name, attack_name)
+
     our_res = get_res(defence_model, select_model, device, 
         clean_testset, filtered_poisoned_testset, poisoned_trainset, poisoned_ids,
         class_rank = class_rank, choice_rate=0.6)
@@ -397,7 +403,7 @@ def main_scene():
 def look():
     save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res.pkl"
+    save_file_name = "res_1.pkl"  # res.pkl
     save_path = os.path.join(save_dir, save_file_name)
     res_dict = joblib.load(save_path)
     our_acc_list = res_dict["our_acc_list"]
@@ -479,7 +485,6 @@ if __name__ == "__main__":
     #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
     #             continue
     #         for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #             main_scene()
     #             acc_res, asr_res, pNum_res = look()
     #             total += 1
     #             if acc_res == "Win":
@@ -489,6 +494,4 @@ if __name__ == "__main__":
     #             if pNum_res == "Win":
     #                 pNum_win_counter += 1
     # print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
-
-
     pass

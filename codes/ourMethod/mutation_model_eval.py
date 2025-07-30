@@ -39,7 +39,6 @@ def get_mutation_models_pred_labels(dataset):
         model_name,
         attack_name
     )
-
     eval_ans = {}
     for ratio in mutation_rate_list:
         logging.debug(f"变异率:{str(ratio)}")
@@ -136,10 +135,7 @@ def get_mutation_models_prob_outputs(dataset):
     return eval_ans
 
 
-
-
-
-def ansToCSV(data_dict,save_path):
+def ansToCSV(data_dict,original_backdoorModel_preLabel_list,save_path):
     # 所有的变异模型列
     # global_model_id：[0-99]是GF变异模型，[100-199]是WS变异模型，
     # [200-299]是NAI变异模型，[300-399]是NB变异模型，[400-499]是NS变异模型
@@ -154,6 +150,7 @@ def ansToCSV(data_dict,save_path):
             total_dict[model_name] = pred_label_list # 变异模型列
             global_model_id += 1
     # sampled_id列,GT_label列和isPoisoned列
+    total_dict["original_backdoorModel_preLabel"] = original_backdoorModel_preLabel_list
     total_dict["sampled_id"] = []
     total_dict["GT_label"] = []
     total_dict["isPoisoned"] = []
@@ -223,9 +220,10 @@ def ansTodictData(data_dict,save_path):
 
 
 
-
 def main(exp_sub,save_format):
     if exp_sub == "preLabel":
+        em = EvalModel(backdoor_model_origin, poisoned_trainset, device)
+        original_backdoorModel_preLabel_list = em.get_pred_labels()
         mutation_models_pred_dict = get_mutation_models_pred_labels(poisoned_trainset)
     elif exp_sub == "confidence":
         mutation_models_pred_dict = get_mutation_models_confidence(poisoned_trainset)
@@ -248,7 +246,7 @@ def main(exp_sub,save_format):
         if save_format == "csv":
             save_file_name = f"{exp_sub}.csv"
             save_file_path = os.path.join(save_dir,save_file_name)
-            ansToCSV(data_dict,save_file_path)
+            ansToCSV(data_dict,original_backdoorModel_preLabel_list,save_file_path)
             logging.debug(f"csv保存在:{save_file_path}")
         elif save_format == "joblib":
             save_file_name = f"{exp_sub}.joblib"
@@ -297,7 +295,7 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "CIFAR10"
     model_name = "ResNet18"
-    attack_name = "BadNets"
+    attack_name = "Refool"
     main_exp_name = "EvalMutationToCSV" 
     sub_exp_name = "preLabel"
     mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1]
@@ -327,6 +325,7 @@ if __name__ == "__main__":
             "backdoor_data.pth")
         backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
         backdoor_model = backdoor_data["backdoor_model"]
+        backdoor_model_origin = copy.deepcopy(backdoor_model)
         poisoned_ids = backdoor_data["poisoned_ids"]
         poisoned_trainset = get_poisoned_trainset(poisoned_ids)
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")

@@ -109,9 +109,9 @@ if __name__ == "__main__":
     main()
     '''
     
-    dataset_name_list = ["CIFAR10","GTSRB","ImageNet2012_subset"]
-    model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10","GTSRB","ImageNet2012_subset"]
+    model_name_list =  ["DenseNet"] # ["ResNet18","VGG19","DenseNet"]
+    attack_name_list =  ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
     mutation_rate = 0.01
     target_class = 3
     for dataset_name in dataset_name_list:
