@@ -295,7 +295,7 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "CIFAR10"
     model_name = "ResNet18"
-    attack_name = "Refool"
+    attack_name = "WaNet"
     main_exp_name = "EvalMutationToCSV" 
     sub_exp_name = "preLabel"
     mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1]
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     mutation_model_num = 100
     proctitle = f"{main_exp_name}|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
-    device = torch.device(f"cuda:0")
+    device = torch.device(f"cuda:1")
 
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
