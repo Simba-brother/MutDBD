@@ -327,12 +327,12 @@ def class_rank_analyse():
     poisoned_testset = backdoor_data["poisoned_testset"]
     # 数据集
     poisoned_trainset, clean_trainset, clean_testset = get_spec_dataset(dataset_name, model_name, attack_name, poisoned_ids)
-    filtered_poisoned_testset = filter_poisonedSet(clean_testset,poisoned_testset,target_class_idx)
     # 10次重复实验记录
     class_rank_p_num_list = []
     no_class_rank_p_num_list = []
+    class_rank = get_classes_rank_v2(exp_root_dir,dataset_name, model_name, attack_name)
     for random_seed in tqdm(range(1,11),desc="10次实验结果收集"):
-        defensed_state_dict_path, selected_state_dict_path = asd_method_state(dataset_name, model_name, attack_name, random_seed)
+        defensed_state_dict_path, selected_state_dict_path = our_method_state(dataset_name, model_name, attack_name, random_seed)
         select_model = get_model(dataset_name,model_name)
         select_model.load_state_dict(torch.load(selected_state_dict_path,map_location="cpu"))
         # 中毒样本切分结果
@@ -486,9 +486,10 @@ def get_classNum(dataset_name):
 if __name__ == "__main__":
     
     device = torch.device("cuda:1")
-    dataset_name = "CIFAR10"
-    model_name = "ResNet18"
+    dataset_name = "ImageNet2012_subset"
+    model_name = "DenseNet"
     attack_name = "BadNets"
+    print(dataset_name,model_name,attack_name)
     # main_scene()
     class_rank_analyse()
     
