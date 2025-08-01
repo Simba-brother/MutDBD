@@ -318,6 +318,35 @@ def compare_WTL(our_list, baseline_list,expect:str, method:str):
 
 
 
+def class_rank_analyse():
+    # 后门信息
+    backdoor_data = torch.load(os.path.join(exp_root_dir, "ATTACK",
+                            dataset_name, model_name, attack_name,
+                            "backdoor_data.pth"), map_location="cpu")
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    poisoned_testset = backdoor_data["poisoned_testset"]
+    # 数据集
+    poisoned_trainset, clean_trainset, clean_testset = get_spec_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+    filtered_poisoned_testset = filter_poisonedSet(clean_testset,poisoned_testset,target_class_idx)
+    # 10次重复实验记录
+    class_rank_p_num_list = []
+    no_class_rank_p_num_list = []
+    for random_seed in tqdm(range(1,11),desc="10次实验结果收集"):
+        defensed_state_dict_path, selected_state_dict_path = asd_method_state(dataset_name, model_name, attack_name, random_seed)
+        select_model = get_model(dataset_name,model_name)
+        select_model.load_state_dict(torch.load(selected_state_dict_path,map_location="cpu"))
+        # 中毒样本切分结果
+        p_num, choiced_num, poisoning_rate = split_method(
+            select_model,
+            poisoned_trainset,
+            poisoned_ids,
+            device,
+            class_rank = None,
+            choice_rate = 0.6
+        )
+        no_class_rank_p_num_list.append(p_num)
+    avg_p_num = round(sum(no_class_rank_p_num_list) / len(no_class_rank_p_num_list),3)
+    print(avg_p_num)
 
 
 def main_scene():
@@ -456,22 +485,23 @@ def get_classNum(dataset_name):
 
 if __name__ == "__main__":
     
-    # device = torch.device("cuda:1")
-    # dataset_name = "CIFAR10"
-    # model_name = "ResNet18"
-    # attack_name = "BadNets"
+    device = torch.device("cuda:1")
+    dataset_name = "CIFAR10"
+    model_name = "ResNet18"
+    attack_name = "BadNets"
     # main_scene()
+    class_rank_analyse()
     
 
-    device = torch.device("cuda:1")
-    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-        class_num = get_classNum(dataset_name)
-        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                continue
-            for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
-                print(dataset_name,model_name,attack_name)
-                main_scene()
+    # device = torch.device("cuda:1")
+    # for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #     class_num = get_classNum(dataset_name)
+    #     for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #             continue
+    #         for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
+    #             print(dataset_name,model_name,attack_name)
+    #             main_scene()
 
     
     # device = torch.device("cuda:0")
