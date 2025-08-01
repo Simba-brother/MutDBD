@@ -295,7 +295,7 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "CIFAR10"
     model_name = "VGG19"
-    attack_name = "IAD"
+    attack_name = "Refool"
     main_exp_name = "EvalMutationToCSV" 
     sub_exp_name = "preLabel"
     mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1]

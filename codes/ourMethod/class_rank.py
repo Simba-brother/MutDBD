@@ -1,3 +1,4 @@
+# 用于计算class rank
 import os
 import queue
 import joblib
@@ -10,7 +11,7 @@ from sklearn.metrics import classification_report,confusion_matrix
 from codes.utils import priorityQueue_2_list,nested_defaultdict,defaultdict_to_dict
 
 
-def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="smaller"):
+def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
     # 优先级队列q,值越小优先级越高
     q = queue.PriorityQueue()
     GT_labels = df["GT_label"]
@@ -70,12 +71,12 @@ def main():
     print("="*10)
 
     # 保存数据
-    save_dir = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name)
-    os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res.joblib"
-    save_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(res,save_path)
-    print("保存:",save_path)
+    # save_dir = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name)
+    # os.makedirs(save_dir,exist_ok=True)
+    # save_file_name = "res.joblib"
+    # save_path = os.path.join(save_dir,save_file_name)
+    # joblib.dump(res,save_path)
+    # print("保存:",save_path)
 
 def look():
     # 保存数据
@@ -99,28 +100,28 @@ def get_classNum(dataset_name):
 if __name__ == "__main__":
 
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    '''
+    
     dataset_name = "CIFAR10"
     class_num = get_classNum(dataset_name)
     model_name = "ResNet18"
-    attack_name = "BadNets"
-    mutation_rate = 0.01
+    attack_name = "WaNet"
     target_class = 3
-    main()
-    '''
-    
-    dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10","GTSRB","ImageNet2012_subset"]
-    model_name_list =  ["DenseNet"] # ["ResNet18","VGG19","DenseNet"]
-    attack_name_list =  ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
-    mutation_rate = 0.01
-    target_class = 3
-    for dataset_name in dataset_name_list:
-        class_num = get_classNum(dataset_name)
-        for model_name in model_name_list:
-            for attack_name in attack_name_list:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                # main()
-                look()
-    print("END")
+    for mutation_rate in [0.01,0.03,0.05,0.07,0.09,0.1]:
+        print("变异率:",mutation_rate)
+        main()
+
+    # dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10","GTSRB","ImageNet2012_subset"]
+    # model_name_list =  ["DenseNet"] # ["ResNet18","VGG19","DenseNet"]
+    # attack_name_list =  ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
+    # mutation_rate = 0.01
+    # target_class = 3
+    # for dataset_name in dataset_name_list:
+    #     class_num = get_classNum(dataset_name)
+    #     for model_name in model_name_list:
+    #         for attack_name in attack_name_list:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             # main()
+    #             # look()
+    # print("END")
 

@@ -8,7 +8,7 @@ from sklearn.metrics import classification_report
 import pandas as pd
 from codes.utils import priorityQueue_2_list
 
-def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="smaller"):
+def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
     # 优先级队列q,值越小优先级越高
     q = queue.PriorityQueue()
     GT_labels = df["GT_label"]
