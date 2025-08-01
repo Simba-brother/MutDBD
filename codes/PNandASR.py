@@ -1,5 +1,11 @@
 '''
 32个场景中PN和ASR假设检验关系
+
+参考文献 Training Data Debugging for the Fairness of Machine Learning Software,(ICSE'22),Linghan Meng,Huiyan Li)
+技术参考：
+(1):https://zhuanlan.zhihu.com/p/22692029
+(2):https://www.datascienceconcepts.com/tutorials/python-programming-language/omitted-variable-bias-wald-test-in-python/
+
 '''
 import os
 import joblib
