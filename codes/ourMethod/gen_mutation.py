@@ -60,9 +60,9 @@ def get_classNum(dataset_name):
 if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    dataset_name = "GTSRB"
+    dataset_name = "ImageNet2012_subset"
     model_name = "DenseNet"
-    attack_name = "IAD"
+    attack_name = "BadNets"
     class_num = get_classNum(dataset_name)
     # 变异率列表
     rate_list = [0.03,0.05,0.07,0.09,0.1]

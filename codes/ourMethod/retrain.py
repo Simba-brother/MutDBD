@@ -1170,6 +1170,97 @@ def purifing_feature_extractor(model,dataset,device, epoch, batch_size,amp,logge
         logger.info(f'Epoch:{epoch+1}, 当前学习率为:{optimizer.param_groups[0]["lr"]}')
     return model
 
+
+
+
+
+def cut_off_discussion(
+        backdoor_model,
+        poisoned_testset,
+        filtered_poisoned_testset, 
+        clean_testset,
+        seedSet,
+        seed_sample_id_list,
+        exp_dir,
+        poisoned_ids,
+        poisoned_trainset,
+        poisoned_evalset_loader,
+        device,
+        class_num,
+        logger,
+        blank_model = None):
+    '''1: 先评估一下后门模型的ASR和ACC'''
+    logger.info("第1步: 先评估一下后门模型的ASR和ACC")
+    asr,acc = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"后门模型的ASR:{asr},后门模型的ACC:{acc}")
+
+    logger.info(f"全体中毒测试集（poisoned_testset）数据量：{len(poisoned_testset)}")
+    logger.info(f"剔除了原来本属于target class的中毒测试集（filtered_poisoned_testset）数据量：{len(filtered_poisoned_testset)}")
+
+    '''2:种子微调模型'''
+    logger.info("第2步: 种子微调模型")
+    logger.info("种子集: 由每个类别中选择10个干净样本组成")
+    seed_num_epoch = 30
+    seed_lr = 1e-3
+    logger.info(f"种子微调轮次:{seed_num_epoch},学习率:{seed_lr}")
+
+    last_BD_model,best_BD_model = ft(backdoor_model,device,seedSet,seed_num_epoch,seed_lr,logger=logger)
+ 
+    logger.info("保存种子微调后门模型")
+    save_file_name = "best_BD_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(best_BD_model.state_dict(), save_file_path)
+    logger.info(f"基于后门模型进行种子微调后的训练损失最小的模型权重保存在:{save_file_path}")
+
+    save_file_name = "last_BD_model.pth"
+    save_file_path = os.path.join(exp_dir,save_file_name)
+    torch.save(last_BD_model.state_dict(), save_file_path)
+    logger.info(f"基于后门模型进行种子微调后的最后一轮次的模型(last_seed_model)权重保存在:{save_file_path}")
+
+    
+    '''3:评估一下种子微调后的ASR和ACC'''
+    
+    logger.info("第3步: 评估一下种子微调后模型的的ASR和ACC")
+    asr,acc = eval_asr_acc(best_BD_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"基于后门模型种子微调后的: ASR:{asr}, ACC:{acc}")
+
+    '''4:重训练'''
+    
+    logger.info("朴素的retrain")
+    # 解冻
+    # best_BD_model = unfreeze(best_BD_model)
+    for choice_rate in [0.4,0.5,0.6,0.7,0.8]:
+        logging.info(f"Cut off:{choice_rate}")
+        choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+        availableSet = ConcatDataset([seedSet,choicedSet])
+        epoch_num = 100
+        lr = 1e-3
+        batch_size = 512
+        weight_decay=1e-3
+        label_counter,weights = get_class_weights(availableSet)
+        logger.info(f"label_counter:{label_counter}")
+        logger.info(f"class_weights:{weights}")
+        class_weights = torch.FloatTensor(weights)
+        last_defense_model,best_defense_model = train(
+            best_BD_model,device,availableSet,num_epoch=epoch_num,
+            lr=lr, batch_size=batch_size, logger=logger, 
+            lr_scheduler="CosineAnnealingLR",
+            class_weight=class_weights,weight_decay=weight_decay)
+        asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+        logger.info(f"朴素监督防御后best_model:ASR:{asr}, ACC:{acc}")
+        asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+        logger.info(f"朴素监督防御后last_model:ASR:{asr}, ACC:{acc}")
+        save_file_name = "best_defense_model.pth"
+        _dir =  os.path.join(exp_dir,str(choice_rate))
+        os.makedirs(_dir,exist_ok=True)
+        save_file_path = os.path.join(_dir,save_file_name)
+        torch.save(best_defense_model.state_dict(), save_file_path)
+        logger.info(f"朴素监督防御后的best权重保存在:{save_file_path}")
+        save_file_name = "last_defense_model.pth"
+        save_file_path = os.path.join(_dir,save_file_name)
+        torch.save(last_defense_model.state_dict(), save_file_path)
+        logger.info(f"朴素监督防御后的last权重保存在:{save_file_path}")
+
 def our_ft_2(
         backdoor_model,
         poisoned_testset,
@@ -1545,14 +1636,14 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 进程名称
     proctitle = f"OMretrain|{dataset_name}|{model_name}|{attack_name}|{r_seed}"
     setproctitle.setproctitle(proctitle)
-    log_base_dir = "log/OurMethod_v2"
+    log_base_dir = "log/cut_off"
     # log_base_dir = "log/temp"
     log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
     log_file_name = f"retrain_r_seed_{r_seed}_{_time}.log"
     logger = _get_logger(log_dir,log_file_name,logger_name=_time)
     
     logger.info(proctitle)
-    exp_dir = os.path.join(config.exp_root_dir,"OurMethod_v2",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+    exp_dir = os.path.join(config.exp_root_dir,"cut_off",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     os.makedirs(exp_dir,exist_ok=True)
     logger.info(f"进程名称:{proctitle}")
     logger.info(f"实验目录:{exp_dir}")
@@ -1676,8 +1767,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     #     defense_model_flag = "backdoor", # str: assistant | backdoor
     #     logger = logger)
     '''
-    
-    our_ft_2(
+    cut_off_discussion(
         backdoor_model,
         poisoned_testset,
         filtered_poisoned_testset, 
@@ -1692,6 +1782,21 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
         class_num,
         logger,
         blank_model = None)
+    # our_ft_2(
+    #     backdoor_model,
+    #     poisoned_testset,
+    #     filtered_poisoned_testset, 
+    #     clean_testset,
+    #     seedSet,
+    #     seed_sample_id_list,
+    #     exp_dir,
+    #     poisoned_ids,
+    #     poisoned_trainset,
+    #     poisoned_evalset_loader,
+    #     device,
+    #     class_num,
+    #     logger,
+    #     blank_model = None)
     logger.info(f"{proctitle}实验场景结束")
     end_time = time.perf_counter()
     cost_time = end_time - start_time
@@ -1795,25 +1900,24 @@ def get_classNum(dataset_name):
 
 if __name__ == "__main__":
     
-    # gpu_id = 0
-    # r_seed = 9
-
-    # dataset_name= "GTSRB" # CIFAR10, GTSRB, ImageNet2012_subset
-    # model_name= "DenseNet" # ResNet18, VGG19, DenseNet
-    # attack_name ="WaNet" # BadNets, IAD, Refool, WaNet
-    # class_num = 43
-
-    # # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
-    # scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
-
-    
     gpu_id = 0
     r_seed = 11
-    dataset_name = "ImageNet2012_subset"
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
     class_num = get_classNum(dataset_name)
-    model_name = "DenseNet"
-    for attack_name in ["IAD"]:
-        scene_single(dataset_name,model_name,attack_name,r_seed)
+
+    # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
+    scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
+
+    
+    # gpu_id = 0
+    # r_seed = 11
+    # dataset_name = "CIFAR10"
+    # class_num = get_classNum(dataset_name)
+    # model_name = "DenseNet"
+    # for attack_name in ["IAD"]:
+    #     scene_single(dataset_name,model_name,attack_name,r_seed)
     
 
     # gpu_id = 1
