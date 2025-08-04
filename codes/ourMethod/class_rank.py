@@ -35,6 +35,7 @@ def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
 
 
 def main():
+    '''获得class rank list and rank top'''
     # 加载变异模型的预测标签
     df_predicted_labels = pd.read_csv(os.path.join(
             exp_root_dir,
@@ -134,10 +135,10 @@ if __name__ == "__main__":
 
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     
-    dataset_name = "GTSRB"
+    dataset_name = "ImageNet2012_subset"
     class_num = get_classNum(dataset_name)
     model_name = "DenseNet"
-    attack_name = "IAD"
+    attack_name = "BadNets"
     target_class = 3
     for mutation_rate in [0.01,0.03,0.05,0.07,0.09,0.1]:
         print("变异率:",mutation_rate)
