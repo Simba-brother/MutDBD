@@ -1189,6 +1189,7 @@ def cut_off_discussion(
         class_num,
         logger,
         blank_model = None):
+    logger.info("cut_off_discussion")
     '''1: 先评估一下后门模型的ASR和ACC'''
     logger.info("第1步: 先评估一下后门模型的ASR和ACC")
     asr,acc = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_testset,device)
@@ -1230,8 +1231,12 @@ def cut_off_discussion(
     # 解冻
     # best_BD_model = unfreeze(best_BD_model)
     for choice_rate in [0.4,0.5,0.6,0.7,0.8]:
+        # 每个采样率都是从微调好的原始模型copy出来的，目的是保持使用同样的best_BD_model
+        finetuned_model = copy.deepcopy(best_BD_model)
         logging.info(f"Cut off:{choice_rate}")
-        choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(best_BD_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
+        # 使用finetuned_model去选择样本
+        choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(
+            finetuned_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
         availableSet = ConcatDataset([seedSet,choicedSet])
         epoch_num = 100
         lr = 1e-3
@@ -1242,7 +1247,7 @@ def cut_off_discussion(
         logger.info(f"class_weights:{weights}")
         class_weights = torch.FloatTensor(weights)
         last_defense_model,best_defense_model = train(
-            best_BD_model,device,availableSet,num_epoch=epoch_num,
+            finetuned_model,device,availableSet,num_epoch=epoch_num,
             lr=lr, batch_size=batch_size, logger=logger, 
             lr_scheduler="CosineAnnealingLR",
             class_weight=class_weights,weight_decay=weight_decay)
@@ -1900,7 +1905,7 @@ def get_classNum(dataset_name):
 
 if __name__ == "__main__":
     
-    gpu_id = 0
+    gpu_id = 1
     r_seed = 11
     dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "DenseNet" # ResNet18, VGG19, DenseNet
