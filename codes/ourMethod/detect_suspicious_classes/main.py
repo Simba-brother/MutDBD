@@ -12,7 +12,7 @@ from codes.ourMethod.detect_suspicious_classes.get_suspicious import get_suspici
 from collections import defaultdict
 import pandas as pd
 from collections import defaultdict
-from codes.bigUtils import entropy
+from codes.utils import entropy
 from sklearn.metrics import classification_report,confusion_matrix
 from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
 from codes.common.logging_handler import get_Logger

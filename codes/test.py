@@ -9,7 +9,7 @@ import torch
 from cliffs_delta import cliffs_delta
 from scipy.stats import wilcoxon,ks_2samp,mannwhitneyu
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
-
+from codes.utils import entropy
 def test1():
     print(time.strftime("%Y-%m-%d_%H:%M:%S"))
     q = queue.PriorityQueue()
@@ -354,8 +354,11 @@ def test38():
     print(a)
 
 def test39():
-    a = {{}}
-    print(a)
+    data = [1,1,1,1,1,1] # 纯熵小
+    e = entropy(data)
+    data2 = [1,2,3,4,5,6]
+    e2 = entropy(data2)
+    print(e,e2)
 
 if __name__ == "__main__":
     test39()
