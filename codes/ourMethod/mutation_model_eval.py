@@ -34,7 +34,7 @@ from codes.poisoned_dataset.imagenet_sub.WaNet.generator import gen_poisoned_dat
 def get_mutation_models_pred_labels(dataset):
     mutations_dir = os.path.join(
         exp_root_dir,
-        "MutationModels",
+        "MutationsForDiscussion", # MutationModels
         dataset_name,
         model_name,
         attack_name
@@ -293,21 +293,21 @@ def get_poisoned_trainset(poisoned_ids):
 if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    dataset_name = "ImageNet2012_subset"
-    model_name = "DenseNet"
+    dataset_name = "CIFAR10"
+    model_name = "ResNet18"
     attack_name = "BadNets"
-    main_exp_name = "EvalMutationToCSV" 
+    main_exp_name = "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
-    mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1]
+    mutation_rate_list = [0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1] # [0.03, 0.05, 0.07, 0.09, 0.1]
     mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
-    mutation_model_num = 100
+    mutation_model_num = 10
     proctitle = f"{main_exp_name}|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:1")
 
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
-    LOG_FILE_DIR = os.path.join("log","EvalMutationToCSV",dataset_name,model_name,attack_name)
+    LOG_FILE_DIR = os.path.join("log","EvalMutationToCSV_ForDiscussion",dataset_name,model_name,attack_name)
     os.makedirs(LOG_FILE_DIR,exist_ok=True)
     LOG_FILE_NAME = f"{main_exp_name}_{sub_exp_name}.log"
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)

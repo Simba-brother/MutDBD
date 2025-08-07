@@ -290,7 +290,7 @@ def look_ImageNet():
         target_transform=None,
         is_valid_file=None)
     
-    poisoned_ids = [666,1000,3000,4500,6000,8000,12000,15000,18000]
+    poisoned_ids = [18000] # [666,1000,3000,4500,6000,8000,12000,15000,18000]
     
 
 
