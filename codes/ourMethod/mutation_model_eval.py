@@ -140,7 +140,7 @@ def ansToCSV(data_dict,original_backdoorModel_preLabel_list,save_path):
     # global_model_id：[0-99]是GF变异模型，[100-199]是WS变异模型，
     # [200-299]是NAI变异模型，[300-399]是NB变异模型，[400-499]是NS变异模型
     mutation_operator_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
-    mutation_model_num = 100
+    mutation_model_num = 10
     total_dict = {}
     global_model_id = 0
     for operator in mutation_operator_list:
