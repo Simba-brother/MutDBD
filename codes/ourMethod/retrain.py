@@ -1242,7 +1242,7 @@ def cut_off_discussion(
     logger.info("朴素的retrain")
     # 解冻
     # best_BD_model = unfreeze(best_BD_model)
-    for choice_rate in [1.0]:
+    for choice_rate in [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]:
         # 每个采样率都是从微调好的原始模型copy出来的，目的是保持使用同样的best_BD_model
         finetuned_model = copy.deepcopy(best_BD_model)
         logger.info(f"Cut off:{choice_rate}")
