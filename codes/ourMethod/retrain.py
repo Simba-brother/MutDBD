@@ -1230,10 +1230,10 @@ def cut_off_discussion(
     logger.info("朴素的retrain")
     # 解冻
     # best_BD_model = unfreeze(best_BD_model)
-    for choice_rate in [0.4,0.5,0.6,0.7,0.8]:
+    for choice_rate in [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]:
         # 每个采样率都是从微调好的原始模型copy出来的，目的是保持使用同样的best_BD_model
         finetuned_model = copy.deepcopy(best_BD_model)
-        logging.info(f"Cut off:{choice_rate}")
+        logger.info(f"Cut off:{choice_rate}")
         # 使用finetuned_model去选择样本
         choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(
             finetuned_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
@@ -1906,10 +1906,10 @@ def get_classNum(dataset_name):
 if __name__ == "__main__":
     
     gpu_id = 1
-    r_seed = 11
-    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
-    attack_name ="IAD" # BadNets, IAD, Refool, WaNet
+    r_seed = 1
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
     class_num = get_classNum(dataset_name)
 
     # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)

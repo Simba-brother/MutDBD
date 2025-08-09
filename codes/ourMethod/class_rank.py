@@ -17,7 +17,7 @@ def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
     GT_labels = df["GT_label"]
     preLabels_o = df["original_backdoorModel_preLabel"]
     report_o = classification_report(GT_labels,preLabels_o,output_dict=True,zero_division=0)
-    for m_i in range(500):
+    for m_i in range(50):
         col_name = f"model_{m_i}"
         preLabel_m = df[col_name]
         report_m = classification_report(GT_labels,preLabel_m,output_dict=True,zero_division=0)
@@ -216,6 +216,31 @@ def discussion_metric(metric_name:str):
         return None
     return _res
 
+def discussion_rate():
+    rate_list = [0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1]
+    for rate in rate_list:
+        csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV_ForDiscussion",dataset_name,model_name,attack_name,str(rate),"preLabel.csv")
+        preLabel_df = pd.read_csv(csv_path)
+        # 加载top50变异模型id
+        # mutated_model_id_list = get_top_k_global_ids(preLabel_df,top_k=50,trend="bigger")
+        mutated_model_id_list = list(range(50))
+        data_stuct_1 = nested_defaultdict(2,int)
+        for m_i in mutated_model_id_list:
+            pre_labels = preLabel_df[f"model_{m_i}"]
+            gt_labels = preLabel_df[f"GT_label"]
+            cm = confusion_matrix(gt_labels, pre_labels)
+            for class_i in range(class_num):
+                data_stuct_1[m_i][class_i] = np.sum(cm[:,class_i]) - cm[class_i][class_i]
+
+        data_stuct_2 = nested_defaultdict(1,int)
+        for class_i in range(class_num):
+            for m_i in mutated_model_id_list:
+                data_stuct_2[class_i] += data_stuct_1[m_i][class_i]
+        sorted_res_1 = dict(sorted(data_stuct_2.items(), key=lambda x: x[1],reverse=True))
+        class_rank = list(sorted_res_1.keys())
+        target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
+        print("变异率:",rate)
+        print("rank:",target_class_rank_ratio)
 def look():
     # 保存数据
     data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
@@ -270,21 +295,32 @@ def caculate_WTL(data_list, baseline_list, expect:str):
 if __name__ == "__main__":
 
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
+    dataset_name = "CIFAR10"
+    class_num = get_classNum(dataset_name)
+    model_name = "ResNet18"
+    attack_name = "BadNets"
     target_class = 3
-    mutation_rate = 0.01
-    metric_name = "Entropy"
-    print("target_class:",target_class)
-    print("mutation_rate:",mutation_rate)
-    print("metric_name:",metric_name)
-    for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
-        class_num = get_classNum(dataset_name)
-        for model_name in ["ResNet18","VGG19","DenseNet"]:
-            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                continue
-            for attack_name in ["BadNets","IAD","Refool","WaNet"]:
-                print(f"{dataset_name}|{model_name}|{attack_name}")
-                _res = discussion_metric(metric_name)
-                print("rank_rate:",_res["target_class_rank_ratio"])
+    discussion_rate()
+    print("END")
+
+
+
+    # exp_root_dir = "/data/mml/backdoor_detect/experiments/"
+    # target_class = 3
+    # mutation_rate = 0.01
+    # metric_name = "Entropy"
+    # print("target_class:",target_class)
+    # print("mutation_rate:",mutation_rate)
+    # print("metric_name:",metric_name)
+    # for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
+    #     class_num = get_classNum(dataset_name)
+    #     for model_name in ["ResNet18","VGG19","DenseNet"]:
+    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #             continue
+    #         for attack_name in ["BadNets","IAD","Refool","WaNet"]:
+    #             print(f"{dataset_name}|{model_name}|{attack_name}")
+    #             _res = discussion_metric(metric_name)
+    #             print("rank_rate:",_res["target_class_rank_ratio"])
 
     # with_ClassRank_list = [56.2,22.9,24.1,22.2,8.8,17,387.9,323.6,194.4,22.9,415.1,34.3,18.2,19.6,12.2,15.4,4.5,2.8,117.1,26.6,33.1,23.5,38.4,7.5,1.8,3.8,376.3,24.5,3.6]
     # no_ClassRank_list = [117.3,80.3,265,78,36.7,36.7,1248.4,793,263.1,59.3,769.7,153.7,28.6,24.2,15.3,19.2,11.6,20.1,235.6,33.9,39.2,28.3,46.8,24.2,46.1,46,846.1,132.5,40.5]

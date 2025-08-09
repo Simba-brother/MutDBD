@@ -65,7 +65,7 @@ if __name__ == "__main__":
     attack_name = "BadNets"
     class_num = get_classNum(dataset_name)
     # 变异率列表
-    rate_list = [0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1] # [0.03,0.05,0.07,0.09,0.1]
+    rate_list = [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
     # 每个变异算子在每个变异率下生成的变异模型数量
     mutated_model_num = 10
     proctitle = f"MutationsForDiscussion|{dataset_name}|{model_name}|{attack_name}"
