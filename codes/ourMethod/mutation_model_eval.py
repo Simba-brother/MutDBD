@@ -298,7 +298,7 @@ if __name__ == "__main__":
     attack_name = "BadNets"
     main_exp_name = "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
-    mutation_rate_list = [0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1] # [0.03, 0.05, 0.07, 0.09, 0.1]
+    mutation_rate_list = [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03, 0.05, 0.07, 0.09, 0.1]
     mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
     mutation_model_num = 10
     proctitle = f"{main_exp_name}|{dataset_name}|{model_name}|{attack_name}"

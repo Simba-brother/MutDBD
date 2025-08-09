@@ -1189,13 +1189,25 @@ def cut_off_discussion(
         class_num,
         logger,
         blank_model = None):
+    
+    # last_model, best_model = train(blank_model,device,poisoned_trainset,num_epoch=100,
+    #     lr=1e-3, batch_size=512, logger=logger, 
+    #     lr_scheduler="CosineAnnealingLR",
+    #     class_weight=None,weight_decay=1e-3)
+    # asr, acc = eval_asr_acc(best_model,filtered_poisoned_testset,clean_testset,device)
+    # print("best_model,asr:",asr)
+    # print("best_model,acc:",acc)
+
+    # asr, acc = eval_asr_acc(last_model,filtered_poisoned_testset,clean_testset,device)
+    # print("last_model,asr:",asr)
+    # print("last_model,acc:",acc)
+    
     logger.info("cut_off_discussion")
     '''1: 先评估一下后门模型的ASR和ACC'''
     logger.info("第1步: 先评估一下后门模型的ASR和ACC")
     asr,acc = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_testset,device)
     logger.info(f"后门模型的ASR:{asr},后门模型的ACC:{acc}")
 
-    logger.info(f"全体中毒测试集（poisoned_testset）数据量：{len(poisoned_testset)}")
     logger.info(f"剔除了原来本属于target class的中毒测试集（filtered_poisoned_testset）数据量：{len(filtered_poisoned_testset)}")
 
     '''2:种子微调模型'''
@@ -1230,7 +1242,7 @@ def cut_off_discussion(
     logger.info("朴素的retrain")
     # 解冻
     # best_BD_model = unfreeze(best_BD_model)
-    for choice_rate in [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]:
+    for choice_rate in [1.0]:
         # 每个采样率都是从微调好的原始模型copy出来的，目的是保持使用同样的best_BD_model
         finetuned_model = copy.deepcopy(best_BD_model)
         logger.info(f"Cut off:{choice_rate}")
@@ -1238,6 +1250,7 @@ def cut_off_discussion(
         choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list = build_choiced_dataset(
             finetuned_model,poisoned_trainset,poisoned_ids,poisoned_evalset_loader,choice_rate,device,logger)
         availableSet = ConcatDataset([seedSet,choicedSet])
+        # finetuned_model = unfreeze(finetuned_model)
         epoch_num = 100
         lr = 1e-3
         batch_size = 512
@@ -1250,7 +1263,7 @@ def cut_off_discussion(
             finetuned_model,device,availableSet,num_epoch=epoch_num,
             lr=lr, batch_size=batch_size, logger=logger, 
             lr_scheduler="CosineAnnealingLR",
-            class_weight=class_weights,weight_decay=weight_decay)
+            class_weight=None,weight_decay=weight_decay)
         asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
         logger.info(f"朴素监督防御后best_model:ASR:{asr}, ACC:{acc}")
         asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
@@ -1528,8 +1541,8 @@ def our_ft_2(
 def get_fresh_dataset(poisoned_ids):
     if dataset_name == "CIFAR10":
         if attack_name == "BadNets":
-            poisoned_trainset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
-            clean_trainset, clean_testset = cifar10_BadNets()
+            poisoned_trainset, poisoned_testset_noTargetClass, clean_trainset, clean_testset = cifar10_badNets_gen_poisoned_dataset(poisoned_ids,"train")
+            # clean_trainset, clean_testset = cifar10_BadNets()
         elif attack_name == "IAD":
             poisoned_trainset = cifar10_IAD_gen_poisoned_dataset(model_name, poisoned_ids,"train")
             clean_trainset, _, clean_testset, _ = cifar10_IAD()
@@ -1565,7 +1578,7 @@ def get_fresh_dataset(poisoned_ids):
         elif attack_name == "WaNet":
             poisoned_trainset = imagenet_WaNet_gen_poisoned_dataset(model_name, poisoned_ids,"train")
             clean_trainset, clean_testset = imagenet_WaNet()
-    return poisoned_trainset, clean_trainset, clean_testset
+    return poisoned_trainset, poisoned_testset_noTargetClass, clean_trainset, clean_testset
 
 def _get_logger(log_dir,log_file_name,logger_name):
     # 创建一个logger
@@ -1670,7 +1683,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # 训练数据集中中毒样本id
     poisoned_ids = backdoor_data["poisoned_ids"]
     # 预制的poisoned_testset
-    poisoned_testset = backdoor_data["poisoned_testset"] 
+    # poisoned_testset = backdoor_data["poisoned_testset"] 
     
     # 空白模型
     blank_model = get_model(dataset_name, model_name)
@@ -1690,7 +1703,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # mutated_model.load_state_dict(torch.load(os.path.join(mutations_dir,str(mutate_rate),"Gaussian_Fuzzing",f"model_{m_id}.pth")))
 
     # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
-    poisoned_trainset, clean_trainset, clean_testset = get_fresh_dataset(poisoned_ids)
+    poisoned_trainset, poisoned_testset_noTargetClass, clean_trainset, clean_testset = get_fresh_dataset(poisoned_ids)
     # 数据加载器
     # 打乱
     poisoned_trainset_loader = DataLoader(
@@ -1715,7 +1728,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
                 pin_memory=True)
     # 不打乱
     poisoned_testset_loader = DataLoader(
-                poisoned_testset,# 预制
+                poisoned_testset_noTargetClass,# 预制
                 batch_size=64,
                 shuffle=False,
                 num_workers=4,
@@ -1741,16 +1754,16 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     seedSet = Subset(poisoned_trainset,seed_sample_id_list)
 
     # 从poisoned_testset中剔除原来就是target class的数据
-    clean_testset_label_list = []
-    for _, batch in enumerate(clean_testset_loader):
-        Y = batch[1]
-        clean_testset_label_list.extend(Y.tolist())
-    filtered_ids = []
-    for sample_id in range(len(clean_testset)):
-        sample_label = clean_testset_label_list[sample_id]
-        if sample_label != config.target_class_idx:
-            filtered_ids.append(sample_id)
-    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    # clean_testset_label_list = []
+    # for _, batch in enumerate(clean_testset_loader):
+    #     Y = batch[1]
+    #     clean_testset_label_list.extend(Y.tolist())
+    # filtered_ids = []
+    # for sample_id in range(len(clean_testset)):
+    #     sample_label = clean_testset_label_list[sample_id]
+    #     if sample_label != config.target_class_idx:
+    #         filtered_ids.append(sample_id)
+    # filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
 
 
     # 获得设备
@@ -1774,8 +1787,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     '''
     cut_off_discussion(
         backdoor_model,
-        poisoned_testset,
-        filtered_poisoned_testset, 
+        poisoned_testset_noTargetClass,
+        poisoned_testset_noTargetClass, 
         clean_testset,
         seedSet,
         seed_sample_id_list,
