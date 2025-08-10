@@ -324,9 +324,8 @@ def class_rank_analyse():
                             dataset_name, model_name, attack_name,
                             "backdoor_data.pth"), map_location="cpu")
     poisoned_ids = backdoor_data["poisoned_ids"]
-    poisoned_testset = backdoor_data["poisoned_testset"]
     # 数据集
-    poisoned_trainset, clean_trainset, clean_testset = get_spec_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset( dataset_name, model_name, attack_name,poisoned_ids)
     # 10次重复实验记录
     no_class_rank_p_num_list = []
     # class_rank = get_classes_rank_v2(exp_root_dir,dataset_name, model_name, attack_name)
