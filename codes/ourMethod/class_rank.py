@@ -217,6 +217,9 @@ def discussion_metric(metric_name:str):
     return _res
 
 def discussion_rate():
+    '''
+    讨论不同变异率对类排序影响
+    '''
     rate_list = [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
     for rate in rate_list:
         csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV_ForDiscussion",dataset_name,model_name,attack_name,str(rate),"preLabel.csv")
@@ -239,8 +242,8 @@ def discussion_rate():
         sorted_res_1 = dict(sorted(data_stuct_2.items(), key=lambda x: x[1],reverse=True))
         class_rank = list(sorted_res_1.keys())
         target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
-        print("变异率:",rate)
-        print("rank:",target_class_rank_ratio)
+        print(f"变异率:{rate}, rank:{target_class_rank_ratio}")
+
 def look():
     # 保存数据
     data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")

@@ -1,5 +1,5 @@
 '''
-完成空白模型或后门模型的重训练
+OurMethod主程序
 '''
 import logging
 import sys
@@ -1918,8 +1918,8 @@ def get_classNum(dataset_name):
 
 if __name__ == "__main__":
     
-    gpu_id = 1
-    r_seed = 1
+    gpu_id = 0
+    r_seed = 2
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
     attack_name ="BadNets" # BadNets, IAD, Refool, WaNet

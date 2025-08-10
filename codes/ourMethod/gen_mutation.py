@@ -60,29 +60,29 @@ def get_classNum(dataset_name):
 if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    dataset_name = "CIFAR10"
+    dataset_name = "GTSRB"
     model_name = "ResNet18"
-    attack_name = "BadNets"
+    attack_name = "IAD"
     class_num = get_classNum(dataset_name)
     # 变异率列表
-    rate_list = [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
+    rate_list = [0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
     # 每个变异算子在每个变异率下生成的变异模型数量
-    mutated_model_num = 10
-    proctitle = f"MutationsForDiscussion|{dataset_name}|{model_name}|{attack_name}"
+    mutated_model_num = 50
+    proctitle = f"Mutations|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     # 变异模型的生成使用cpu设备即可
     device = torch.device(f"cpu")
     # 变异模型保存目录
     save_dir = os.path.join(
         exp_root_dir,
-        "MutationsForDiscussion",
+        "MutationModels", # "MutationsForDiscussion",
         dataset_name,
         model_name,
         attack_name,
         )
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
-    LOG_FILE_DIR = os.path.join("log","MutationsForDiscussion",dataset_name,model_name,attack_name)
+    LOG_FILE_DIR = os.path.join("log","Mutations",dataset_name,model_name,attack_name)
     os.makedirs(LOG_FILE_DIR,exist_ok=True)
     LOG_FILE_NAME = "Mutations.log"
     LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
