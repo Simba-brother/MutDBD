@@ -9,7 +9,7 @@ from scipy.stats import wilcoxon,mannwhitneyu,ks_2samp
 from cliffs_delta import cliffs_delta
 from codes.config import exp_root_dir,target_class_idx
 from codes.models import get_model
-from codes.bigUtils.dataset import get_spec_dataset
+from codes.bigUtils.dataset import get_all_dataset
 from codes.common.eval_model import EvalModel
 from torch.utils.data import DataLoader,Subset
 import joblib
@@ -354,10 +354,10 @@ def main_scene():
                             dataset_name, model_name, attack_name,
                             "backdoor_data.pth"), map_location="cpu")
     poisoned_ids = backdoor_data["poisoned_ids"]
-    poisoned_testset = backdoor_data["poisoned_testset"]
+    # poisoned_testset = backdoor_data["poisoned_testset"]
     # 数据集
-    poisoned_trainset, clean_trainset, clean_testset = get_spec_dataset(dataset_name, model_name, attack_name, poisoned_ids)
-    filtered_poisoned_testset = filter_poisonedSet(clean_testset,poisoned_testset,target_class_idx)
+    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+    
     # 10次重复实验记录
     our_acc_list = []
     our_asr_list = []
@@ -396,7 +396,7 @@ def main_scene():
 
     save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res_1.pkl"
+    save_file_name = "res_2.pkl"
     save_path = os.path.join(save_dir, save_file_name)
     joblib.dump(res_dict,save_path)
     print("结果保存在:",save_path)
@@ -491,15 +491,17 @@ if __name__ == "__main__":
     # print(dataset_name,model_name,attack_name)
     # main_scene()
     # class_rank_analyse()
-    device = torch.device("cuda:1")
+
+    device = torch.device("cuda:0")
     for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
         class_num = get_classNum(dataset_name)
         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                 continue
             for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
-                print(dataset_name,model_name,attack_name)
-                class_rank_analyse()
+                print(f"{dataset_name}|{model_name}|{attack_name}")
+                # class_rank_analyse()
+                main_scene()
 
 
     # device = torch.device("cuda:1")
