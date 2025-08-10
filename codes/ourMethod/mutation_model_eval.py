@@ -13,12 +13,13 @@ import joblib
 from codes.scripts.dataset_constructor import *
 from codes.common.eval_model import EvalModel
 from codes.bigUtils.dataset import get_all_dataset
+from codes.scripts.dataset_constructor import ExtractDataset
 
 
 def get_mutation_models_pred_labels(dataset):
     mutations_dir = os.path.join(
         exp_root_dir,
-        "MutationsForDiscussion", # MutationModels
+        "MutationModels", # "MutationsForDiscussion", # MutationModels
         dataset_name,
         model_name,
         attack_name
@@ -250,7 +251,7 @@ if __name__ == "__main__":
     attack_name = "BadNets"
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
-    mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1], # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
+    mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
     mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
     mutation_model_num = 50
     proctitle = f"{main_exp_name}|{dataset_name}|{model_name}|{attack_name}"
@@ -280,6 +281,8 @@ if __name__ == "__main__":
         backdoor_model_origin = copy.deepcopy(backdoor_model)
         poisoned_ids = backdoor_data["poisoned_ids"]
         poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+        # 花点时间预抽取下中毒训练集，为了加速评估
+        poisoned_trainset = ExtractDataset(poisoned_trainset)
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")
         main(f"{sub_exp_name}",save_format="csv")
         logging.debug("End")
