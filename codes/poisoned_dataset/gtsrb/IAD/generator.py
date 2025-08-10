@@ -9,6 +9,7 @@ from codes import config
 from codes.core.attacks.IAD import Generator
 from codes.scripts.dataset_constructor import Add_IAD_DatasetFolderTrigger,ModifyTarget
 from codes.poisoned_dataset.utils import filter_class
+from torch.utils.data import DataLoader,Subset
 
 class IADPoisonedDatasetFolder(DatasetFolder):
     def __init__(self,
@@ -102,7 +103,7 @@ def get_attack_dict_path(model_name:str):
 
     return attack_dict_path
 
-def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
+def gen_needed_dataset(model_name:str,poisoned_ids:list):
     #  数据集
     trainset,trainset1, testset, testset1 = gtsrb_IAD()
     '''
@@ -132,23 +133,40 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list,trainOrtest:str):
     modelM.eval()
     
     # # 在数据集转换组合transforms.Compose[]的最后进行中毒植入
-    if trainOrtest == "train":
-        poisonedDatasetFolder =  IADPoisonedDatasetFolder(
-            benign_dataset = trainset,
-            y_target = config.target_class_idx,
-            poisoned_ids = poisoned_ids,
-            modelG = modelG,
-            modelM =modelM
-        )
-    elif trainOrtest == "test":
-        filtered_testset = filter_class(testset,config.target_class_idx)
-        poisonedDatasetFolder =  IADPoisonedDatasetFolder(
-            benign_dataset = filtered_testset,
-            y_target = config.target_class_idx,
-            poisoned_ids = poisoned_ids,
-            modelG = modelG,
-            modelM =modelM
-        )
-    return poisonedDatasetFolder
+
+    poisoned_trainset =  IADPoisonedDatasetFolder(
+        benign_dataset = trainset,
+        y_target = config.target_class_idx,
+        poisoned_ids = poisoned_ids,
+        modelG = modelG,
+        modelM =modelM
+    )
+
+    # 投毒测试集
+    clean_testset_label_list = []
+    clean_testset_loader = DataLoader(
+                testset,
+                batch_size=64, 
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    for _, batch in enumerate(clean_testset_loader):
+        Y = batch[1]
+        clean_testset_label_list.extend(Y.tolist())
+    filtered_ids = []
+    for sample_id in range(len(testset)):
+        sample_label = clean_testset_label_list[sample_id]
+        if sample_label != 3:
+            filtered_ids.append(sample_id)
+    
+    poisoned_testset =  IADPoisonedDatasetFolder(
+        benign_dataset = testset,
+        y_target = 3,
+        poisoned_ids = list(range(len(testset))),
+        modelG = modelG,
+        modelM =modelM
+    )
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    return poisoned_trainset, filtered_poisoned_testset, trainset, testset
     
     

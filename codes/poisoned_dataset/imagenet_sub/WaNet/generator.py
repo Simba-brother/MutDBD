@@ -12,6 +12,7 @@ from codes.core.attacks.WaNet import AddDatasetFolderTrigger, ModifyTarget
 from codes.transform_dataset import imagenet_WaNet
 from codes import config
 from codes.poisoned_dataset.utils import filter_class
+from torch.utils.data import DataLoader,Subset
 
 
 def gen_grid(height, k):
@@ -105,7 +106,7 @@ class PoisonedDatasetFolder(DatasetFolder):
 
         return sample, target, isPoisoned
 
-def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
+def gen_needed_dataset(model_name:str,poisoned_ids:list):
     #  数据集
     trainset,testset = imagenet_WaNet()
     '''
@@ -167,11 +168,25 @@ def gen_poisoned_dataset(model_name:str,poisoned_ids:list, trainOrtest:str):
     identity_grid = backdoor_data["identity_grid"]
     noise_grid = backdoor_data["noise_grid"]
     # 在最前面进行投毒
-    if trainOrtest == "train":
-        poisonedDatasetFolder= PoisonedDatasetFolder(trainset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=0,poisoned_target_transform_index=0,s=1)
-    elif trainOrtest == "test":
-        filterd_testset = filter_class(testset,config.target_class_idx)
-        poisonedDatasetFolder= PoisonedDatasetFolder(filterd_testset,config.target_class_idx, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=0,poisoned_target_transform_index=0,s=1)
-    return poisonedDatasetFolder
+    poisoned_trainset= PoisonedDatasetFolder(trainset,3,poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=0,poisoned_target_transform_index=0,s=1)
+    # 投毒测试集
+    clean_testset_label_list = []
+    clean_testset_loader = DataLoader(
+                testset,
+                batch_size=64, 
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    for _, batch in enumerate(clean_testset_loader):
+        Y = batch[1]
+        clean_testset_label_list.extend(Y.tolist())
+    filtered_ids = []
+    for sample_id in range(len(testset)):
+        sample_label = clean_testset_label_list[sample_id]
+        if sample_label != 3:
+            filtered_ids.append(sample_id)
+    poisoned_testset= PoisonedDatasetFolder(testset,3,list(range(len(testset))),identity_grid,noise_grid,noise=False,poisoned_transform_index=0,poisoned_target_transform_index=0,s=1)
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    return poisoned_trainset, filtered_poisoned_testset, trainset, testset
 
 

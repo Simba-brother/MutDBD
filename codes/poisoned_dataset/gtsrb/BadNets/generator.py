@@ -11,6 +11,7 @@ from codes.transform_dataset import gtsrb_BadNets
 from torchvision.datasets import DatasetFolder
 from torchvision.transforms import Compose
 from codes.poisoned_dataset.utils import filter_class
+from torch.utils.data import DataLoader,Subset
 
 class PoisonedDatasetFolder(DatasetFolder):
     def __init__(self,
@@ -77,7 +78,7 @@ class PoisonedDatasetFolder(DatasetFolder):
 
         return sample, target, isPoisoned
 
-def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
+def gen_needed_dataset(poisoned_ids:list):
     #  数据集
     '''
     transform_train = Compose([
@@ -99,12 +100,25 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     pattern[-3:, -3:] = 255
     weight = torch.zeros((32, 32), dtype=torch.float32)
     weight[-3:, -3:] = 1.0
-    if trainOrtest == "train":
-        # 中毒的数据集
-        poisonedDatasetFolder = PoisonedDatasetFolder(trainset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
-    elif trainOrtest == "test":
-        filtered_testset = filter_class(testset,config.target_class_idx)
-        # 中毒的数据集
-        # 在数据集转换组合transforms.Compose[]的最后一个元素(ToTensor)之前进行中毒植入
-        poisonedDatasetFolder = PoisonedDatasetFolder(filtered_testset,config.target_class_idx,poisoned_ids,pattern, weight, -1, 0)
-    return poisonedDatasetFolder
+    poisoned_trainset = PoisonedDatasetFolder(trainset,3,poisoned_ids,pattern, weight, -1, 0)
+    # 投毒测试集
+    clean_testset_label_list = []
+    clean_testset_loader = DataLoader(
+                testset,
+                batch_size=64, 
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    for _, batch in enumerate(clean_testset_loader):
+        Y = batch[1]
+        clean_testset_label_list.extend(Y.tolist())
+    filtered_ids = []
+    for sample_id in range(len(testset)):
+        sample_label = clean_testset_label_list[sample_id]
+        if sample_label != 3:
+            filtered_ids.append(sample_id)
+        
+    poisoned_testset = PoisonedDatasetFolder(testset,3,list(range(len(testset))),pattern, weight, -1, 0)
+
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    return poisoned_trainset, filtered_poisoned_testset, trainset, testset

@@ -86,8 +86,8 @@ class PoisonedDatasetFolder(DatasetFolder):
 
 
 
-def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
-
+def gen_needed_dataset(poisoned_ids:list):
+    
     #  数据集
     trainset,testset = cifar10_BadNets()
     # backdoor pattern

@@ -14,7 +14,7 @@ from codes import config
 from codes.transform_dataset import gtsrb_Refool
 from codes.core.attacks.Refool import AddDatasetFolderTriggerMixin,ModifyTarget
 from codes.poisoned_dataset.utils import filter_class
-
+from torch.utils.data import DataLoader,Subset
 
 class PoisonedDatasetFolder(DatasetFolder, AddDatasetFolderTriggerMixin):
     def __init__(self, benign_dataset, y_target, poisoned_ids, poisoned_transform_index, poisoned_target_transform_index, reflection_cadidates,\
@@ -118,7 +118,7 @@ def read_image(img_path, type=None):
     else:
         raise NotImplementedError
 
-def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
+def gen_needed_dataset(poisoned_ids:list):
 
     #  数据集
     trainset,testset = gtsrb_Refool()
@@ -151,25 +151,41 @@ def gen_poisoned_dataset(poisoned_ids:list, trainOrtest:str):
     reflection_images = [read_image(os.path.join(reflection_data_dir,img_path)) for img_path in reflection_image_path[:200]]
     # 中毒的数据集
     # 直接在transform.Compose([])最开始处投毒
-    if trainOrtest == "train":
-        poisonedDatasetFolder = PoisonedDatasetFolder(
-            trainset, 
-            config.target_class_idx, 
-            poisoned_ids, 
-            poisoned_transform_index=0, 
-            poisoned_target_transform_index=1, 
-            reflection_cadidates=reflection_images,
-            max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
-    elif trainOrtest == "test":
-        filtered_testset = filter_class(testset,config.target_class_idx)
-        poisonedDatasetFolder = PoisonedDatasetFolder(
-            filtered_testset, 
-            config.target_class_idx, 
-            poisoned_ids, 
-            poisoned_transform_index=0, 
-            poisoned_target_transform_index=1, 
-            reflection_cadidates=reflection_images,
-            max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
-    return poisonedDatasetFolder
+    
+    poisoned_trainset = PoisonedDatasetFolder(
+        trainset, 
+        config.target_class_idx, 
+        poisoned_ids, 
+        poisoned_transform_index=0, 
+        poisoned_target_transform_index=1, 
+        reflection_cadidates=reflection_images,
+        max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
+    
+    # 投毒测试集
+    clean_testset_label_list = []
+    clean_testset_loader = DataLoader(
+                testset,
+                batch_size=64, 
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    for _, batch in enumerate(clean_testset_loader):
+        Y = batch[1]
+        clean_testset_label_list.extend(Y.tolist())
+    filtered_ids = []
+    for sample_id in range(len(testset)):
+        sample_label = clean_testset_label_list[sample_id]
+        if sample_label != 3:
+            filtered_ids.append(sample_id)
+    poisoned_testset = PoisonedDatasetFolder(
+        testset, 
+        3, 
+        list(range(len(testset))), 
+        poisoned_transform_index=0, 
+        poisoned_target_transform_index=1, 
+        reflection_cadidates=reflection_images,
+        max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    return poisoned_trainset, filtered_poisoned_testset, trainset, testset
     
     
