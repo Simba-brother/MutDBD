@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "GTSRB"
-    model_name = "ResNet18"
+    model_name = "DenseNet"
     attack_name = "Refool"
     class_num = get_classNum(dataset_name)
     # 变异率列表

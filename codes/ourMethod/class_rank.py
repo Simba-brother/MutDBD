@@ -81,6 +81,7 @@ def main():
 
 
 def recall_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
+    '''从小到大'''
     # {class_id(int):[recall_1,recall_2,..recall_500]}
     data_dict = defaultdict(list)
     GT_label_list = df["GT_label"]
@@ -95,8 +96,31 @@ def recall_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
     dict_2 = {}
     for class_id in range(class_num):
         dict_2[class_id] = round(np.mean(data_dict[class_id]),4)
-    # 按照avg_LCR对class_id进行排序（降序），recall越大的class越可疑
-    sorted_res_1 = dict(sorted(dict_2.items(), key=lambda x: x[1],reverse=True)) # 降序
+    sorted_res_1 = dict(sorted(dict_2.items(), key=lambda x: x[1],reverse=False)) # 升序
+    class_rank = list(sorted_res_1.keys())
+    target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
+    
+    res = {
+        "class_rank":class_rank,
+        "target_class_rank_ratio":target_class_rank_ratio
+    }
+    return res
+
+def FP_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
+    '''从大到小'''
+    data_stuct_1 = nested_defaultdict(2,int)
+    for m_i in mutated_model_global_id_list:
+        pre_labels = df[f"model_{m_i}"]
+        gt_labels = df[f"GT_label"]
+        cm = confusion_matrix(gt_labels, pre_labels)
+        for class_i in range(class_num):
+            data_stuct_1[m_i][class_i] = np.sum(cm[:,class_i]) - cm[class_i][class_i]
+
+    data_stuct_2 = nested_defaultdict(1,int)
+    for class_i in range(class_num):
+        for m_i in mutated_model_global_id_list:
+            data_stuct_2[class_i] += data_stuct_1[m_i][class_i]
+    sorted_res_1 = dict(sorted(data_stuct_2.items(), key=lambda x: x[1],reverse=True))
     class_rank = list(sorted_res_1.keys())
     target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
     
@@ -107,6 +131,7 @@ def recall_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
     return res
 
 def f1_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
+    '''从小到大'''
     # {class_id(int):[f1_1,f1_2,..f1_500]}
     data_dict = defaultdict(list)
     GT_label_list = df["GT_label"]
@@ -121,8 +146,7 @@ def f1_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
     dict_2 = {}
     for class_id in range(class_num):
         dict_2[class_id] = round(np.mean(data_dict[class_id]),4)
-    # 按照avg_f1对class_id进行排序（降序），f1越小的class越可疑
-    sorted_res_1 = dict(sorted(dict_2.items(), key=lambda x: x[1],reverse=False)) # 降序
+    sorted_res_1 = dict(sorted(dict_2.items(), key=lambda x: x[1],reverse=False)) # 升序
     class_rank = list(sorted_res_1.keys())
     target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
     
@@ -133,6 +157,7 @@ def f1_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
     return res
 
 def LCR_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
+    '''从小到大'''
     # {class_id(int):avg_LCR}
     data_dict = defaultdict(list)
     for class_id in range(class_num):
@@ -154,7 +179,6 @@ def LCR_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
             lcr_samples.append(lcr_sample)
         avg_lcr = np.mean(lcr_samples)
         data_dict[class_id] = avg_lcr
-    # 按照avg_lcr对class_id进行排序（升序），lcr越小的class越可疑
     sorted_res_1 = dict(sorted(data_dict.items(), key=lambda x: x[1],reverse=False)) # 升序
     class_rank = list(sorted_res_1.keys())
     target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
@@ -164,7 +188,36 @@ def LCR_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
     }
     return res
 
+def precision_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
+    '''从小到大'''
+    # {class_id(int):[precison_1,precision_2,..precision_500]}
+    data_dict = defaultdict(list)
+    # ground truth label
+    GT_label_list = df["GT_label"]
+    for mutated_model_global_id in mutated_model_global_id_list:
+        model_col_name = f"model_{mutated_model_global_id}"
+        pred_label_list = list(df[model_col_name])
+        report = classification_report(GT_label_list,pred_label_list,output_dict=True, zero_division=0)
+        for class_i in range(class_num):
+            measure = report[str(class_i)]["precision"]
+            data_dict[class_i].append(measure)
+    # {class_id(int):avg_precision}
+    dict_2 = {}
+    for class_id in range(class_num):
+        dict_2[class_id] = round(np.mean(data_dict[class_id]),4)
+    sorted_res_1 = dict(sorted(dict_2.items(), key=lambda x: x[1],reverse=False)) # 升序
+    class_rank = list(sorted_res_1.keys())
+    target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
+    
+    res = {
+        "class_rank":class_rank,
+        "target_class_rank_ratio":target_class_rank_ratio
+    }
+    return res
+
+
 def entropy_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
+    '''从大到小'''
     # {class_id(int):avg_LCR}
     data_dict = defaultdict(list)
     for class_id in range(class_num):
@@ -182,8 +235,7 @@ def entropy_metrics(df:pd.DataFrame,mutated_model_global_id_list:list):
             entropy_samples.append(entropy_sample)
         avg_entropy = round(np.mean(entropy_samples),4)
         data_dict[class_id] = avg_entropy
-    # 按照avg_entropy对class_id进行排序（升序），entropy越小（越纯）的class越可疑
-    sorted_res_1 = dict(sorted(data_dict.items(), key=lambda x: x[1],reverse=False)) # 升序
+    sorted_res_1 = dict(sorted(data_dict.items(), key=lambda x: x[1],reverse=True)) # 降序
     class_rank = list(sorted_res_1.keys())
     target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
     res = {
@@ -204,13 +256,23 @@ def discussion_metric(metric_name:str):
             "preLabel.csv"))
     # 加载top50变异模型id
     top_mutated_model_id_list = get_top_k_global_ids(df_predicted_labels,top_k=50,trend="bigger")
-    if metric_name == "Recall":
+    if metric_name == "FP":
+        # 从大到小
+        _res = FP_metrics(df_predicted_labels,top_mutated_model_id_list)
+    elif metric_name == "precision":
+        # 从小到大
+        _res = precision_metrics(df_predicted_labels,top_mutated_model_id_list)
+    elif metric_name == "Recall":
+        # 从小到大
         _res = recall_metrics(df_predicted_labels,top_mutated_model_id_list)
     elif metric_name == "F1":
+        # 从小到大
         _res = f1_metrics(df_predicted_labels,top_mutated_model_id_list)
     elif metric_name == "LCR":
+        # 从小到大
         _res = LCR_metrics(df_predicted_labels,top_mutated_model_id_list)
     elif metric_name == "Entropy":
+        # 从大到小
         _res = entropy_metrics(df_predicted_labels,top_mutated_model_id_list)
     else:
         return None
@@ -264,13 +326,21 @@ def get_classNum(dataset_name):
     return class_num
 
 
-# 计算W/T/L
-def caculate_WTL(data_list, baseline_list, expect:str):
-    statistic, p_value = wilcoxon(data_list, baseline_list) # statistic:检验统计量
+def compare_WTL(our_list, baseline_list,expect:str, method:str):
+    ans = ""
+    # 计算W/T/L
+    # Wilcoxon:https://blog.csdn.net/TUTO_TUTO/article/details/138289291
+    # Wilcoxon：主要来判断两组数据是否有显著性差异。
+    if method == "wilcoxon": # 配对
+        statistic, p_value = wilcoxon(our_list, baseline_list) # statistic:检验统计量
+    elif method == "mannwhitneyu": # 不配对
+        statistic, p_value = mannwhitneyu(our_list, baseline_list) # statistic:检验统计量
+    elif method == "ks_2samp":
+        statistic, p_value = ks_2samp(our_list, baseline_list) # statistic:检验统计量
     # 如果p_value < 0.05则说明分布有显著差异
     # cliffs_delta：比较大小
     # 如果参数1较小的话，则d趋近-1,0.147(negligible)
-    d,res = cliffs_delta(data_list, baseline_list)
+    d,res = cliffs_delta(our_list, baseline_list)
     if p_value >= 0.05:
         # 值分布没差别
         ans = "Tie"
@@ -295,35 +365,109 @@ def caculate_WTL(data_list, baseline_list, expect:str):
                 ans = "Tie"
     return ans
 
+
 if __name__ == "__main__":
 
-    exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    dataset_name = "CIFAR10"
-    class_num = get_classNum(dataset_name)
-    model_name = "ResNet18"
-    attack_name = "BadNets"
-    target_class = 3
-    discussion_rate()
-    print("END")
-
-
-
     # exp_root_dir = "/data/mml/backdoor_detect/experiments/"
+    # dataset_name = "CIFAR10"
+    # class_num = get_classNum(dataset_name)
+    # model_name = "ResNet18"
+    # attack_name = "BadNets"
     # target_class = 3
-    # mutation_rate = 0.01
-    # metric_name = "Entropy"
-    # print("target_class:",target_class)
-    # print("mutation_rate:",mutation_rate)
-    # print("metric_name:",metric_name)
-    # for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
-    #     class_num = get_classNum(dataset_name)
-    #     for model_name in ["ResNet18","VGG19","DenseNet"]:
-    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-    #             continue
-    #         for attack_name in ["BadNets","IAD","Refool","WaNet"]:
-    #             print(f"{dataset_name}|{model_name}|{attack_name}")
-    #             _res = discussion_metric(metric_name)
-    #             print("rank_rate:",_res["target_class_rank_ratio"])
+    # discussion_rate()
+    # print("END")
+
+    exp_root_dir = "/data/mml/backdoor_detect/experiments/"
+    target_class = 3
+    mutation_rate = 0.01
+    print("target_class:",target_class)
+    print("mutation_rate:",mutation_rate)
+    FP_list = []
+    precision_list = []
+    Recall_list = []
+    F1_list = []
+    Entropy_list = []
+    for metric_name in ["FP","precision","Recall","F1","Entropy"]:
+        print(metric_name)
+        for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
+            class_num = get_classNum(dataset_name)
+            for model_name in ["ResNet18","VGG19","DenseNet"]:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for attack_name in ["BadNets","IAD","Refool","WaNet"]:
+                    print(f"{dataset_name}|{model_name}|{attack_name}")
+                    _res = discussion_metric(metric_name)
+                    if metric_name == "FP":
+                        FP_list.append(_res["target_class_rank_ratio"])
+                    if metric_name == "precision":
+                        precision_list.append(_res["target_class_rank_ratio"])
+                    if metric_name == "Recall":
+                        Recall_list.append(_res["target_class_rank_ratio"])
+                    if metric_name == "F1":
+                        F1_list.append(_res["target_class_rank_ratio"])
+                    if metric_name == "Entropy":
+                        Entropy_list.append(_res["target_class_rank_ratio"])
+
+    
+
+    fp_count = 0
+    precision_count = 0
+    recall_count = 0
+    f1_count = 0
+    entropy_count = 0                       
+    for scence_idx in range(len(FP_list)):
+        fp = FP_list[scence_idx]
+        precision =  precision_list[scence_idx]
+        recall = Recall_list[scence_idx]
+        f1 = F1_list[scence_idx]
+        e = Entropy_list[scence_idx]
+        min_value = min(fp,precision,recall,f1,e)
+        if fp == min_value:
+            fp_count += 1
+        if precision == min_value:
+            precision_count += 1
+        if recall == min_value:
+            recall_count += 1
+        if f1 == min_value:
+            f1_count += 1
+        if e == min_value:
+            entropy_count += 1
+    
+
+
+    avg_FP = round(np.mean(FP_list),3)
+    avg_precision = round(np.mean(precision_list),3)
+    avg_Recall = round(np.mean(Recall_list),3)
+    avg_F1 = round(np.mean(F1_list),3)
+    avg_Entropy = round(np.mean(Entropy_list),3)
+
+    wtl_precison = compare_WTL(FP_list,precision_list,"small","wilcoxon")
+    wtl_recall = compare_WTL(FP_list,Recall_list,"small","wilcoxon")
+    wtl_f1 = compare_WTL(FP_list,F1_list,"small","wilcoxon")
+    wtl_entropy = compare_WTL(FP_list,Entropy_list,"small","wilcoxon")
+
+    print("FP_list:",FP_list)
+    print("precision_list:",precision_list)
+    print("Recall_list:",Recall_list)
+    print("F1_list:",F1_list)
+    print("Entropy_list:",Entropy_list)
+
+    print("fp_count:",fp_count)
+    print("precision_count:",fp_count)
+    print("recall_count:",recall_count)
+    print("f1_count:",f1_count)
+    print("entropy_count:",entropy_count)
+
+    print("avg_FP:",avg_FP)
+    print("avg_precision:",avg_precision)
+    print("avg_Recall:",avg_Recall)
+    print("avg_F1:",avg_F1)
+    print("avg_Entropy:",avg_Entropy)
+
+    print("wtl_precison:",wtl_precison)
+    print("wtl_recall:",wtl_recall)
+    print("wtl_f1:",wtl_f1)
+    print("wtl_entropy:",wtl_entropy)
 
     # with_ClassRank_list = [56.2,22.9,24.1,22.2,8.8,17,387.9,323.6,194.4,22.9,415.1,34.3,18.2,19.6,12.2,15.4,4.5,2.8,117.1,26.6,33.1,23.5,38.4,7.5,1.8,3.8,376.3,24.5,3.6]
     # no_ClassRank_list = [117.3,80.3,265,78,36.7,36.7,1248.4,793,263.1,59.3,769.7,153.7,28.6,24.2,15.3,19.2,11.6,20.1,235.6,33.9,39.2,28.3,46.8,24.2,46.1,46,846.1,132.5,40.5]
