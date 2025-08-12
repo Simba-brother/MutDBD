@@ -1828,7 +1828,7 @@ if __name__ == "__main__":
     r_seed = 1
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="IAD" # BadNets, IAD, Refool, WaNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
     class_num = get_classNum(dataset_name)
 
     # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)

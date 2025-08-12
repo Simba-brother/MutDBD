@@ -112,11 +112,10 @@ def draw():
 
     # 优化布局
     plt.tight_layout()
-    save_dir = "imgs/discussion"
+    save_dir = "imgs/discussion/cut_off"
     # 保存图像（支持多种格式）
-    plt.savefig(os.path.join(save_dir,"threshold_analysis.pdf"), dpi=300, bbox_inches='tight')
-    plt.savefig(os.path.join(save_dir,"threshold_analysis.png"), dpi=300, bbox_inches='tight')
-
+    plt.savefig(os.path.join(save_dir,f"{scence_name}.png"), dpi=300, bbox_inches='tight')
+    # plt.savefig(os.path.join(save_dir,f"{scence_name}.pdf"), dpi=300, bbox_inches='tight')
     # 显示图表
     plt.show()
 
@@ -126,8 +125,10 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "CIFAR10"
     model_name  = "ResNet18"
-    attack_name = "BadNets"
+    attack_name = "WaNet"
+    scence_name = f"{dataset_name}_{model_name}_{attack_name}"
     random_seed = 1
     # 获得计算设备
     device = torch.device(f"cuda:1")
     draw()
+    print("END")
