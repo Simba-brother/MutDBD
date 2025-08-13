@@ -62,7 +62,7 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "ImageNet2012_subset" # ImageNet2012_subset
     model_name = "DenseNet"
-    attack_name = "IAD"
+    attack_name = "WaNet"
     class_num = get_classNum(dataset_name)
     # 变异率列表
     rate_list = [0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
