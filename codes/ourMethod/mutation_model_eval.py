@@ -125,7 +125,7 @@ def ansToCSV(data_dict,original_backdoorModel_preLabel_list,save_path):
     # global_model_id：[0-99]是GF变异模型，[100-199]是WS变异模型，
     # [200-299]是NAI变异模型，[300-399]是NB变异模型，[400-499]是NS变异模型
     mutation_operator_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
-    mutation_model_num = 50
+    mutation_model_num = 100
     total_dict = {}
     global_model_id = 0
     for operator in mutation_operator_list:
@@ -247,13 +247,13 @@ if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "CIFAR10" # CIFAR10,GTSRB,ImageNet2012_subset
-    model_name = "DenseNet" 
-    attack_name = "IAD"
+    model_name = "DenseNet" # ResNet18,VGG19,DenseNet
+    attack_name = "BadNets" # BadNets,IAD,Refool,WaNet
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
     mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
     mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
-    mutation_model_num = 50
+    mutation_model_num = 100
     proctitle = f"{main_exp_name}|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:1")

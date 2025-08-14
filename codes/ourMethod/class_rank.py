@@ -284,7 +284,7 @@ def discussion_rate():
     '''
     讨论不同变异率对类排序影响
     '''
-    rate_list = [0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+    rate_list = [0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
     for rate in rate_list:
         csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV",dataset_name,model_name,attack_name,str(rate),"preLabel.csv")
         preLabel_df = pd.read_csv(csv_path)
