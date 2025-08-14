@@ -11,13 +11,16 @@ from cliffs_delta import cliffs_delta
 from codes.utils import priorityQueue_2_list,nested_defaultdict,entropy
 
 
-def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
+def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger",mutation_nums = 500):
+    '''
+    mutation_nums:所有变异算子变异模型个数
+    '''
     # 优先级队列q,值越小优先级越高
     q = queue.PriorityQueue()
     GT_labels = df["GT_label"]
     preLabels_o = df["original_backdoorModel_preLabel"]
     report_o = classification_report(GT_labels,preLabels_o,output_dict=True,zero_division=0)
-    for m_i in range(50):
+    for m_i in range(mutation_nums):
         col_name = f"model_{m_i}"
         preLabel_m = df[col_name]
         report_m = classification_report(GT_labels,preLabel_m,output_dict=True,zero_division=0)
@@ -67,9 +70,8 @@ def main():
         "class_rank":class_rank,
         "target_class_rank_ratio":target_class_rank_ratio
     }
-    print(dataset_name,model_name,attack_name)
-    print(res)
-    print("="*10)
+    print(target_class_rank_ratio)
+
 
     # 保存数据
     # save_dir = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name)
@@ -282,13 +284,13 @@ def discussion_rate():
     '''
     讨论不同变异率对类排序影响
     '''
-    rate_list = [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+    rate_list = [0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
     for rate in rate_list:
-        csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV_ForDiscussion",dataset_name,model_name,attack_name,str(rate),"preLabel.csv")
+        csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV",dataset_name,model_name,attack_name,str(rate),"preLabel.csv")
         preLabel_df = pd.read_csv(csv_path)
-        # 加载top50变异模型id
-        # mutated_model_id_list = get_top_k_global_ids(preLabel_df,top_k=50,trend="bigger")
-        mutated_model_id_list = list(range(50))
+
+        mutated_model_id_list = get_top_k_global_ids(preLabel_df,top_k=50,trend="bigger")
+        # mutated_model_id_list = list(range(50))
         data_stuct_1 = nested_defaultdict(2,int)
         for m_i in mutated_model_id_list:
             pre_labels = preLabel_df[f"model_{m_i}"]
@@ -368,106 +370,109 @@ def compare_WTL(our_list, baseline_list,expect:str, method:str):
 
 if __name__ == "__main__":
 
-    # exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    # dataset_name = "CIFAR10"
-    # class_num = get_classNum(dataset_name)
-    # model_name = "ResNet18"
-    # attack_name = "BadNets"
-    # target_class = 3
-    # discussion_rate()
-    # print("END")
-
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     target_class = 3
-    mutation_rate = 0.01
-    print("target_class:",target_class)
-    print("mutation_rate:",mutation_rate)
-    FP_list = []
-    precision_list = []
-    Recall_list = []
-    F1_list = []
-    Entropy_list = []
-    for metric_name in ["FP","precision","Recall","F1","Entropy"]:
-        print(metric_name)
-        for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
-            class_num = get_classNum(dataset_name)
-            for model_name in ["ResNet18","VGG19","DenseNet"]:
+    for dataset_name in ["CIFAR10"]:
+        class_num = get_classNum(dataset_name)
+        for model_name in ["DenseNet"]:
+            for attack_name in ["BadNets"]:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
-                for attack_name in ["BadNets","IAD","Refool","WaNet"]:
-                    print(f"{dataset_name}|{model_name}|{attack_name}")
-                    _res = discussion_metric(metric_name)
-                    if metric_name == "FP":
-                        FP_list.append(_res["target_class_rank_ratio"])
-                    if metric_name == "precision":
-                        precision_list.append(_res["target_class_rank_ratio"])
-                    if metric_name == "Recall":
-                        Recall_list.append(_res["target_class_rank_ratio"])
-                    if metric_name == "F1":
-                        F1_list.append(_res["target_class_rank_ratio"])
-                    if metric_name == "Entropy":
-                        Entropy_list.append(_res["target_class_rank_ratio"])
+                print(f"{dataset_name}|{model_name}|{attack_name}")
+                discussion_rate()
+    print("END")
+
+    # exp_root_dir = "/data/mml/backdoor_detect/experiments/"
+    # target_class = 3
+    # mutation_rate = 0.01
+    # print("target_class:",target_class)
+    # print("mutation_rate:",mutation_rate)
+    # FP_list = []
+    # precision_list = []
+    # Recall_list = []
+    # F1_list = []
+    # Entropy_list = []
+    # for metric_name in ["FP","precision","Recall","F1","Entropy"]:
+    #     print(metric_name)
+    #     for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
+    #         class_num = get_classNum(dataset_name)
+    #         for model_name in ["ResNet18","VGG19","DenseNet"]:
+    #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #                 continue
+    #             for attack_name in ["BadNets","IAD","Refool","WaNet"]:
+    #                 print(f"{dataset_name}|{model_name}|{attack_name}")
+    #                 _res = discussion_metric(metric_name)
+    #                 if metric_name == "FP":
+    #                     FP_list.append(_res["target_class_rank_ratio"])
+    #                 if metric_name == "precision":
+    #                     precision_list.append(_res["target_class_rank_ratio"])
+    #                 if metric_name == "Recall":
+    #                     Recall_list.append(_res["target_class_rank_ratio"])
+    #                 if metric_name == "F1":
+    #                     F1_list.append(_res["target_class_rank_ratio"])
+    #                 if metric_name == "Entropy":
+    #                     Entropy_list.append(_res["target_class_rank_ratio"])
 
     
 
-    fp_count = 0
-    precision_count = 0
-    recall_count = 0
-    f1_count = 0
-    entropy_count = 0                       
-    for scence_idx in range(len(FP_list)):
-        fp = FP_list[scence_idx]
-        precision =  precision_list[scence_idx]
-        recall = Recall_list[scence_idx]
-        f1 = F1_list[scence_idx]
-        e = Entropy_list[scence_idx]
-        min_value = min(fp,precision,recall,f1,e)
-        if fp == min_value:
-            fp_count += 1
-        if precision == min_value:
-            precision_count += 1
-        if recall == min_value:
-            recall_count += 1
-        if f1 == min_value:
-            f1_count += 1
-        if e == min_value:
-            entropy_count += 1
+    # fp_count = 0
+    # precision_count = 0
+    # recall_count = 0
+    # f1_count = 0
+    # entropy_count = 0                       
+    # for scence_idx in range(len(FP_list)):
+    #     fp = FP_list[scence_idx]
+    #     precision =  precision_list[scence_idx]
+    #     recall = Recall_list[scence_idx]
+    #     f1 = F1_list[scence_idx]
+    #     e = Entropy_list[scence_idx]
+    #     min_value = min(fp,precision,recall,f1,e)
+    #     if fp == min_value:
+    #         fp_count += 1
+    #     if precision == min_value:
+    #         precision_count += 1
+    #     if recall == min_value:
+    #         recall_count += 1
+    #     if f1 == min_value:
+    #         f1_count += 1
+    #     if e == min_value:
+    #         entropy_count += 1
     
 
 
-    avg_FP = round(np.mean(FP_list),3)
-    avg_precision = round(np.mean(precision_list),3)
-    avg_Recall = round(np.mean(Recall_list),3)
-    avg_F1 = round(np.mean(F1_list),3)
-    avg_Entropy = round(np.mean(Entropy_list),3)
+    # avg_FP = round(np.mean(FP_list),3)
+    # avg_precision = round(np.mean(precision_list),3)
+    # avg_Recall = round(np.mean(Recall_list),3)
+    # avg_F1 = round(np.mean(F1_list),3)
+    # avg_Entropy = round(np.mean(Entropy_list),3)
 
-    wtl_precison = compare_WTL(FP_list,precision_list,"small","wilcoxon")
-    wtl_recall = compare_WTL(FP_list,Recall_list,"small","wilcoxon")
-    wtl_f1 = compare_WTL(FP_list,F1_list,"small","wilcoxon")
-    wtl_entropy = compare_WTL(FP_list,Entropy_list,"small","wilcoxon")
+    # wtl_precison = compare_WTL(FP_list,precision_list,"small","wilcoxon")
+    # wtl_recall = compare_WTL(FP_list,Recall_list,"small","wilcoxon")
+    # wtl_f1 = compare_WTL(FP_list,F1_list,"small","wilcoxon")
+    # wtl_entropy = compare_WTL(FP_list,Entropy_list,"small","wilcoxon")
 
-    print("FP_list:",FP_list)
-    print("precision_list:",precision_list)
-    print("Recall_list:",Recall_list)
-    print("F1_list:",F1_list)
-    print("Entropy_list:",Entropy_list)
+    # print("FP_list:",FP_list)
+    # print("precision_list:",precision_list)
+    # print("Recall_list:",Recall_list)
+    # print("F1_list:",F1_list)
+    # print("Entropy_list:",Entropy_list)
 
-    print("fp_count:",fp_count)
-    print("precision_count:",fp_count)
-    print("recall_count:",recall_count)
-    print("f1_count:",f1_count)
-    print("entropy_count:",entropy_count)
+    # print("fp_count:",fp_count)
+    # print("precision_count:",fp_count)
+    # print("recall_count:",recall_count)
+    # print("f1_count:",f1_count)
+    # print("entropy_count:",entropy_count)
 
-    print("avg_FP:",avg_FP)
-    print("avg_precision:",avg_precision)
-    print("avg_Recall:",avg_Recall)
-    print("avg_F1:",avg_F1)
-    print("avg_Entropy:",avg_Entropy)
+    # print("avg_FP:",avg_FP)
+    # print("avg_precision:",avg_precision)
+    # print("avg_Recall:",avg_Recall)
+    # print("avg_F1:",avg_F1)
+    # print("avg_Entropy:",avg_Entropy)
 
-    print("wtl_precison:",wtl_precison)
-    print("wtl_recall:",wtl_recall)
-    print("wtl_f1:",wtl_f1)
-    print("wtl_entropy:",wtl_entropy)
+    # print("wtl_precison:",wtl_precison)
+    # print("wtl_recall:",wtl_recall)
+    # print("wtl_f1:",wtl_f1)
+    # print("wtl_entropy:",wtl_entropy)
 
     # with_ClassRank_list = [56.2,22.9,24.1,22.2,8.8,17,387.9,323.6,194.4,22.9,415.1,34.3,18.2,19.6,12.2,15.4,4.5,2.8,117.1,26.6,33.1,23.5,38.4,7.5,1.8,3.8,376.3,24.5,3.6]
     # no_ClassRank_list = [117.3,80.3,265,78,36.7,36.7,1248.4,793,263.1,59.3,769.7,153.7,28.6,24.2,15.3,19.2,11.6,20.1,235.6,33.9,39.2,28.3,46.8,24.2,46.1,46,846.1,132.5,40.5]
@@ -479,9 +484,10 @@ if __name__ == "__main__":
     # print(avg_with_classRank_list)
     # print(avg_no_classRank_list)
 
-    # dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10","GTSRB","ImageNet2012_subset"]
-    # model_name_list =  ["DenseNet"] # ["ResNet18","VGG19","DenseNet"]
-    # attack_name_list =  ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
+    # exp_root_dir = "/data/mml/backdoor_detect/experiments/"
+    # dataset_name_list = ["CIFAR10","GTSRB","ImageNet2012_subset"]
+    # model_name_list = ["ResNet18","VGG19","DenseNet"]
+    # attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     # mutation_rate = 0.01
     # target_class = 3
     # for dataset_name in dataset_name_list:
@@ -490,7 +496,8 @@ if __name__ == "__main__":
     #         for attack_name in attack_name_list:
     #             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
     #                 continue
-    #             # main()
+    #             print(f"{dataset_name}|{model_name}|{attack_name}")
+    #             main()
     #             # look()
     # print("END")
 
