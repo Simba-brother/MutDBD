@@ -360,7 +360,12 @@ def test39():
     e2 = entropy(data2)
     print(e,e2)
 
+def test40():
+   data_list = list(range(50,100))
+   for i in data_list:
+       print(i)
+
 if __name__ == "__main__":
-    test39()
+    test40()
 
 
