@@ -247,7 +247,7 @@ if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "GTSRB" # CIFAR10,GTSRB,ImageNet2012_subset
-    model_name = "ResNet18" # ResNet18,VGG19,DenseNet
+    model_name = "VGG19" # ResNet18,VGG19,DenseNet
     attack_name = "WaNet" # BadNets,IAD,Refool,WaNet
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
@@ -256,7 +256,7 @@ if __name__ == "__main__":
     mutation_model_num = 100
     proctitle = f"{main_exp_name}|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
-    device = torch.device(f"cuda:1")
+    device = torch.device(f"cuda:0")
 
     # 日志保存目录
     LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
