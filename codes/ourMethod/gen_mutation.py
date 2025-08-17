@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "GTSRB" # GTSRB, ImageNet2012_subset
-    model_name = "VGG19" # ResNet18,VGG19,DenseNet
+    model_name = "DenseNet" # ResNet18,VGG19,DenseNet
     attack_name = "WaNet" # BadNets,IAD,Refool,WaNet
     class_num = get_classNum(dataset_name)
     # 变异率列表
