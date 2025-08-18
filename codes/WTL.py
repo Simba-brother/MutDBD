@@ -406,7 +406,7 @@ def main_scene():
 
     save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res_2.pkl"
+    save_file_name = "res_818.pkl"
     save_path = os.path.join(save_dir, save_file_name)
     joblib.dump(res_dict,save_path)
     print("结果保存在:",save_path)
@@ -547,8 +547,8 @@ if __name__ == "__main__":
             for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
                 print(f"{dataset_name}|{model_name}|{attack_name}")
                 class_avg, no_class_avg, wtl_res = class_rank_analyse() 
-                print(f"class_AVG:{class_avg},no_class_AVG:{no_class_avg},wtl:{wtl_res}")
-                # main_scene()
+                # print(f"class_AVG:{class_avg},no_class_AVG:{no_class_avg},wtl:{wtl_res}")
+                main_scene()
 
 
     # device = torch.device("cuda:1")

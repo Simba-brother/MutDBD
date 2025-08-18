@@ -246,9 +246,9 @@ def main(exp_sub,save_format):
 if __name__ == "__main__":
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    dataset_name = "GTSRB" # CIFAR10,GTSRB,ImageNet2012_subset
-    model_name = "DenseNet" # ResNet18,VGG19,DenseNet
-    attack_name = "WaNet" # BadNets,IAD,Refool,WaNet
+    dataset_name = "ImageNet2012_subset" # CIFAR10,GTSRB,ImageNet2012_subset
+    model_name = "ResNet18" # ResNet18,VGG19,DenseNet
+    attack_name = "BadNets" # BadNets,IAD,Refool,WaNet
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
     mutation_rate_list = [0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 

@@ -284,7 +284,7 @@ def discussion_rate():
     '''
     讨论不同变异率对类排序影响
     '''
-    rate_list = [0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+    rate_list = [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
     for rate in rate_list:
         csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV",dataset_name,model_name,attack_name,str(rate),"preLabel.csv")
         preLabel_df = pd.read_csv(csv_path)
@@ -372,10 +372,10 @@ if __name__ == "__main__":
 
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     target_class = 3
-    for dataset_name in ["CIFAR10"]:
+    for dataset_name in ["CIFAR10","GTSRB"]:
         class_num = get_classNum(dataset_name)
-        for model_name in ["DenseNet"]:
-            for attack_name in ["BadNets"]:
+        for model_name in ["ResNet18","VGG19","DenseNet"]:
+            for attack_name in ["BadNets","IAD","Refool","WaNet"]:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
                 print(f"{dataset_name}|{model_name}|{attack_name}")
