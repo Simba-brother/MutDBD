@@ -546,7 +546,7 @@ if __name__ == "__main__":
                 continue
             for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
                 print(f"{dataset_name}|{model_name}|{attack_name}")
-                class_avg, no_class_avg, wtl_res = class_rank_analyse() 
+                # class_avg, no_class_avg, wtl_res = class_rank_analyse() 
                 # print(f"class_AVG:{class_avg},no_class_AVG:{no_class_avg},wtl:{wtl_res}")
                 main_scene()
 
