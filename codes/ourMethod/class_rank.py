@@ -280,33 +280,33 @@ def discussion_metric(metric_name:str):
         return None
     return _res
 
-def discussion_rate():
+def discussion_rate(mutation_rate):
     '''
     讨论不同变异率对类排序影响
     '''
-    rate_list = [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
-    for rate in rate_list:
-        csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV",dataset_name,model_name,attack_name,str(rate),"preLabel.csv")
-        preLabel_df = pd.read_csv(csv_path)
+    
+    
+    csv_path = os.path.join(exp_root_dir,"EvalMutationToCSV",dataset_name,model_name,attack_name,str(mutation_rate),"preLabel.csv")
+    preLabel_df = pd.read_csv(csv_path)
 
-        mutated_model_id_list = get_top_k_global_ids(preLabel_df,top_k=50,trend="bigger")
-        # mutated_model_id_list = list(range(50))
-        data_stuct_1 = nested_defaultdict(2,int)
-        for m_i in mutated_model_id_list:
-            pre_labels = preLabel_df[f"model_{m_i}"]
-            gt_labels = preLabel_df[f"GT_label"]
-            cm = confusion_matrix(gt_labels, pre_labels)
-            for class_i in range(class_num):
-                data_stuct_1[m_i][class_i] = np.sum(cm[:,class_i]) - cm[class_i][class_i]
-
-        data_stuct_2 = nested_defaultdict(1,int)
+    mutated_model_id_list = get_top_k_global_ids(preLabel_df,top_k=50,trend="bigger")
+    # mutated_model_id_list = list(range(50))
+    data_stuct_1 = nested_defaultdict(2,int)
+    for m_i in mutated_model_id_list:
+        pre_labels = preLabel_df[f"model_{m_i}"]
+        gt_labels = preLabel_df[f"GT_label"]
+        cm = confusion_matrix(gt_labels, pre_labels)
         for class_i in range(class_num):
-            for m_i in mutated_model_id_list:
-                data_stuct_2[class_i] += data_stuct_1[m_i][class_i]
-        sorted_res_1 = dict(sorted(data_stuct_2.items(), key=lambda x: x[1],reverse=True))
-        class_rank = list(sorted_res_1.keys())
-        target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
-        print(f"变异率:{rate}, rank:{target_class_rank_ratio}")
+            data_stuct_1[m_i][class_i] = np.sum(cm[:,class_i]) - cm[class_i][class_i]
+
+    data_stuct_2 = nested_defaultdict(1,int)
+    for class_i in range(class_num):
+        for m_i in mutated_model_id_list:
+            data_stuct_2[class_i] += data_stuct_1[m_i][class_i]
+    sorted_res_1 = dict(sorted(data_stuct_2.items(), key=lambda x: x[1],reverse=True))
+    class_rank = list(sorted_res_1.keys())
+    target_class_rank_ratio = round((class_rank.index(target_class)+1) / len(class_rank),3)
+    return target_class_rank_ratio
 
 def look():
     # 保存数据
@@ -372,15 +372,23 @@ if __name__ == "__main__":
 
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     target_class = 3
-    for dataset_name in ["CIFAR10","GTSRB"]:
+    scence_id = 0
+    res = nested_defaultdict(4)
+    for dataset_name in ["CIFAR10","GTSRB","ImageNet2012_subset"]:
         class_num = get_classNum(dataset_name)
         for model_name in ["ResNet18","VGG19","DenseNet"]:
             for attack_name in ["BadNets","IAD","Refool","WaNet"]:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
-                print(f"{dataset_name}|{model_name}|{attack_name}")
-                discussion_rate()
-    print("END")
+                for m_rate in [0.01,0.03,0.05,0.07,0.09,0.1]:
+                    print(f"{dataset_name}|{model_name}|{attack_name}|{m_rate}")
+                    rank_rate = discussion_rate(m_rate)
+                    res[dataset_name][model_name][attack_name][m_rate] = rank_rate
+    save_dir = os.path.join("/data/mml/backdoor_detect/experiments/实验结果")
+    save_file_name = "disscution_mutation_rate_for_class_rank.pkl"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(res,save_path)
+    print("结果保存在:",save_path)
 
     # exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     # target_class = 3

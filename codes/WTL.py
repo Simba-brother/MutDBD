@@ -441,7 +441,7 @@ def main_scene():
 def look():
     save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res_1.pkl"  # res.pkl
+    save_file_name = "res_818.pkl"  # res.pkl
     save_path = os.path.join(save_dir, save_file_name)
     res_dict = joblib.load(save_path)
     our_acc_list = res_dict["our_acc_list"]
@@ -538,19 +538,20 @@ if __name__ == "__main__":
 
 
 
-    device = torch.device("cuda:1")
-    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-        class_num = get_classNum(dataset_name)
-        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                continue
-            for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
-                print(f"{dataset_name}|{model_name}|{attack_name}")
-                # class_avg, no_class_avg, wtl_res = class_rank_analyse() 
-                # print(f"class_AVG:{class_avg},no_class_AVG:{no_class_avg},wtl:{wtl_res}")
-                main_scene()
+    '''class rank 有效性分析'''
+    # device = torch.device("cuda:1")
+    # for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #     class_num = get_classNum(dataset_name)
+    #     for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #             continue
+    #         for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
+    #             print(f"{dataset_name}|{model_name}|{attack_name}")
+    #             class_avg, no_class_avg, wtl_res = class_rank_analyse() 
+    #             print(f"class_AVG:{class_avg},no_class_AVG:{no_class_avg},wtl:{wtl_res}")
 
 
+    '''w/t/l 跑数据'''
     # device = torch.device("cuda:1")
     # for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
     #     class_num = get_classNum(dataset_name)
@@ -561,25 +562,25 @@ if __name__ == "__main__":
     #             print(dataset_name,model_name,attack_name)
     #             main_scene()
 
-    
-    # device = torch.device("cuda:0")
-    # acc_win_counter = 0
-    # asr_win_counter = 0
-    # pNum_win_counter = 0
-    # total = 0
-    # for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-    #     class_num = get_classNum(dataset_name)
-    #     for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-    #             continue
-    #         for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-    #             acc_res, asr_res, pNum_res = look()
-    #             total += 1
-    #             if acc_res == "Win":
-    #                 acc_win_counter += 1
-    #             if asr_res == "Win":
-    #                 asr_win_counter += 1
-    #             if pNum_res == "Win":
-    #                 pNum_win_counter += 1
-    # print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
+    '''w/t/l 看数据'''
+    device = torch.device("cuda:0")
+    acc_win_counter = 0
+    asr_win_counter = 0
+    pNum_win_counter = 0
+    total = 0
+    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+        class_num = get_classNum(dataset_name)
+        for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+            if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                continue
+            for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+                acc_res, asr_res, pNum_res = look()
+                total += 1
+                if acc_res == "Win":
+                    acc_win_counter += 1
+                if asr_res == "Win":
+                    asr_win_counter += 1
+                if pNum_res == "Win":
+                    pNum_win_counter += 1
+    print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
     
