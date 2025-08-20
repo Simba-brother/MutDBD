@@ -10,6 +10,8 @@ from cliffs_delta import cliffs_delta
 from scipy.stats import wilcoxon,ks_2samp,mannwhitneyu
 from sklearn.metrics import classification_report,precision_score,recall_score,f1_score
 from codes.utils import entropy
+from codes.utils import nested_defaultdict,defaultdict_to_dict
+import joblib
 def test1():
     print(time.strftime("%Y-%m-%d_%H:%M:%S"))
     q = queue.PriorityQueue()
@@ -365,7 +367,12 @@ def test40():
    for i in data_list:
        print(i)
 
+def test41():
+    res = nested_defaultdict(4)
+    res[1][2][3][4] = 5.0
+    _res = defaultdict_to_dict(res)
+    joblib.dump(_res,"temp_res.pkl")
 if __name__ == "__main__":
-    test40()
+    test41()
 
 
