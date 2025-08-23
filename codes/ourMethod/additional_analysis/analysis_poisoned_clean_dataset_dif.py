@@ -16,6 +16,7 @@ from codes import config
 from codes.scripts.dataset_constructor import *
 from codes.common.eval_model import EvalModel
 from codes.utils import entropy
+from codes.ourMethod.detect_suspicious_classes.select_mutated_model import get_top_k_global_ids
 
 
 
@@ -174,9 +175,9 @@ def main_2():
 
 
 def main_3():
-    dataset_name = "ImageNet2012_subset"
-    model_name = "DenseNet"
-    attack_name = "IAD"
+    dataset_name = "CIFAR10"  # ImageNet2012_subset
+    model_name = "ResNet18"
+    attack_name = "WaNet"
     csv_df = pd.read_csv(os.path.join(
         config.exp_root_dir,
         "EvalMutationToCSV",
@@ -185,8 +186,13 @@ def main_3():
         attack_name,
         str(0.01),
         "preLabel.csv"))
-    grid = joblib.load(os.path.join(config.exp_root_dir,"实验结果","ImageNet_grid.joblib"))
-    mutated_model_id_list = grid[dataset_name][model_name][attack_name][0.01]["top50_model_id_list"]
+    
+    mutated_model_id_list = get_top_k_global_ids(csv_df)
+    # grid = joblib.load(os.path.join(config.exp_root_dir,"实验结果","grid.joblib"))
+    # mutated_model_id_list = grid["CIFAR10"]["ResNet18"]["IAD"][0.01]["top50_model_id_list"]
+    
+    # grid = joblib.load(os.path.join(config.exp_root_dir,"实验结果","ImageNet_grid.joblib"))
+    # mutated_model_id_list = grid[dataset_name][model_name][attack_name][0.01]["top50_model_id_list"]
     
     '''
     res = {}
@@ -268,12 +274,12 @@ def main_3():
             res_1[class_i] += res[m_i][class_i]
     sorted_res_1 = dict(sorted(res_1.items(), key=lambda x: x[1],reverse=True))
     print(sorted_res_1)
-    # save_dir = os.path.join(config.exp_root_dir, "实验结果","标签迁移","变异率0.01", "CIFAR10","ResNet18","BadNets")
-    # os.makedirs(save_dir,exist_ok=True)
-    # save_file_name = "res.joblib"
-    # save_path = os.path.join(save_dir,save_file_name)
-    # joblib.dump(res_1,save_path)
-    # print(save_path)
+    save_dir = os.path.join(config.exp_root_dir, "实验结果","标签迁移","变异率0.01", dataset_name,model_name,attack_name)
+    os.makedirs(save_dir,exist_ok=True)
+    save_file_name = "res.joblib"
+    save_path = os.path.join(save_dir,save_file_name)
+    joblib.dump(res_1,save_path)
+    print(save_path)
     print("END")
 
 
@@ -332,12 +338,18 @@ def data_visualization_stackbar():
     plt.savefig("imgs/stack.png")
 
 def data_visualization_bar():
+    '''
+    FP 动机
+    '''
     # 加载数据
+    dataset_name = "CIFAR10"
+    model_name = "ResNet18"
+    attack_name = "WaNet"
     data = joblib.load(os.path.join(config.exp_root_dir,
                                     "实验结果",
                                     "标签迁移",
                                     "变异率0.01",
-                                    "CIFAR10","ResNet18","BadNets",
+                                    dataset_name,model_name,attack_name,
                                     "res.joblib"))
     categories = list(range(10))
     bar_data = []
@@ -379,7 +391,7 @@ def data_visualization_bar():
     # 显示图形
     plt.show()
 
-    plt.savefig("imgs/positive.png")
+    plt.savefig(f"imgs/FP_{attack_name}.png")
 
 
 def data_visualization_box():
@@ -543,7 +555,7 @@ if __name__ == "__main__":
         logging.debug("发生异常:%s",e)
     '''
 
-    main_3()
-    # data_visualization_bar()
+    # main_3()
+    data_visualization_bar()
     # data_visualization_stackbar()
     # data_visualization()

@@ -8,6 +8,8 @@ from codes.utils import my_excepthook
 sys.excepthook = my_excepthook
 from codes.common.time_handler import get_formattedDateTime
 import os
+import scienceplots
+import matplotlib
 from codes.utils import convert_to_hms
 import time
 from collections import Counter
@@ -17,6 +19,7 @@ import queue
 import numpy as np
 from collections import defaultdict
 from codes.ourMethod.loss import SCELoss
+
 import matplotlib.pyplot as plt
 from codes.asd.log import Record
 import torch
@@ -130,16 +133,70 @@ def sort_sample_id(model,
             isPoisoned_list.append(False)
     return ranked_sample_id_list, isPoisoned_list,loss_array
 
-def draw(isPoisoned_list,file_name):
+def draw(isPoisoned_list_1, isPoisoned_list_2 ,file_name):
+    '''
     # 话图看一下中毒样本在序中的分布
     distribution = [1 if flag else 0 for flag in isPoisoned_list]
     # 绘制热力图
+    # 创建图形时设置较小的高度
+    plt.style.use(['science','ieee'])
+    matplotlib.rcParams['font.family'] = 'Times New Roman'
+
+    plt.figure(figsize=(3, 0.5))  # 宽度为10，高度为2（可根据需要调整）
     plt.imshow([distribution], aspect='auto', cmap='Reds', interpolation='nearest')
-    plt.title('Heat map distribution of poisoned samples')
-    plt.xlabel('ranking')
-    plt.colorbar()
+    # plt.title('Heat map distribution of poisoned samples')
+    plt.xlabel('ranking',fontsize='3')
+    # 调整横轴刻度字号
+    plt.xticks(fontsize=3)  # 明确设置横轴刻度字号为6pt
+    # plt.colorbar()
     plt.yticks([])
-    plt.savefig(f"imgs/{file_name}", bbox_inches='tight', pad_inches=0.0, dpi=800)
+    plt.savefig(f"imgs/sample_sort/{file_name}", bbox_inches='tight', dpi=800) # pad_inches=0.0
+    plt.close()
+    '''
+    plt.style.use('science')
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.serif': ['Times New Roman'],
+        'mathtext.fontset': 'stix',
+        'axes.titlesize': 10,
+        'axes.labelsize': 8,
+        'xtick.labelsize': 6,
+        'ytick.labelsize': 6,
+        'legend.fontsize': 6
+    })
+    distribution1 = [1 if flag else 0 for flag in isPoisoned_list_1]
+    distribution2 = [1 if flag else 0 for flag in isPoisoned_list_2]
+    
+    # 创建2行1列的子图
+    fig, axs = plt.subplots(2, 1, figsize=(3, 1.0))  # 总高度调整为1.0，每个子图高度约0.5
+
+    # 确保axs是数组形式（即使只有一行）
+    if not isinstance(axs, np.ndarray):
+        axs = [axs]
+
+    # 绘制第一个子图
+    axs[0].imshow([distribution1], aspect='auto', cmap='Reds', interpolation='nearest')
+    axs[0].set_xlabel('ranking', fontsize=3)
+    axs[0].tick_params(axis='x', labelsize=3)  # 修正：使用tick_params设置刻度标签字号
+    axs[0].set_yticks([])
+
+    # 绘制第二个子图
+    axs[1].imshow([distribution2], aspect='auto', cmap='Reds', interpolation='nearest')
+    axs[1].set_xlabel('ranking', fontsize=3)
+    axs[1].tick_params(axis='x', labelsize=3)  # 修正：使用tick_params设置刻度标签字号
+    axs[1].set_yticks([])
+
+    # 调整子图间距
+    plt.subplots_adjust(hspace=0.3)  # 调整垂直间距
+
+    # 保存为高分辨率图像
+    plt.savefig(f"imgs/sample_sort/{file_name}", 
+                bbox_inches='tight', 
+                pad_inches=0.02,
+                dpi=800,
+                facecolor='white',
+                edgecolor='none')
+
     plt.close()
 
 def train_epoch(model,dataset_loader,loss_fn,device,optimizer):
@@ -783,7 +840,7 @@ def freeze_model(model,dataset_name,model_name):
         raise Exception("模型不存在")
     return model
 
-def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device,logger):
+def seed_ft(model, filtered_poisoned_testset, poisoned_trainset, clean_testset, seedSet, device, poisoned_ids, logger):
     # FT前模型评估
     e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
@@ -791,24 +848,34 @@ def seed_ft(model, filtered_poisoned_testset, clean_testset, seedSet, device,log
     e = EvalModel(model,clean_testset,device)
     acc = e.eval_acc()
     print("backdoor_acc:",acc)
-    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model)
-    draw(isPoisoned_list,file_name="backdoor_loss.png")
+    poisoned_evalset_loader = DataLoader(
+                poisoned_trainset, # 非预制
+                batch_size=64,
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
     # 冻结
     freeze_model(model,dataset_name=dataset_name,model_name=model_name)
     # 获得class_rank
-    class_rank = get_classes_rank()
+    class_rank = get_classes_rank_v2(exp_root_dir,dataset_name,model_name,attack_name)
     # 基于种子集和后门模型微调10轮次
-    model = train(model,device,seedSet,lr=1e-3,logger=logger)
+    _, model = train(model,device,seedSet,num_epoch=20,lr=1e-3,logger=logger)
     e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
     print("FT_ASR:",asr)
     e = EvalModel(model,clean_testset,device)
     acc = e.eval_acc()
     print("FT_acc:",acc)
-    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model)
-    draw(isPoisoned_list,file_name="retrain10epoch_loss.png")
-    ranked_sample_id_list, isPoisoned_list = sort_sample_id(model,class_rank)
-    draw(isPoisoned_list,file_name="retrain10epoch_lossAndClassRank.png")
+    ranked_sample_id_list_1, isPoisoned_list_1, _ = sort_sample_id(model,device,
+                poisoned_evalset_loader,
+                poisoned_ids,
+                class_rank=None)
+    ranked_sample_id_list_2, isPoisoned_list_2, _ = sort_sample_id(model,device,
+            poisoned_evalset_loader,
+            poisoned_ids,
+            class_rank=class_rank)
+    draw(isPoisoned_list_1,isPoisoned_list_2, file_name="sort.png")
+    
 
 def ft(model,device,dataset,epoch,lr,logger):
     '''
@@ -1620,6 +1687,14 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     poisoned_ids = backdoor_data["poisoned_ids"]
     # 预制的poisoned_testset
     # poisoned_testset = backdoor_data["poisoned_testset"] 
+    # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
+    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name,model_name,attack_name,poisoned_ids)
+    # 获得设备
+    device = torch.device(f"cuda:{gpu_id}")
+    # e = EvalModel(backdoor_model,poisoned_testset,device)
+    # acc = e.eval_acc()
+    # e = EvalModel(backdoor_model,filtered_poisoned_testset,device)
+    # acc_1 = e.eval_acc()
     
     # 空白模型
     blank_model = get_model(dataset_name, model_name)
@@ -1638,8 +1713,8 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # logger.info(f"变异率:{mutate_rate}, id:{m_id}")
     # mutated_model.load_state_dict(torch.load(os.path.join(mutations_dir,str(mutate_rate),"Gaussian_Fuzzing",f"model_{m_id}.pth")))
 
-    # 根据poisoned_ids得到非预制菜poisoneds_trainset和新鲜clean_testset
-    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name,model_name,attack_name,poisoned_ids)
+    
+   
     # 数据加载器
     # 打乱
     poisoned_trainset_loader = DataLoader(
@@ -1688,6 +1763,10 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     for class_id,sample_id_list in clean_sample_dict.items():
         seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
     seedSet = Subset(poisoned_trainset,seed_sample_id_list)
+    
+    # seed_ft(backdoor_model, filtered_poisoned_testset, clean_testset, seedSet, device,logger)
+    seed_ft(backdoor_model, filtered_poisoned_testset, poisoned_trainset, clean_testset, seedSet, device, poisoned_ids, logger)    
+    print("")
 
     # 从poisoned_testset中剔除原来就是target class的数据
     # clean_testset_label_list = []
@@ -1702,8 +1781,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     # filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
 
 
-    # 获得设备
-    device = torch.device(f"cuda:{gpu_id}")
+    
     '''
     # 实验脚本
     # our_ft(
@@ -1826,11 +1904,11 @@ if __name__ == "__main__":
     
     gpu_id = 0
     r_seed = 1
+    exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
+    attack_name ="WaNet" # BadNets, IAD, Refool, WaNet
     class_num = get_classNum(dataset_name)
-
     # try_semi_train_main(dataset_name, model_name, attack_name, class_num, r_seed)
     scene_single(dataset_name, model_name, attack_name, r_seed=r_seed)
 
