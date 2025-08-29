@@ -8,6 +8,8 @@ import logging
 import setproctitle
 import pandas as pd
 from sklearn.metrics import accuracy_score,precision_score,recall_score,f1_score,classification_report,confusion_matrix
+import matplotlib
+import scienceplots
 import matplotlib.pyplot as plt
 import joblib
 import numpy as np
@@ -339,12 +341,12 @@ def data_visualization_stackbar():
 
 def data_visualization_bar():
     '''
-    FP 动机
+    论文配图，动机章节：FP柱状图
     '''
     # 加载数据
     dataset_name = "CIFAR10"
     model_name = "ResNet18"
-    attack_name = "WaNet"
+    attack_name = "BadNets"
     data = joblib.load(os.path.join(config.exp_root_dir,
                                     "实验结果",
                                     "标签迁移",
@@ -355,8 +357,17 @@ def data_visualization_bar():
     bar_data = []
     for c_i in categories:
         bar_data.append(data[c_i]/50)
+
+
+    
+
+
+    # 设置IEEE/Science风格的绘图参数
+    plt.style.use(['science','ieee'])
+    matplotlib.rcParams['font.family'] = 'Times New Roman'
+    matplotlib.rcParams['mathtext.fontset'] = 'stix'
     # 创建图形和坐标轴
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(6, 3)) # IEEE双栏推荐宽度3.5英寸，这里适当放宽
 
     # 创建颜色列表：第4个柱子(索引3)为红色，其余为绿色
     bar_colors = ['green' if i != 3 else 'red' for i in range(len(categories))]
@@ -364,7 +375,8 @@ def data_visualization_bar():
     x_pos = np.arange(len(categories))  # 创建0-9的位置索引
 
     # 绘制柱状图
-    bars = ax.bar(categories, bar_data, color=bar_colors, edgecolor='black', alpha=0.8)
+    bars = ax.bar(categories, bar_data, color=bar_colors, edgecolor='black',linewidth=0.5, alpha=0.8)
+
     # 设置x轴刻度和标签 - 关键修改：确保所有标签都显示
     ax.set_xticks(x_pos)  # 设置所有10个位置都有刻度
     ax.set_xticklabels(categories)  # 设置所有10个位置的标签
@@ -378,18 +390,31 @@ def data_visualization_bar():
                     ha='center', va='bottom')
 
     # 设置标题和标签
-    ax.set_title('Data comparison of 10 categories', fontsize=14, pad=20)
-    ax.set_xlabel('Category', fontsize=12)
-    ax.set_ylabel('Numeric', fontsize=12)
+    # ax.set_title('', fontsize=14, pad=20)
+    # 设置坐标轴标签（Science风格通常使用更正式的标签）
+    ax.set_xlabel('Class', fontsize=9, labelpad=2)
+    ax.set_ylabel('FPs', fontsize=9, labelpad=2)
+    # 调整刻度参数
+    ax.tick_params(axis='both', which='major', labelsize=8, pad=2)
 
-    # 添加网格线（只在Y轴方向）
-    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    # 添加网格线（保持简洁风格）
+    ax.grid(axis='y', linestyle=':', linewidth=0.5, alpha=0.6)
+
+    # 移除上部和右侧边框
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # 保存图像（设置高DPI和边界）
+    plt.savefig(f"imgs/FP_{attack_name}.png", 
+                dpi=600, 
+                bbox_inches='tight',
+                pad_inches=0.05)
 
     # 调整布局
-    plt.tight_layout()
+    # plt.tight_layout()
 
     # 显示图形
-    plt.show()
+    # plt.show()
 
     plt.savefig(f"imgs/FP_{attack_name}.png")
 

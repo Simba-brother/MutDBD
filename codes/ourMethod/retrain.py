@@ -135,6 +135,7 @@ def sort_sample_id(model,
 
 def draw(isPoisoned_list_1, isPoisoned_list_2 ,file_name):
     '''
+    论文配图，动机章节：热力图
     # 话图看一下中毒样本在序中的分布
     distribution = [1 if flag else 0 for flag in isPoisoned_list]
     # 绘制热力图
@@ -176,13 +177,13 @@ def draw(isPoisoned_list_1, isPoisoned_list_2 ,file_name):
 
     # 绘制第一个子图
     axs[0].imshow([distribution1], aspect='auto', cmap='Reds', interpolation='nearest')
-    axs[0].set_xlabel('ranking', fontsize=3)
+    axs[0].set_xlabel('Sample ranking', fontsize=3)
     axs[0].tick_params(axis='x', labelsize=3)  # 修正：使用tick_params设置刻度标签字号
     axs[0].set_yticks([])
 
     # 绘制第二个子图
     axs[1].imshow([distribution2], aspect='auto', cmap='Reds', interpolation='nearest')
-    axs[1].set_xlabel('ranking', fontsize=3)
+    axs[1].set_xlabel('Sample ranking', fontsize=3)
     axs[1].tick_params(axis='x', labelsize=3)  # 修正：使用tick_params设置刻度标签字号
     axs[1].set_yticks([])
 
@@ -190,7 +191,7 @@ def draw(isPoisoned_list_1, isPoisoned_list_2 ,file_name):
     plt.subplots_adjust(hspace=0.3)  # 调整垂直间距
 
     # 保存为高分辨率图像
-    plt.savefig(f"imgs/sample_sort/{file_name}", 
+    plt.savefig(f"imgs/Motivation/SampleRanking/{file_name}", 
                 bbox_inches='tight', 
                 pad_inches=0.02,
                 dpi=800,
@@ -859,6 +860,7 @@ def seed_ft(model, filtered_poisoned_testset, poisoned_trainset, clean_testset, 
     # 获得class_rank
     class_rank = get_classes_rank_v2(exp_root_dir,dataset_name,model_name,attack_name)
     # 基于种子集和后门模型微调10轮次
+    # BadNets:3,IAD:3,Refool:10,WaNet:20
     _, model = train(model,device,seedSet,num_epoch=20,lr=1e-3,logger=logger)
     e = EvalModel(model,filtered_poisoned_testset,device)
     asr = e.eval_acc()
@@ -874,7 +876,7 @@ def seed_ft(model, filtered_poisoned_testset, poisoned_trainset, clean_testset, 
             poisoned_evalset_loader,
             poisoned_ids,
             class_rank=class_rank)
-    draw(isPoisoned_list_1,isPoisoned_list_2, file_name="sort.png")
+    draw(isPoisoned_list_1,isPoisoned_list_2, file_name=f"{attack_name}.png")
     
 
 def ft(model,device,dataset,epoch,lr,logger):
@@ -1766,7 +1768,7 @@ def scene_single(dataset_name, model_name, attack_name, r_seed):
     
     # seed_ft(backdoor_model, filtered_poisoned_testset, clean_testset, seedSet, device,logger)
     seed_ft(backdoor_model, filtered_poisoned_testset, poisoned_trainset, clean_testset, seedSet, device, poisoned_ids, logger)    
-    print("")
+    
 
     # 从poisoned_testset中剔除原来就是target class的数据
     # clean_testset_label_list = []

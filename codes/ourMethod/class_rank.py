@@ -431,7 +431,7 @@ def draw_box():
     # 添加标签和标题
     ax.set_xlabel('Mutation Rate', fontsize=14, fontweight='bold')
     ax.set_ylabel('Rank Ratio', fontsize=14, fontweight='bold')
-    ax.set_title('Rank Ratio Distribution at Different Mutation Rates', fontsize=16, fontweight='bold')
+    # ax.set_title('Rank Ratio Distribution at Different Mutation Rates', fontsize=16, fontweight='bold')
 
     # 添加网格
     ax.grid(True, linestyle='--', alpha=0.7)
@@ -499,8 +499,8 @@ if __name__ == "__main__":
     #                 if metric_name == "Entropy":
     #                     Entropy_list.append(_res["target_class_rank_ratio"])
 
-    # exp_root_dir = "/data/mml/backdoor_detect/experiments/"
-    # draw_box()
+    exp_root_dir = "/data/mml/backdoor_detect/experiments/"
+    draw_box()
 
     # fp_count = 0
     # precision_count = 0

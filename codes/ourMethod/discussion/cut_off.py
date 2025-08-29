@@ -55,6 +55,7 @@ def main():
 
 
 def draw():
+    '''论文配图，讨论截取阈值对PN/ASR/ACC的影响'''
     # 获得数据
     CutOff_list,PN_rate_list,ASR_list,ACC_list = main()
     # 设置Science期刊风格
@@ -70,34 +71,40 @@ def draw():
     ACC = ACC_list
 
     # 创建图形
-    fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+    fig, ax = plt.subplots(figsize=(4.0, 2.5))  # IEEE双栏标准宽度3.5英寸
     ax.grid(True, linestyle=':', alpha=0.7)
 
     # 绘制三条折线
-    line1, = ax.plot(thresholds, PN_rate, 'o-', color='#1f77b4', linewidth=2, markersize=6, 
-                    markeredgecolor='w', markeredgewidth=0.5, label='PN Rate')
-    line2, = ax.plot(thresholds, ASR, 's--', color='#d62728', linewidth=2, markersize=6, 
-                    markeredgecolor='w', markeredgewidth=0.5, label='ASR')
-    line3, = ax.plot(thresholds, ACC, '^-.', color='#2ca02c', linewidth=2, markersize=6, 
-                    markeredgecolor='w', markeredgewidth=0.5, label='ACC')
+    line1, = ax.plot(thresholds, PN_rate, 'o-', color='#1f77b4', linewidth=1.2, markersize=4, 
+                    markeredgecolor='w', markeredgewidth=0.3, label='PN Rate')
+    line2, = ax.plot(thresholds, ASR, 's--', color='#d62728', linewidth=1.2, markersize=4, 
+                    markeredgecolor='w', markeredgewidth=0.3, label='ASR')
+    line3, = ax.plot(thresholds, ACC, '^-.', color='#2ca02c', linewidth=1.2, markersize=4, 
+                    markeredgecolor='w', markeredgewidth=0.3, label='ACC')
 
     # 设置坐标轴
-    ax.set_xlabel('Threshold', fontsize=12)
-    ax.set_ylabel('Rate / Accuracy', fontsize=12)
+    ax.set_xlabel('Cutoff Threshold', fontsize=12)
+    # ax.set_ylabel('Rate / Accuracy', fontsize=12)
     ax.set_xlim(0.05, 1.05)
     ax.set_ylim(0, 1.05)
     ax.set_xticks(thresholds)
-    ax.set_xticklabels([f'{t:.1f}' for t in thresholds])
+    ax.set_xticklabels([f'{int(t*100)}%' for t in thresholds],rotation=-45)
     ax.yaxis.set_major_formatter(PercentFormatter(1.0))  # 将Y轴显示为百分比
 
-    # 添加图例
-    ax.legend(loc='best', frameon=True, framealpha=0.9, fontsize=10)
+    # 添加图例 - 调整位置和样式
+    ax.legend(loc='best', frameon=True, framealpha=0.8, fontsize=7, handlelength=2)
+    # 添加网格 - 使用更细的网格线
+    ax.grid(True, linestyle=':', linewidth=0.5, alpha=0.5)
 
+
+    # 设置底部和左侧边框为更细的线
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.spines['left'].set_linewidth(0.5)
     # 添加标题
-    ax.set_title('Performance Metrics vs. Threshold', fontsize=14, pad=15)
+    # ax.set_title('Performance Metrics vs. Threshold', fontsize=14, pad=15)
 
-    # 添加网格
-    ax.grid(True, linestyle=':', alpha=0.5)
+    # 紧凑布局
+    plt.tight_layout(pad=0.5)
 
     # 添加数据点标签（可选，根据需要取消注释）
     # for i, (x, y) in enumerate(zip(thresholds, PN_rate)):
@@ -110,15 +117,11 @@ def draw():
     #     ax.annotate(f'{y:.2f}', (x, y), textcoords="offset points", 
     #                 xytext=(0,10), ha='center', fontsize=8)
 
-    # 优化布局
-    plt.tight_layout()
+   
     save_dir = "imgs/discussion/cut_off"
     # 保存图像（支持多种格式）
-    plt.savefig(os.path.join(save_dir,f"{scence_name}.png"), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(save_dir,f"{attack_name}.png"), dpi=600, bbox_inches='tight')
     # plt.savefig(os.path.join(save_dir,f"{scence_name}.pdf"), dpi=300, bbox_inches='tight')
-    # 显示图表
-    plt.show()
-
 
 if __name__ == "__main__":
 
@@ -126,9 +129,9 @@ if __name__ == "__main__":
     dataset_name = "CIFAR10"
     model_name  = "ResNet18"
     attack_name = "WaNet"
-    scence_name = f"{dataset_name}_{model_name}_{attack_name}"
+    # scence_name = f"{dataset_name}_{model_name}_{attack_name}"
     random_seed = 1
     # 获得计算设备
-    device = torch.device(f"cuda:1")
+    device = torch.device(f"cuda:0")
     draw()
     print("END")
