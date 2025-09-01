@@ -1,3 +1,5 @@
+'''所有（数据集*攻击）的train_transform和test_transform'''
+
 from torchvision import transforms
 
 def get_cifar10_transform(attack_name):

@@ -1,3 +1,7 @@
+'''
+用于中间数据加载
+'''
+
 import os
 from commonUtils import read_yaml
 config = read_yaml("config.yaml")
