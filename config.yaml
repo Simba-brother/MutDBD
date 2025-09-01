@@ -1,0 +1,10 @@
+exp_root_dir : "/data/mml/backdoor_detect/experiments"
+# CIFAR-10 dataset dir
+CIFAR10_dataset_dir: /data/mml/backdoor_detect/dataset/cifar10
+# GTSRB dataset dir
+GTSRB_dataset_dir: /data/mml/backdoor_detect/dataset/GTSRB
+# ImageNet2012_subset dir
+ImageNet2012_subset_dir: /data/mml/backdoor_detect/dataset/ImageNet2012_subset
+
+
+cifar10_resnet18_iad: /data/mml/backdoor_detect/experiments/ATTACK/CIFAR10/ResNet18/IAD/ATTACK_2024-12-18_13:17:49/dict_state.pth
