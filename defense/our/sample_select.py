@@ -6,7 +6,7 @@ from mid_data_loader import get_class_rank
 import torch.nn as nn
 import torch
 from commonUtils import Record
-
+import queue
 import scienceplots
 import matplotlib
 import matplotlib.pyplot as plt
@@ -42,6 +42,27 @@ def clean_seed(poisoned_trainset,poisoned_ids):
     clean_seedSet = Subset(poisoned_trainset,seed_sample_id_list)
     
     return clean_seedSet
+
+
+def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
+        # 基于class_rank得到每个类别权重，原则是越可疑的类别（索引越小的类别），权（分）越大
+        cls_num = len(class_rank)
+        cls2score = {}
+        for idx, cls in enumerate(class_rank):
+            cls2score[cls] = (cls_num - idx)/cls_num  # 类别3：(10-0)/10 = 1, (10-9)/ 10 = 0.1
+        sample_num = len(ranked_sample_id_list)
+        # 一个优先级队列
+        q = queue.PriorityQueue()
+        for idx, sample_id in enumerate(ranked_sample_id_list):
+            sample_rank = idx+1
+            sample_label = label_list[sample_id]
+            cls_score = cls2score[sample_label]
+            score = (sample_rank/sample_num)*cls_score # cls_score 归一化了，没加log
+            q.put((score,sample_id)) # 越小优先级越高，越干净
+        resort_sample_id_list = []
+        while not q.empty():
+            resort_sample_id_list.append(q.get()[1])
+        return resort_sample_id_list
 
 
 def sort_sample_id(model,
