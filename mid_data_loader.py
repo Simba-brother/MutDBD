@@ -1,9 +1,10 @@
 '''
 用于中间数据加载
 '''
-
 import os
 from commonUtils import read_yaml
+import torch
+import joblib
 config = read_yaml("config.yaml")
 exp_root_dir = config["exp_root_dir"]
 
@@ -74,7 +75,13 @@ def get_GTSRB_WaNet_attack_dict_path(model_name):
     return attack_dict_path
 
 def get_backdoor_data(dataset_name,model_name,attack_name):
-    backdoor_data = os.path.join(exp_root_dir,"ATTACK",dataset_name,model_name,attack_name,
+    backdoor_data_path = os.path.join(exp_root_dir,"ATTACK",dataset_name,model_name,attack_name,
             "backdoor_data.pth"
         )
+    backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
     return backdoor_data
+
+def get_class_rank(dataset_name,model_name,attack_name):
+    data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    data = joblib.load(data_path)
+    return data["class_rank"]

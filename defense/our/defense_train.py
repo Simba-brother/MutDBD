@@ -1,0 +1,260 @@
+'''
+OurMethod主程序
+'''
+import logging
+import sys
+import math
+from codes.utils import my_excepthook
+sys.excepthook = my_excepthook
+from codes.common.time_handler import get_formattedDateTime
+import os
+import scienceplots
+import matplotlib
+from codes.utils import convert_to_hms
+import time
+from collections import Counter
+import joblib
+import copy
+import queue
+import numpy as np
+
+from codes.ourMethod.loss import SCELoss
+
+import matplotlib.pyplot as plt
+from codes.asd.log import Record
+import torch
+from torch.optim.lr_scheduler import StepLR,MultiStepLR,CosineAnnealingLR
+import setproctitle
+from torch.utils.data import DataLoader,Subset,ConcatDataset,random_split
+import torch.nn as nn
+import torch.optim as optim
+from codes import config
+from codes.ourMethod.defence import defence_train
+from codes.common.eval_model import EvalModel
+from sklearn.model_selection import KFold
+from codes.asd.loss import SCELoss, MixMatchLoss
+from codes.ourMethod.loss import SimCLRLoss
+from prefetch_generator import BackgroundGenerator
+from itertools import cycle,islice
+from torch.cuda.amp import autocast
+from torch.cuda.amp import GradScaler
+
+from datasets.posisoned_dataset import get_all_dataset
+from commonUtils import get_class_num,read_yaml,get_logger,set_random_seed
+from mid_data_loader import get_backdoor_data,get_class_rank
+from defense.our.sample_select import clean_seed
+from attack.models import get_model
+from defense.our.sample_select import chose_retrain_set
+
+
+def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
+          logger=None,lr_scheduler=None, class_weight = None, weight_decay=None):
+    model.train()
+    model.to(device)
+    dataset_loader = DataLoader(
+            dataset, # 非预制
+            batch_size=batch_size,
+            shuffle=True, # 打乱
+            num_workers=4)
+    if weight_decay:
+        optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=weight_decay)
+    else:
+        optimizer = optim.Adam(model.parameters(),lr=lr)
+    if lr_scheduler == "MultiStepLR":
+        scheduler = MultiStepLR(optimizer, milestones=[30,60,90], gamma=0.1)
+    elif lr_scheduler == "CosineAnnealingLR":
+        scheduler = CosineAnnealingLR(optimizer,T_max=num_epoch,eta_min=1e-6)
+    if class_weight is None:
+        loss_function = nn.CrossEntropyLoss()
+    else:
+        loss_function = nn.CrossEntropyLoss(class_weight.to(device))
+    loss_function.to(device)
+    optimal_loss = float('inf')
+    best_model = model
+    for epoch in range(num_epoch):
+        step_loss_list = []
+        for _, batch in enumerate(dataset_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+            step_loss_list.append(loss.item())
+        if lr_scheduler:
+            scheduler.step()
+        epoch_loss = sum(step_loss_list) / len(step_loss_list)
+        if epoch_loss < optimal_loss:
+            optimal_loss = epoch_loss
+            best_model = model
+        logger.info(f"epoch:{epoch},loss:{epoch_loss}")
+    return model,best_model
+
+def unfreeze(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = True
+    return model
+
+def freeze_model(model,dataset_name,model_name):
+    if dataset_name == "CIFAR10" or dataset_name == "GTSRB":
+        if model_name == "ResNet18":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'features.5' in name or 'features.4' in name or 'features.3' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'dense4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    elif dataset_name == "ImageNet2012_subset":
+        if model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name,param in model.named_parameters():
+                if 'classifier' in name or 'features.denseblock4' in name or 'features.denseblock3' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "ResNet18":
+            for name,param in model.named_parameters():
+                if 'fc' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    else:
+        raise Exception("模型不存在")
+    return model
+
+def get_class_weights(dataset,class_num):
+    label_counts = Counter()
+    for sample_id in range(len(dataset)):
+        label = dataset[sample_id][1]
+        label_counts[label] += 1
+    most_num = label_counts.most_common(1)[0][1]
+    weights = []
+    for cls in range(class_num):
+        num = label_counts[cls]
+        weights.append(round(most_num / num,1))
+    return label_counts, weights
+
+def eval_asr_acc(model,poisoned_set,clean_set,device):
+    e = EvalModel(model,poisoned_set,device)
+    asr = e.eval_acc()
+    e = EvalModel(model,clean_set,device)
+    acc = e.eval_acc()
+    return asr,acc
+
+def get_exp_info():
+    # 获得实验时间戳年月日时分秒
+    _time = get_formattedDateTime()
+    exp_dir = os.path.join(exp_root_dir,"OurDefenseTrain",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+    os.makedirs(exp_dir,exist_ok=True)
+    exp_info = {}
+    exp_info["exp_time"] = _time
+    exp_info["exp_name"] = "OurDefenseTrain"
+    exp_info["exp_dir"] = exp_dir
+    return exp_info
+    
+def pre_work(dataset_name, model_name, attack_name, r_seed):
+    set_random_seed(r_seed)
+    exp_info = get_exp_info()
+    # 进程名称
+    proctitle = f'{exp_info["exp_name"]}|{dataset_name}|{model_name}|{attack_name}|{r_seed}'
+    setproctitle.setproctitle(proctitle)
+    # 获得实验logger
+    log_dir = os.path.join("log",dataset_name,model_name,attack_name)
+    log_file_name  = f'{exp_info["exp_name"]}.log'
+    logger = get_logger(log_dir,log_file_name)
+    logger.info(f'实验时间:{exp_info["exp_time"]}')
+    logger.info(f'实验名称:{exp_info["exp_name"]}')
+    logger.info(f'实验目录:{exp_info["exp_dir"]}')
+    logger.info(f"随机种子:{r_seed}")
+    logger.info(f'进程title:{proctitle}')
+    return logger,exp_info
+
+def one_scene(dataset_name, model_name, attack_name, r_seed):
+    # 实验开始计时
+    start_time = time.perf_counter()
+    logger,exp_info= pre_work(dataset_name, model_name, attack_name, r_seed)
+
+    # 加载后门攻击配套数据
+    backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
+    # 后门模型
+    backdoor_model = backdoor_data["backdoor_model"]
+    # 训练数据集中中毒样本id
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+    # 获得设备
+    device = torch.device(f"cuda:{gpu_id}")
+    # 空白模型
+    blank_model = get_model(dataset_name, model_name)
+    seedSet = clean_seed(poisoned_trainset, poisoned_ids)
+    # 种子微调
+    freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
+    last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,num_epoch=30,lr=1e-3,logger=logger)
+    # 样本选择
+    choice_rate = 0.6
+    choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = chose_retrain_set(best_fine_tuned_mmodel, device, 
+                      dataset_name, model_name, attack_name, 
+                      choice_rate, poisoned_trainset, poisoned_ids)
+    logger.info(f"截取阈值:{choice_rate},中毒样本含量:{PN}/{len(choicedSet)}")
+    # 防御重训练
+    availableSet = ConcatDataset([seedSet,choicedSet])
+    epoch_num = 100
+    lr = 1e-3
+    batch_size = 512
+    weight_decay=1e-3
+    class_num = get_class_num(class_num)
+    label_counter,weights = get_class_weights(availableSet, class_num)
+    logger.info(f"label_counter:{label_counter}")
+    logger.info(f"class_weights:{weights}")
+    class_weights = torch.FloatTensor(weights)
+    last_defense_model,best_defense_model = train(
+        best_fine_tuned_mmodel,device,availableSet,num_epoch=epoch_num,
+        lr=lr, batch_size=batch_size, logger=logger, 
+        lr_scheduler="CosineAnnealingLR",
+        class_weight=class_weights,weight_decay=weight_decay)
+    asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"朴素监督防御后best_model:ASR:{asr}, ACC:{acc}")
+    asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+    logger.info(f"朴素监督防御后last_model:ASR:{asr}, ACC:{acc}")
+    save_file_name = "best_defense_model.pth"
+    save_file_path = os.path.join(exp_info["exp_dir"],save_file_name)
+    torch.save(best_defense_model.state_dict(), save_file_path)
+    logger.info(f"朴素监督防御后的best权重保存在:{save_file_path}")
+    save_file_name = "last_defense_model.pth"
+    save_file_path = os.path.join(exp_info["exp_dir"],save_file_name)
+    torch.save(last_defense_model.state_dict(), save_file_path)
+    logger.info(f"朴素监督防御后的last权重保存在:{save_file_path}")
+    end_time = time.perf_counter()
+    cost_time = end_time - start_time
+    hours, minutes, seconds = convert_to_hms(cost_time)
+    logger.info(f"共耗时:{hours}时{minutes}分{seconds:.3f}秒")
+
+if __name__ == "__main__":
+    config = read_yaml("config.yaml")
+    exp_root_dir = config["exp_root_dir"]
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
+    gpu_id = 0
+    r_seed = 1
+    one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)

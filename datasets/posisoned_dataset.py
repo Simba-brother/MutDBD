@@ -40,7 +40,7 @@ def get_BadNets_dataset(dataset_name, poisoned_ids):
     return  poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset
 
 
-def get_IAD_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
+def get_IAD_dataset(dataset_name:str, model_name:str,poisoned_ids):
     clean_train_dataset, clean_test_dataset = get_clean_dataset(dataset_name,"IAD")
     # backdoor pattern
     if dataset_name == "CIFAR10":
@@ -179,3 +179,14 @@ def get_WaNet_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
     filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
     return poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset
 
+def get_all_dataset(dataset_name:str, model_name:str, attack_name:str, poisoned_ids):
+    if attack_name == "BadNets":
+        return get_BadNets_dataset(dataset_name, poisoned_ids)
+    elif attack_name == "IAD":
+        return get_IAD_dataset(dataset_name, model_name, poisoned_ids)
+    elif attack_name == "Refool":
+        return get_Refool_dataset(dataset_name, poisoned_ids)
+    elif attack_name == "WaNet":
+        return get_WaNet_dataset(dataset_name, model_name, poisoned_ids)
+    else:
+        raise ValueError("Invalid input")

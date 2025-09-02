@@ -6,5 +6,11 @@ GTSRB_dataset_dir: /data/mml/backdoor_detect/dataset/GTSRB
 # ImageNet2012_subset dir
 ImageNet2012_subset_dir: /data/mml/backdoor_detect/dataset/ImageNet2012_subset
 
+global_random_seed: 0
+# attacked class
+target_class: 3
+poisoned_rate: 0.05
 
-cifar10_resnet18_iad: /data/mml/backdoor_detect/experiments/ATTACK/CIFAR10/ResNet18/IAD/ATTACK_2024-12-18_13:17:49/dict_state.pth
+dataset_name_list: CIFAR10, GTSRB, ImageNet2012_subset
+model_name_list: ResNet18, VGG19, DenseNet
+attack_name_list: BadNets, IAD, Refool, WaNet
