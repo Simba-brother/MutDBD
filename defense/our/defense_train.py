@@ -16,8 +16,7 @@ import setproctitle
 from torch.utils.data import DataLoader,ConcatDataset,random_split
 import torch.nn as nn
 import torch.optim as optim
-from codes import config
-from codes.common.eval_model import EvalModel
+from modelEvalUtils import EvalModel
 from datasets.posisoned_dataset import get_all_dataset
 from commonUtils import get_class_num,read_yaml,get_logger,set_random_seed
 from mid_data_loader import get_backdoor_data
