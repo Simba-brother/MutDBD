@@ -1,47 +1,26 @@
 '''
 OurMethod主程序
 '''
-import logging
+
 import sys
-import math
-from codes.utils import my_excepthook
+from commonUtils import my_excepthook
 sys.excepthook = my_excepthook
-from codes.common.time_handler import get_formattedDateTime
+from commonUtils import get_formattedDateTime
 import os
-import scienceplots
-import matplotlib
-from codes.utils import convert_to_hms
+from commonUtils import convert_to_hms
 import time
 from collections import Counter
-import joblib
-import copy
-import queue
-import numpy as np
-
-from codes.ourMethod.loss import SCELoss
-
-import matplotlib.pyplot as plt
-from codes.asd.log import Record
 import torch
 from torch.optim.lr_scheduler import StepLR,MultiStepLR,CosineAnnealingLR
 import setproctitle
-from torch.utils.data import DataLoader,Subset,ConcatDataset,random_split
+from torch.utils.data import DataLoader,ConcatDataset,random_split
 import torch.nn as nn
 import torch.optim as optim
 from codes import config
-from codes.ourMethod.defence import defence_train
 from codes.common.eval_model import EvalModel
-from sklearn.model_selection import KFold
-from codes.asd.loss import SCELoss, MixMatchLoss
-from codes.ourMethod.loss import SimCLRLoss
-from prefetch_generator import BackgroundGenerator
-from itertools import cycle,islice
-from torch.cuda.amp import autocast
-from torch.cuda.amp import GradScaler
-
 from datasets.posisoned_dataset import get_all_dataset
 from commonUtils import get_class_num,read_yaml,get_logger,set_random_seed
-from mid_data_loader import get_backdoor_data,get_class_rank
+from mid_data_loader import get_backdoor_data
 from defense.our.sample_select import clean_seed
 from attack.models import get_model
 from defense.our.sample_select import chose_retrain_set

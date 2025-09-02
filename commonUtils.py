@@ -6,6 +6,8 @@ import os
 import torch
 import numpy as np
 import random
+import time
+import sys
 def read_yaml(file_path):
     with open(file_path, "r") as f:
         return yaml.safe_load(f)
@@ -104,3 +106,24 @@ class Record(object):
     def update(self, batch_data):
         self.data[self.ptr : self.ptr + len(batch_data)] = batch_data
         self.ptr += len(batch_data)
+
+def convert_to_hms(seconds):
+    hours = int(seconds // 3600)
+    remaining_seconds = seconds % 3600
+    minutes = int(remaining_seconds // 60)
+    seconds = remaining_seconds % 60
+    return hours, minutes, seconds
+
+def get_formattedDateTime():
+    '''
+    用于生成格式化的时间
+    '''
+    timestamp = time.time()
+    date_time = time.localtime(timestamp)
+    formatted_time = time.strftime('%Y-%m-%d_%H:%M:%S', date_time)
+    return formatted_time
+
+def my_excepthook(exctype, value, traceback):
+    logging.critical("Uncaught exception", exc_info=(exctype, value, traceback))
+    # 调用默认的异常钩子，以防程序意外退出
+    sys.__excepthook__(exctype, value, traceback)
