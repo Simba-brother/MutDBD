@@ -5,6 +5,8 @@ import os
 from commonUtils import read_yaml
 import torch
 import joblib
+import yaml
+
 config = read_yaml("config.yaml")
 exp_root_dir = config["exp_root_dir"]
 
@@ -75,6 +77,9 @@ def get_GTSRB_WaNet_attack_dict_path(model_name):
     return attack_dict_path
 
 def get_backdoor_data(dataset_name,model_name,attack_name):
+    '''
+    获得所有场景（dataset+model+attack）的后门数据
+    '''
     backdoor_data_path = os.path.join(exp_root_dir,"ATTACK",dataset_name,model_name,attack_name,
             "backdoor_data.pth"
         )
@@ -82,6 +87,27 @@ def get_backdoor_data(dataset_name,model_name,attack_name):
     return backdoor_data
 
 def get_class_rank(dataset_name,model_name,attack_name):
+    '''
+    获得所有场景（dataset+model+attack）的类别排序信息
+    '''
     data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
     data = joblib.load(data_path)
     return data["class_rank"]
+
+def get_our_method_state(dataset_name, model_name, attack_name, random_seed):
+    '''获得我们方法fine_tuned_backdoor_model和defensed_model'''
+    defensed_state_dict_path = os.path.join(exp_root_dir,"OurMethod_v2", dataset_name, model_name, attack_name, f"exp_{random_seed}", "last_defense_model.pth") 
+    selected_state_dict_path = os.path.join(exp_root_dir,"OurMethod_v2", dataset_name, model_name, attack_name, f"exp_{random_seed}", "best_BD_model.pth") 
+    return defensed_state_dict_path, selected_state_dict_path
+
+def get_asd_method_state(dataset_name, model_name, attack_name, random_seed):
+
+    '''获得ASD方法的fine_tuned_backdoor_model和defensed_model'''
+    data = read_yaml("ASD_res_config.yaml")
+    exp_id = f"exp_{random_seed}"
+    time_str = data[dataset_name][model_name][attack_name][exp_id]
+    # 获得防御模型路径
+    defensed_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","latest_model.pt") # key:"model_state_dict"
+    # 获得选择模型路径
+    selected_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","secondtolast.pth")
+    return defensed_state_dict_path, selected_state_dict_path

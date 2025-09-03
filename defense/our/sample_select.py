@@ -43,7 +43,6 @@ def clean_seed(poisoned_trainset,poisoned_ids):
     
     return clean_seedSet
 
-
 def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
         # 基于class_rank得到每个类别权重，原则是越可疑的类别（索引越小的类别），权（分）越大
         cls_num = len(class_rank)
@@ -63,7 +62,6 @@ def resort(ranked_sample_id_list,label_list,class_rank:list)->list:
         while not q.empty():
             resort_sample_id_list.append(q.get()[1])
         return resort_sample_id_list
-
 
 def sort_sample_id(model,
                    device,
@@ -112,12 +110,10 @@ def sort_sample_id(model,
     return ranked_sample_id_list, isPoisoned_list,loss_array
 
 def chose_retrain_set(ranker_model, device, 
-                      dataset_name, model_name, attack_name, 
-                      choice_rate, poisoned_trainset, poisoned_ids):
+                      choice_rate, poisoned_trainset, poisoned_ids, class_rank=None):
     '''
     选择用于后门模型重训练的数据集
     '''
-    class_rank = get_class_rank(dataset_name, model_name, attack_name)
     ranked_sample_id_list, isPoisoned_list,loss_array = sort_sample_id(
                                                 ranker_model,
                                                 device,
@@ -205,3 +201,7 @@ def draw(isPoisoned_list_1, isPoisoned_list_2 ,file_name):
                 edgecolor='none')
 
     plt.close()
+
+
+if __name__ == "__main__":
+    pass

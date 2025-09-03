@@ -200,5 +200,9 @@ class EvalModel(object):
                 confidence_list.extend(vaules.tolist())
         return confidence_list
 
-
-    
+def eval_asr_acc(model,poisoned_set,clean_set,device):
+    e = EvalModel(model,poisoned_set,device)
+    asr = e.eval_acc()
+    e = EvalModel(model,clean_set,device)
+    acc = e.eval_acc()
+    return asr,acc

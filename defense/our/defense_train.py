@@ -16,7 +16,7 @@ import setproctitle
 from torch.utils.data import DataLoader,ConcatDataset,random_split
 import torch.nn as nn
 import torch.optim as optim
-from modelEvalUtils import EvalModel
+from modelEvalUtils import eval_asr_acc
 from datasets.posisoned_dataset import get_all_dataset
 from commonUtils import get_class_num,read_yaml,get_logger,set_random_seed
 from mid_data_loader import get_backdoor_data
@@ -132,13 +132,6 @@ def get_class_weights(dataset,class_num):
         num = label_counts[cls]
         weights.append(round(most_num / num,1))
     return label_counts, weights
-
-def eval_asr_acc(model,poisoned_set,clean_set,device):
-    e = EvalModel(model,poisoned_set,device)
-    asr = e.eval_acc()
-    e = EvalModel(model,clean_set,device)
-    acc = e.eval_acc()
-    return asr,acc
 
 def get_exp_info():
     # 获得实验时间戳年月日时分秒
