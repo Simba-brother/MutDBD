@@ -20,7 +20,6 @@ def get_clean_dataset(dataset_name,attack_name):
         dataset_dir = config["ImageNet2012_subset_dir"]
         extensions = ('jpeg',)
         train_transform, test_transform = get_imagenet_transform(attack_name)
-
     trainset = DatasetFolder(
         root= os.path.join(dataset_dir, "train"), # 文件夹目录
         loader=cv2.imread, # ndarray
@@ -28,7 +27,6 @@ def get_clean_dataset(dataset_name,attack_name):
         transform=train_transform,
         target_transform=None,
         is_valid_file=None)
-
     testset = DatasetFolder(
         root= os.path.join(dataset_dir, "test"), # 文件夹目录
         loader=cv2.imread,

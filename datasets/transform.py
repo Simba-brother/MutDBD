@@ -50,7 +50,7 @@ def get_cifar10_transform(attack_name):
         ])
     elif attack_name == "WaNet":
         # 获得训练集transform
-        transform_train = transforms.Compose([
+        train_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.RandomCrop(size=32,padding=4,padding_mode="reflect"),
             transforms.RandomHorizontalFlip()
@@ -58,6 +58,21 @@ def get_cifar10_transform(attack_name):
         # 获得测试集transform
         test_transform = transforms.Compose([
             transforms.ToTensor()
+        ])
+    elif attack_name == "LabelConsistent":
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
     else:
         raise ValueError("Invalid input")
@@ -117,6 +132,21 @@ def get_gtsrb_transform(attack_name):
             transforms.Resize((32, 32)),
             transforms.ToTensor()
         ])
+    elif attack_name == "LabelConsistent":
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
     else:
         raise ValueError("Invalid input")
     return train_transform,test_transform
@@ -175,6 +205,21 @@ def get_imagenet_transform(attack_name):
             transforms.ToPILImage(),
             transforms.Resize((224, 224)),
             transforms.ToTensor()
+        ])
+    elif attack_name == "LabelConsistent":
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((224, 224)),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
     else:
         raise ValueError("Invalid input")

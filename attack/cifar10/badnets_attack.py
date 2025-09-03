@@ -4,8 +4,7 @@ import torch
 import torch.nn as nn
 from attack.core.attacks import BadNets
 from attack.models import get_model
-from commonUtils import read_yaml
-from attack.random_util import set_random_seed
+from commonUtils import read_yaml,set_random_seed
 from datasets.clean_dataset import get_clean_dataset
 config = read_yaml("config.yaml")
 global_random_seed = config["global_random_seed"]
