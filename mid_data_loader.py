@@ -111,3 +111,20 @@ def get_asd_method_state(dataset_name, model_name, attack_name, random_seed):
     # 获得选择模型路径
     selected_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","secondtolast.pth")
     return defensed_state_dict_path, selected_state_dict_path
+
+def get_labelConsistent_benign_model(dataset_name, model_name):
+    
+    LC_benign_record_dict = {
+        "CIFAR10":{
+            "ResNet18":"benign_train_2025-07-16_13:17:28",
+            "VGG19":"benign_train_2025-07-16_17:35:57",
+            "DenseNet":"benign_train_2025-07-16_22:34:07"
+            }
+    }
+    key_dir = LC_benign_record_dict[dataset_name][model_name]
+    benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, "LabelConsistent", key_dir, "best_model.pth")
+    benign_state_dict = torch.load(benign_state_dict_path,map_location="cpu")
+    return benign_state_dict
+
+
+

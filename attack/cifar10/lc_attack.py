@@ -10,6 +10,7 @@ from attack.models import get_model
 from datasets.clean_dataset import get_clean_dataset
 from commonUtils import read_yaml,set_random_seed
 from attack.core.attacks import LabelConsistent
+from mid_data_loader import get_labelConsistent_benign_model
 
 
 config = read_yaml("config.yaml")
@@ -23,12 +24,6 @@ target_class = config["target_class"]
 global_random_seed = config["global_random_seed"]
 is_benign = False
 set_random_seed(global_random_seed)
-benign_dict = {
-    "ResNet18":"benign_train_2025-07-16_13:17:28",
-    "VGG19":"benign_train_2025-07-16_17:35:57",
-    "DenseNet":"benign_train_2025-07-16_22:34:07"
-}
-benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, attack_name, benign_dict[model_name], "best_model.pth")
 experiment_name = "benign_train" if is_benign else "attack_train"
 
 def get_trigger():
@@ -130,15 +125,16 @@ def bengin_main(model,trainset,testset):
     attacker = get_attacker(trainset,testset,model,target_class,poisoned_rate,
                             adv_model,adv_dataset_dir)
     attacker.train()
-    print("save_path:", os.path.join(attacker.work_dir, "best_model.pth"))
-    print("END")
+    print("bengin model save in:", os.path.join(attacker.work_dir, "best_model.pth"))
     return attacker.best_model
 
 def attack_main(model,trainset,testset):    
     poisoned_rate = 0.1
+    # 被对抗模型
     adv_model = copy.deepcopy(model)
-    benign_state_dict = torch.load(benign_state_dict_path, map_location="cpu")
+    benign_state_dict = get_labelConsistent_benign_model(dataset_name,model_name)
     adv_model.load_state_dict(benign_state_dict)
+    # 得到对抗数据集
     adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
     attacker = get_attacker(trainset,testset,model,target_class,poisoned_rate,
                             adv_model,adv_dataset_dir)
@@ -147,18 +143,19 @@ def attack_main(model,trainset,testset):
     print("LC攻击结束,开始保存攻击数据")
     backdoor_model = attacker.best_model
     bd_res = {}
-    poisoned_testset = attacker.poisoned_test_dataset
+    # poisoned_testset = attacker.poisoned_test_dataset
     poisoned_ids = attacker.poisoned_set
     bd_res["backdoor_model"] = backdoor_model
     bd_res["poisoned_ids"] = poisoned_ids
-    bd_res["poisoned_testset"] = poisoned_testset
+    pattern,weight = get_trigger()
+    bd_res["pattern"] = pattern
+    bd_res["pattern"] = weight
     save_path = os.path.join(
         config.exp_root_dir, "ATTACK",
         dataset_name, model_name, attack_name,
         "backdoor_data.pth")
     torch.save(bd_res, save_path)
-    print(f"攻击结果保存到:{save_path}")
-    print("END")
+    print(f"backdoor_data save in:{save_path}")
     return bd_res
 
 def main():

@@ -2,13 +2,18 @@
 import os
 import cv2
 import torch
-from datasets.clean_dataset import get_clean_dataset
 
+from datasets.clean_dataset import get_clean_dataset
+from torchvision.datasets import DatasetFolder
+from commonUtils import read_yaml
+from copy import deepcopy
 # 数据投毒
 from datasets.poisoned_folder.badnets_folder import PoisonedDatasetFolder as BadNetsPoisonedDatasetFolder
 from datasets.poisoned_folder.iad_folder import PoisonedDatasetFolder as IADPoisonedDatasetFolder
 from datasets.poisoned_folder.refool_folder import PoisonedDatasetFolder as RefoolPoisonedDatasetFolder
 from datasets.poisoned_folder.wanet_folder import PoisonedDatasetFolder as WaNetPoisonedDatasetFolder
+from datasets.poisoned_folder.labelConsistent_folder import PoisonedDatasetFolder_Trainset as LabelConsistentPoisonedDatasetFolder_Trainset
+from datasets.poisoned_folder.labelConsistent_folder import PoisonedDatasetFolder_Testset as LabelConsistentPoisonedDatasetFolder_Testset
 # 过滤掉原target class样本
 from datasets.filter import filter_dataset
 from torch.utils.data import Subset
@@ -179,6 +184,81 @@ def get_WaNet_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
     filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
     return poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset
 
+
+def get_LabelConsistent_trigger(dataset_name):
+    if dataset_name == "CIFAR10" and "GTSRB":
+        img_size = (32,32)
+        pattern = torch.zeros(img_size, dtype=torch.uint8)
+        # pattern[:3,:3] = 255
+        # pattern[:3,-3:] = 255
+        # pattern[-3:,:3] = 255
+        # pattern[-3:,-3:] = 255
+
+        pattern[-1, -1] = 255
+        pattern[-1, -3] = 255
+        pattern[-3, -1] = 255
+        pattern[-2, -2] = 255
+
+        pattern[0, -1] = 255
+        pattern[1, -2] = 255
+        pattern[2, -3] = 255
+        pattern[2, -1] = 255
+
+        pattern[0, 0] = 255
+        pattern[1, 1] = 255
+        pattern[2, 2] = 255
+        pattern[2, 0] = 255
+
+        pattern[-1, 0] = 255
+        pattern[-1, 2] = 255
+        pattern[-2, 1] = 255
+        pattern[-3, 0] = 255
+
+        weight = torch.zeros(img_size, dtype=torch.float32)
+        weight[:3,:3] = 1.0
+        weight[:3,-3:] = 1.0
+        weight[-3:,:3] = 1.0
+        weight[-3:,-3:] = 1.0
+        return pattern,weight
+    
+def my_imread(file_path):
+    return cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
+
+def get_LabelConsistent_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
+    clean_train_dataset, clean_test_dataset = get_clean_dataset(dataset_name,"LabelConsistent")
+    backdoor_data = get_backdoor_data(dataset_name,model_name,"LabelConsistent")
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    pattern,weight = get_LabelConsistent_trigger(dataset_name)
+    config = read_yaml("config.yaml")
+    exp_root_dir = config["exp_root_dir"]
+    adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, "LabelConsistent", "adv_dataset")
+    target_adv_dataset = DatasetFolder(
+            root=os.path.join(adv_dataset_dir, 'target_adv_dataset'),
+            loader=my_imread,
+            extensions=('png',),
+            transform=deepcopy(clean_train_dataset.transform),
+            target_transform=deepcopy(clean_train_dataset.target_transform),
+            is_valid_file=None
+        )
+    poisoned_trainset = LabelConsistentPoisonedDatasetFolder_Trainset(target_adv_dataset,
+                 poisoned_ids,
+                 pattern,
+                 weight,
+                 0)
+    target_class = config["target_class"]
+    poisoned_testset = LabelConsistentPoisonedDatasetFolder_Testset(clean_test_dataset,
+                 config["target_class"],
+                 1,
+                 pattern,
+                 weight,
+                 0,
+                 0)
+    filtered_ids = filter_dataset(clean_test_dataset,target_class)
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    return poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset
+
+
+
 def get_all_dataset(dataset_name:str, model_name:str, attack_name:str, poisoned_ids):
     if attack_name == "BadNets":
         return get_BadNets_dataset(dataset_name, poisoned_ids)
@@ -188,5 +268,7 @@ def get_all_dataset(dataset_name:str, model_name:str, attack_name:str, poisoned_
         return get_Refool_dataset(dataset_name, poisoned_ids)
     elif attack_name == "WaNet":
         return get_WaNet_dataset(dataset_name, model_name, poisoned_ids)
+    elif attack_name == "LabelConsistent":
+        return get_LabelConsistent_dataset(dataset_name, model_name,poisoned_ids)
     else:
         raise ValueError("Invalid input")

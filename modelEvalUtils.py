@@ -5,22 +5,13 @@
 import time
 import torch
 import torch.nn.functional as F
-import numpy as np
-import random
 from torch.utils.data import DataLoader
 from sklearn.metrics import classification_report
 
-from codes.config import random_seed
+from commonUtils import set_random_seed, read_yaml
+config = read_yaml("config.yaml")
 
-
-torch.manual_seed(random_seed)
-np.random.seed(random_seed)
-random.seed(random_seed)
-
-def _seed_worker(worker_id):
-    torch.manual_seed(random_seed)
-    np.random.seed(random_seed)
-    random.seed(random_seed)
+set_random_seed(config["global_random_seed"])
 
 class EvalModel(object):
     def __init__(self, model, dataset, device, batch_size=512, num_workers=8):
@@ -36,8 +27,7 @@ class EvalModel(object):
             shuffle=False,
             num_workers=num_workers,
             drop_last=False,
-            pin_memory=True,
-            worker_init_fn=_seed_worker
+            pin_memory=True
         )
         return dataset_loader
 

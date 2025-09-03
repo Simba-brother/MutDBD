@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader # 用于批量加载训练集的
 from torchvision.datasets import DatasetFolder, MNIST, CIFAR10
 
-from ..utils import Log
+from attack.core.utils import Log
 
 # 支持的数据集类型
 support_list = (

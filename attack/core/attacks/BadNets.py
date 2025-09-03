@@ -13,8 +13,9 @@ import PIL
 from PIL import Image
 from torchvision.transforms import functional as F
 from torchvision.transforms import Compose
+from attack.core.attacks.base import *
+# from .base import * #把父类所在文件所有东西都引进了，包括父类文件中的import module也导入了
 
-from .base import * #把父类所在文件所有东西都引进了，包括父类文件中的import module也导入了
 
 
 class AddTrigger:
