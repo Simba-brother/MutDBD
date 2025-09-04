@@ -22,11 +22,11 @@ def eval_LabelConsistent_benign_model(dataset_name, model_name):
     return acc
 
 
-def eval_Backdoor_model(dataset_name, model_name, attack_name):
-    backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
+def eval_Backdoor_and_Benign_model_For_LabelConsistent(dataset_name, model_name):
+    backdoor_data = get_backdoor_data(dataset_name, model_name, "LabelConsistent")
     backdoor_model = backdoor_data["backdoor_model"]
     poisoned_ids = backdoor_data["poisoned_ids"]
-    poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+    poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset = get_all_dataset(dataset_name, model_name, "LabelConsistent", poisoned_ids)
     bd_ASR, bd_ACC = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_test_dataset,device)
 
     benign_model = get_model(dataset_name, model_name)
@@ -41,10 +41,12 @@ if __name__ == "__main__":
     exp_root_dir = config["exp_root_dir"]
     device = torch.device("cuda:0")
     dataset_name = "CIFAR10"
-    model_name = "ResNet18"
+    model_name = "DenseNet"
     attack_name = "LabelConsistent"
-    bd_ASR, bd_ACC, be_ASR, be_ACC = eval_Backdoor_model(dataset_name, model_name, attack_name)
-    print(f"{dataset_name}|{model_name}|{attack_name}")
-    print(f"bd_ASR:{bd_ASR},bd_ACC:{bd_ACC},be_ASR:{be_ASR},be_ACC:{be_ACC}")
+    acc = eval_LabelConsistent_benign_model(dataset_name, model_name)
+    print(f"bd_ACC:{acc}")
+    # bd_ASR, bd_ACC, be_ASR, be_ACC = eval_Backdoor_and_Benign_model_For_LabelConsistent(dataset_name, model_name)
+    # print(f"{dataset_name}|{model_name}|{attack_name}")
+    # print(f"bd_ASR:{bd_ASR},bd_ACC:{bd_ACC},be_ASR:{be_ASR},be_ACC:{be_ACC}")
     pass
 

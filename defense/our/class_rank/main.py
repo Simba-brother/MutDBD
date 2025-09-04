@@ -212,17 +212,22 @@ def entropy_metrics(df:pd.DataFrame,mutated_model_global_id_list:list,class_num:
     }
     return res
 
+def look_res():
+    FP_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"FP.joblib"))
+    print(FP_res)
+
 if __name__ == "__main__":
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
-    dataset_name_list = config["dataset_name_list"]
-    model_name_list = config["model_name_list"]
-    attack_name_list = config["attack_name_list"]
+    # dataset_name_list = config["dataset_name_list"]
+    # model_name_list = config["model_name_list"]
+    # attack_name_list = config["attack_name_list"]
     dataset_name = "CIFAR10"
     model_name = "ResNet18"
-    attack_name = "BadNets"
+    attack_name = "LabelConsistent"
     mutation_rate = 0.01
     target_class = config["target_class"]
-    main_scene(dataset_name,model_name,attack_name,mutation_rate=0.01, metric="FP")
+    # main_scene(dataset_name,model_name,attack_name,mutation_rate=0.01, metric="FP")
+    look_res()
     print("END")
 

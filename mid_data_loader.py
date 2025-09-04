@@ -5,7 +5,7 @@ import os
 from commonUtils import read_yaml
 import torch
 import joblib
-import yaml
+
 
 config = read_yaml("config.yaml")
 exp_root_dir = config["exp_root_dir"]
@@ -82,15 +82,18 @@ def get_backdoor_data(dataset_name,model_name,attack_name):
     '''
     backdoor_data_path = os.path.join(exp_root_dir,"ATTACK",dataset_name,model_name,attack_name,
             "backdoor_data.pth"
-        )
-    backdoor_data = torch.load(backdoor_data_path,map_location="cpu")
+    )
+    backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     return backdoor_data
 
 def get_class_rank(dataset_name,model_name,attack_name):
     '''
     获得所有场景（dataset+model+attack）的类别排序信息
     '''
-    data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    if attack_name != "LabelConsistent":
+        data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    else:
+        data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(0.01),"FP.joblib")
     data = joblib.load(data_path)
     return data["class_rank"]
 

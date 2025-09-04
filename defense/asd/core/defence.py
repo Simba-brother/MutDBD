@@ -6,7 +6,7 @@ import setproctitle
 import os
 import time
 from copy import deepcopy
-from codes.utils import convert_to_hms
+from commonUtils import convert_to_hms,create_dir,get_class_num,read_yaml
 import cv2
 import numpy as np
 import torch
@@ -18,20 +18,16 @@ from torch.utils.data import DataLoader # 用于批量加载训练集的
 
 from torchvision.transforms import Compose, ToTensor, RandomHorizontalFlip, ToPILImage, Resize, RandomCrop
 from torchvision.datasets import DatasetFolder
-from codes import config
-from codes.core.attacks import BadNets
-from codes.core.models.resnet import ResNet
-from codes.asd.loss import SCELoss, MixMatchLoss
-from codes.asd.semi import poison_linear_record, mixmatch_train,linear_test
-from codes.asd.dataset import MixMatchDataset
-# from ASD.log import result2csv
-from codes.utils import create_dir
-from codes.scripts.dataset_constructor import ExtractDataset, PureCleanTrainDataset, PurePoisonedTrainDataset
-# from ASD.models.resnet_cifar import get_model
+from attack.core.attacks import BadNets
+from models.resnet import ResNet
+from defense.asd.core.loss import SCELoss,MixMatchLoss
+from defense.asd.core.semi import poison_linear_record, mixmatch_train,linear_test
+from defense.asd.core.dataset import MixMatchDataset
+config = read_yaml("config.yaml")
 
-def main_test():
+def main_test(dataset_name,model_name,attack_name):
     # 进程名称
-    proctitle = f"ASD|{config.dataset_name}|{config.model_name}|{config.attack_name}"
+    proctitle = f"ASD_test|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     print(f"proctitle:{proctitle}")
     # 准备数据集
@@ -45,15 +41,15 @@ def main_test():
     # ASD防御训练
     defence_train(
         model = prepare_model(),
-        class_num = config.class_num,
+        class_num = get_class_num(dataset_name),
         poisoned_train_dataset = backdoor_data["poisoned_train_dataset"], # 有污染的训练集
         poisoned_ids = backdoor_data["poisoned_ids"], # 被污染的样本id list
         poisoned_eval_dataset_loader = backdoor_data["poisoned_eval_dataset_loader"], # 有污染的验证集加载器（可以是有污染的训练集不打乱加载）
         poisoned_train_dataset_loader = backdoor_data["poisoned_train_dataset_loader"], #有污染的训练集加载器
         clean_test_dataset_loader = backdoor_data["clean_test_dataset_loader"], # 干净的测试集加载器
         poisoned_test_dataset_loader = backdoor_data["poisoned_test_dataset_loader"], # 污染的测试集加载器
-        device = torch.device(f"cuda:{config.gpu_id}"),
-        save_dir = os.path.join(config.exp_root_dir, "ASD", config.dataset_name, config.model_name, config.attack_name)
+        device = torch.device(f"cuda:{gpu_id}"),
+        save_dir = os.path.join(exp_root_dir, "ASD", dataset_name, model_name, attack_name)
     )
     
 def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=True):
@@ -66,7 +62,7 @@ def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=Tru
     Return:
         攻击后的字典数据
     '''
-    if config.attack_name == "BadNets":
+    if attack_name == "BadNets":
         pattern = torch.zeros((32, 32), dtype=torch.uint8)
         pattern[-3:, -3:] = 255
         weight = torch.zeros((32, 32), dtype=torch.float32)
@@ -80,7 +76,7 @@ def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=Tru
             test_dataset=testset,
             model=model,
             loss=nn.CrossEntropyLoss(),
-            y_target=config.target_class_idx,
+            y_target=config["target_class"],
             poisoned_rate=0.1,
             pattern=pattern,
             weight=weight,
@@ -128,12 +124,11 @@ def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=Tru
             num_workers=4,
             pin_memory=True,
             )
-        exp_root_dir = "/data/mml/backdoor_detect/experiments"
         dataset_name = "CIFAR10"
         model_name = "ResNet18"
         attack_name = "BadNets"
         schedule = {
-            'device': f'cuda:{config.gpu_id}',
+            'device': f'cuda:{gpu_id}',
             'benign_training': False,
             'batch_size': 128,
             'num_workers': 4,
@@ -158,26 +153,14 @@ def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=Tru
         work_dir = badnets.work_dir
         # 获得backdoor model weights
         backdoor_model = badnets.best_model
-        # clean testset
-        clean_testset = testset
-        # poisoned testset
-        poisoned_testset = badnets.poisoned_test_dataset
         # poisoned trainset
         poisoned_trainset = badnets.poisoned_train_dataset
         # poisoned_ids
         poisoned_ids = poisoned_trainset.poisoned_set
-        # pure clean trainset
-        pureCleanTrainDataset = PureCleanTrainDataset(poisoned_trainset, poisoned_ids)
-        # pure poisoned trainset
-        purePoisonedTrainDataset = PurePoisonedTrainDataset(poisoned_trainset, poisoned_ids)
+
         dict_state = {}
         dict_state["backdoor_model"] = backdoor_model
-        dict_state["poisoned_trainset"]=poisoned_trainset
         dict_state["poisoned_ids"]=poisoned_ids
-        dict_state["pureCleanTrainDataset"] = pureCleanTrainDataset
-        dict_state["purePoisonedTrainDataset"] = purePoisonedTrainDataset
-        dict_state["clean_testset"]=clean_testset
-        dict_state["poisoned_testset"]=poisoned_testset
         dict_state["pattern"] = pattern
         dict_state['weight']=weight
         save_file_name = f"dict_state.pth"
@@ -198,14 +181,14 @@ def backdoor_attack(trainset, testset, model, random_seed=666, deterministic=Tru
     }
     return res
     
-def prepare_model():
+def prepare_model(dataset_name,model_name):
     '''
     准备模型
     Return:
         model
     '''
-    if config.model_name == "ResNet18":
-        model = ResNet(num=18, num_classes=config.class_num)
+    if model_name == "ResNet18":
+        model = ResNet(num=18, num_classes=get_class_num(dataset_name))
     return model
 
 def prepare_data():
@@ -228,7 +211,7 @@ def prepare_data():
         ToTensor()
     ])
     # 数据集文件夹
-    dataset_dir = config.CIFAR10_dataset_dir
+    dataset_dir = config["CIFAR10_dataset_dir"]
     # 获得训练数据集
     trainset = DatasetFolder(
         root=os.path.join(dataset_dir, "train"),
@@ -280,7 +263,7 @@ def defence_train(
     # 分割损失函数对象放到gpu上
     split_criterion.to(device)
     # semi 损失函数 # rampup_length = 120  same as epoches
-    semi_criterion = MixMatchLoss(rampup_length=config.asd_config[kwargs["dataset_name"]]["epoch"], lambda_u=15)
+    semi_criterion = MixMatchLoss(rampup_length=config["ASD_config"][kwargs["dataset_name"]]["epoch"], lambda_u=15)
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     # 模型参数的优化器
@@ -325,7 +308,7 @@ def defence_train(
     best_acc = -1 # 干净测试集上的最好性能
     best_epoch = -1 # 记录下最好的epoch_id
     # 从配置文件中读取总共的训练轮次
-    total_epoch = config.asd_config[kwargs["dataset_name"]]["epoch"]
+    total_epoch = config["ASD_config"][kwargs["dataset_name"]]["epoch"]
     for epoch in range(total_epoch):
         epoch_start_time = time.perf_counter()
         logger.info("===Epoch: {}/{}===".format(epoch+1, total_epoch))
@@ -709,4 +692,7 @@ def temp_2(xloader,uloader,logger):
 '''
 
 if __name__ == "__main__":
+    config = read_yaml("config.yaml")
+    exp_root_dir = config["exp_root_dir"]
+    gpu_id = 0
     main_test()

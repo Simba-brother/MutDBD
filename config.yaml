@@ -14,3 +14,13 @@ poisoned_rate: 0.05
 dataset_name_list: CIFAR10, GTSRB, ImageNet2012_subset
 model_name_list: ResNet18, VGG19, DenseNet
 attack_name_list: BadNets, IAD, Refool, WaNet
+
+ASD_config:
+  CIFAR10:
+    epoch: 120
+  GTSRB:
+    epoch: 100
+  ImageNet2012_subset:
+    epoch: 120
+
+

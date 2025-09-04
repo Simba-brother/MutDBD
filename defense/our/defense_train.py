@@ -19,10 +19,11 @@ import torch.optim as optim
 from modelEvalUtils import eval_asr_acc
 from datasets.posisoned_dataset import get_all_dataset
 from commonUtils import get_class_num,read_yaml,get_logger,set_random_seed
-from mid_data_loader import get_backdoor_data
+from mid_data_loader import get_backdoor_data, get_class_rank
 from defense.our.sample_select import clean_seed
 from attack.models import get_model
 from defense.our.sample_select import chose_retrain_set
+
 
 
 def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
@@ -151,7 +152,7 @@ def pre_work(dataset_name, model_name, attack_name, r_seed):
     proctitle = f'{exp_info["exp_name"]}|{dataset_name}|{model_name}|{attack_name}|{r_seed}'
     setproctitle.setproctitle(proctitle)
     # 获得实验logger
-    log_dir = os.path.join("log",dataset_name,model_name,attack_name)
+    log_dir = os.path.join("log","OurDefenseTrain",dataset_name,model_name,attack_name)
     log_file_name  = f'{exp_info["exp_name"]}.log'
     logger = get_logger(log_dir,log_file_name)
     logger.info(f'实验时间:{exp_info["exp_time"]}')
@@ -160,6 +161,12 @@ def pre_work(dataset_name, model_name, attack_name, r_seed):
     logger.info(f"随机种子:{r_seed}")
     logger.info(f'进程title:{proctitle}')
     return logger,exp_info
+
+def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_path):
+    asr, acc = eval_asr_acc(model,filtered_poisoned_testset,clean_testset,device)
+    torch.save(model.state_dict(), save_path)
+    return asr,acc
+
 
 def one_scene(dataset_name, model_name, attack_name, r_seed):
     # 实验开始计时
@@ -181,11 +188,18 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     # 种子微调
     freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
     last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,num_epoch=30,lr=1e-3,logger=logger)
+    save_path = os.path.join(exp_info["exp_dir"], "best_BD_model.pth")
+    asr,acc = eval_and_save(best_fine_tuned_mmodel, filtered_poisoned_testset, clean_testset, device, save_path)
+    logger.info(f"best_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+    save_path = os.path.join(exp_info["exp_dir"], "last_BD_model.pth")
+    asr,acc = eval_and_save(last_fine_tuned_model, filtered_poisoned_testset, clean_testset, device, save_path)
+    logger.info(f"last_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+
     # 样本选择
     choice_rate = 0.6
-    choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = chose_retrain_set(best_fine_tuned_mmodel, device, 
-                      dataset_name, model_name, attack_name, 
-                      choice_rate, poisoned_trainset, poisoned_ids)
+    class_rank = get_class_rank(dataset_name,model_name,attack_name)
+    choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = chose_retrain_set(
+        best_fine_tuned_mmodel, device, choice_rate, poisoned_trainset, poisoned_ids, class_rank=class_rank)
     logger.info(f"截取阈值:{choice_rate},中毒样本含量:{PN}/{len(choicedSet)}")
     # 防御重训练
     availableSet = ConcatDataset([seedSet,choicedSet])
@@ -193,7 +207,7 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     lr = 1e-3
     batch_size = 512
     weight_decay=1e-3
-    class_num = get_class_num(class_num)
+    class_num = get_class_num(dataset_name)
     label_counter,weights = get_class_weights(availableSet, class_num)
     logger.info(f"label_counter:{label_counter}")
     logger.info(f"class_weights:{weights}")
@@ -203,18 +217,13 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
         lr=lr, batch_size=batch_size, logger=logger, 
         lr_scheduler="CosineAnnealingLR",
         class_weight=class_weights,weight_decay=weight_decay)
-    asr, acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
-    logger.info(f"朴素监督防御后best_model:ASR:{asr}, ACC:{acc}")
-    asr, acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
-    logger.info(f"朴素监督防御后last_model:ASR:{asr}, ACC:{acc}")
-    save_file_name = "best_defense_model.pth"
-    save_file_path = os.path.join(exp_info["exp_dir"],save_file_name)
-    torch.save(best_defense_model.state_dict(), save_file_path)
-    logger.info(f"朴素监督防御后的best权重保存在:{save_file_path}")
-    save_file_name = "last_defense_model.pth"
-    save_file_path = os.path.join(exp_info["exp_dir"],save_file_name)
-    torch.save(last_defense_model.state_dict(), save_file_path)
-    logger.info(f"朴素监督防御后的last权重保存在:{save_file_path}")
+    save_path = os.path.join(exp_info["exp_dir"], "best_defense_model.pth")
+    asr,acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
+    logger.info(f"best_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+    save_path = os.path.join(exp_info["exp_dir"], "last_defense_model.pth")
+    asr,acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
+    logger.info(f"last_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+
     end_time = time.perf_counter()
     cost_time = end_time - start_time
     hours, minutes, seconds = convert_to_hms(cost_time)
@@ -225,7 +234,7 @@ if __name__ == "__main__":
     exp_root_dir = config["exp_root_dir"]
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
+    attack_name ="LabelConsistent" # BadNets, IAD, Refool, WaNet, LabelConsistent
     gpu_id = 0
     r_seed = 1
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)

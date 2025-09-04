@@ -89,7 +89,6 @@ def set_random_seed(random_seed):
     np.random.seed(random_seed)
     random.seed(random_seed)
 
-
 class Record(object):
     '''
     一个批次一个批次的记录数据
@@ -127,3 +126,10 @@ def my_excepthook(exctype, value, traceback):
     logging.critical("Uncaught exception", exc_info=(exctype, value, traceback))
     # 调用默认的异常钩子，以防程序意外退出
     sys.__excepthook__(exctype, value, traceback)
+
+
+def create_dir(dir_path):
+    if os.path.exists(dir_path):
+        pass
+    else:
+        os.makedirs(dir_path)

@@ -18,7 +18,7 @@ exp_root_dir = config["exp_root_dir"]
 dataset_name = "CIFAR10"
 attack_name = "LabelConsistent"
 
-model_name = "DenseNet"
+model_name = "VGG19"
 gpu_id = 0
 target_class = config["target_class"]
 global_random_seed = config["global_random_seed"]
@@ -29,29 +29,29 @@ experiment_name = "benign_train" if is_benign else "attack_train"
 def get_trigger():
     # 图片四角白点
     pattern = torch.zeros((32, 32), dtype=torch.uint8)
-    pattern[:3,:3] = 255
-    pattern[:3,-3:] = 255
-    pattern[-3:,:3] = 255
-    pattern[-3:,-3:] = 255
-    # pattern[-1, -1] = 255
-    # pattern[-1, -3] = 255
-    # pattern[-3, -1] = 255
-    # pattern[-2, -2] = 255
+    # pattern[:3,:3] = 255
+    # pattern[:3,-3:] = 255
+    # pattern[-3:,:3] = 255
+    # pattern[-3:,-3:] = 255
+    pattern[-1, -1] = 255
+    pattern[-1, -3] = 255
+    pattern[-3, -1] = 255
+    pattern[-2, -2] = 255
 
-    # pattern[0, -1] = 255
-    # pattern[1, -2] = 255
-    # pattern[2, -3] = 255
-    # pattern[2, -1] = 255
+    pattern[0, -1] = 255
+    pattern[1, -2] = 255
+    pattern[2, -3] = 255
+    pattern[2, -1] = 255
 
-    # pattern[0, 0] = 255
-    # pattern[1, 1] = 255
-    # pattern[2, 2] = 255
-    # pattern[2, 0] = 255
+    pattern[0, 0] = 255
+    pattern[1, 1] = 255
+    pattern[2, 2] = 255
+    pattern[2, 0] = 255
 
-    # pattern[-1, 0] = 255
-    # pattern[-1, 2] = 255
-    # pattern[-2, 1] = 255
-    # pattern[-3, 0] = 255
+    pattern[-1, 0] = 255
+    pattern[-1, 2] = 255
+    pattern[-2, 1] = 255
+    pattern[-3, 0] = 255
 
     weight = torch.zeros((32, 32), dtype=torch.float32)
     weight[:3,:3] = 1.0
@@ -89,7 +89,7 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
                  adv_model,adv_dataset_dir):
 
     pattern,weight = get_trigger()
-    eps = 8 # Maximum perturbation for PGD adversarial attack. Default: 8.
+    eps = 8 # Maximum perturbation for PGD adversarial attack. Default: 8. # 
     alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
     steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
     max_pixel = 255
@@ -151,7 +151,7 @@ def attack_main(model,trainset,testset):
     bd_res["pattern"] = pattern
     bd_res["pattern"] = weight
     save_path = os.path.join(
-        config.exp_root_dir, "ATTACK",
+        config["exp_root_dir"], "ATTACK",
         dataset_name, model_name, attack_name,
         "backdoor_data.pth")
     torch.save(bd_res, save_path)
@@ -160,7 +160,7 @@ def attack_main(model,trainset,testset):
 
 def main():
     # 获得受害模型
-    victim_model = get_model(model_name)
+    victim_model = get_model(dataset_name, model_name)
     # 获得数据集
     trainset,testset = get_clean_dataset(dataset_name,attack_name)
     if is_benign:

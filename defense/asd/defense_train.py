@@ -5,14 +5,14 @@ import os
 import time
 import torch
 import setproctitle
-from torch.utils.data import DataLoader,Dataset
+from torch.utils.data import DataLoader
 from defense.asd.core import defence_train
 from commonUtils import get_formattedDateTime,convert_to_hms,read_yaml,get_logger
 from modelEvalUtils import EvalModel
 from datasets.posisoned_dataset import get_all_dataset
 from mid_data_loader import get_backdoor_data
 from attack.models import get_model
-
+config = read_yaml("config.yaml")
 def main():
     # log_base_dir = "log/temp/"
     log_base_dir = f"log/{baseline_name}/"
@@ -245,21 +245,15 @@ def main():
     hours, minutes, seconds = convert_to_hms(cost_time)
     logger.info(f"评估防御结果结束，共耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
-
-
-
-
-
-
 if __name__ == "__main__":
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
     gpu_id = 1
-    rand_seed = 10
+    rand_seed = 1
     baseline_name = "ASD_new"
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
+    attack_name ="LabelConsistent" # BadNets, IAD, Refool, WaNet, LabelConsistent
     class_num = get_class_num(dataset_name)
     main()
 

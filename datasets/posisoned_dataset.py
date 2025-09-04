@@ -189,11 +189,14 @@ def get_LabelConsistent_trigger(dataset_name):
     if dataset_name == "CIFAR10" and "GTSRB":
         img_size = (32,32)
         pattern = torch.zeros(img_size, dtype=torch.uint8)
+
+        # 备用
         # pattern[:3,:3] = 255
         # pattern[:3,-3:] = 255
         # pattern[-3:,:3] = 255
         # pattern[-3:,-3:] = 255
 
+        # 正在用
         pattern[-1, -1] = 255
         pattern[-1, -3] = 255
         pattern[-3, -1] = 255
