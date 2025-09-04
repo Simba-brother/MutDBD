@@ -3,6 +3,10 @@ from torchvision import transforms
 import copy
 import random
 import torch
+from torchvision.transforms import functional as F
+import PIL
+import numpy as np
+from PIL import Image
 
 class AddTrigger:
     def __init__(self):
@@ -48,6 +52,61 @@ class AddDatasetFolderTrigger(AddTrigger):
         self.res = self.weight * self.pattern
         self.weight = 1.0 - self.weight
 
+    def __call__(self, img):
+        """Get the poisoned image.
+
+        Args:
+            img (PIL.Image.Image | numpy.ndarray | torch.Tensor): If img is numpy.ndarray or torch.Tensor, the shape should be (H, W, C) or (H, W).
+
+        Returns:
+            torch.Tensor: The poisoned image.
+        """
+
+        def add_trigger(img):
+            if img.dim() == 2:
+                img = img.unsqueeze(0)
+                img = self.add_trigger(img)
+                img = img.squeeze()
+            else:
+                img = self.add_trigger(img)
+            return img
+
+        if type(img) == PIL.Image.Image:
+            img = F.pil_to_tensor(img)
+            img = add_trigger(img)
+            # 1 x H x W
+            if img.size(0) == 1:
+                img = Image.fromarray(img.squeeze().numpy(), mode='L')
+            # 3 x H x W
+            elif img.size(0) == 3:
+                img = Image.fromarray(img.permute(1, 2, 0).numpy())
+            else:
+                raise ValueError("Unsupportable image shape.")
+            return img
+        elif type(img) == np.ndarray:
+            # H x W
+            if len(img.shape) == 2:
+                img = torch.from_numpy(img)
+                img = add_trigger(img)
+                img = img.numpy()
+            # H x W x C
+            else:
+                img = torch.from_numpy(img).permute(2, 0, 1)
+                img = add_trigger(img)
+                img = img.permute(1, 2, 0).numpy()
+            return img
+        elif type(img) == torch.Tensor:
+            # H x W
+            if img.dim() == 2:
+                img = add_trigger(img)
+            # H x W x C
+            else:
+                img = img.permute(2, 0, 1)
+                img = add_trigger(img)
+                img = img.permute(1, 2, 0)
+            return img
+        else:
+            raise TypeError('img should be PIL.Image.Image or numpy.ndarray or torch.Tensor. Got {}'.format(type(img)))
 
 class ModifyTarget:
     def __init__(self, y_target):
