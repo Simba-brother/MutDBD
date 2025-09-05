@@ -31,7 +31,7 @@ experiment_name = "benign_train" if is_benign else "attack_train"
 
 def get_trigger():
     # 图片四角白点
-    pattern = torch.zeros((32, 32), dtype=torch.uint8)
+    pattern = torch.zeros((img_size, img_size), dtype=torch.uint8)
     # pattern[:3,:3] = 255
     # pattern[:3,-3:] = 255
     # pattern[-3:,:3] = 255
@@ -56,7 +56,7 @@ def get_trigger():
     pattern[-2, 1] = 255
     pattern[-3, 0] = 255
 
-    weight = torch.zeros((32, 32), dtype=torch.float32)
+    weight = torch.zeros((img_size, img_size), dtype=torch.float32)
     weight[:3,:3] = 1.0
     weight[:3,-3:] = 1.0
     weight[-3:,:3] = 1.0
