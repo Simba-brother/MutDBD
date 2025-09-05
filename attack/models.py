@@ -19,11 +19,11 @@ def get_model(dataset_name, model_name):
         # victim model
         num_classes = 43
         if model_name == "ResNet18":
-            model = ResNet(num = 18, num_classes=num_classes)
+            model = ResNet(num=18, num_classes=num_classes)
         elif model_name == "VGG19":
             model = VGG("VGG19", num_classes)
         elif model_name == "DenseNet":
-            model = DenseNet121(43)
+            model = DenseNet121(num_classes)
     elif dataset_name == "ImageNet2012_subset":
         num_classes = 30
         if model_name == "ResNet18":

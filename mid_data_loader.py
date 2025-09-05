@@ -122,7 +122,12 @@ def get_labelConsistent_benign_model(dataset_name, model_name):
             "ResNet18":"benign_train_2025-07-16_13:17:28",
             "VGG19":"benign_train_2025-07-16_17:35:57",
             "DenseNet":"benign_train_2025-07-16_22:34:07"
-            }
+        },
+        "GTSRB":{
+            "ResNet18":"benign_train_2025-09-05_15:24:30",
+            "VGG19":"benign_train_2025-07-16_23:35:40",
+            "DenseNet":"benign_train_2025-07-16_23:35:55"
+        }
     }
     key_dir = LC_benign_record_dict[dataset_name][model_name]
     benign_state_dict_path = os.path.join(exp_root_dir,"ATTACK",dataset_name, model_name, "LabelConsistent", key_dir, "best_model.pth")

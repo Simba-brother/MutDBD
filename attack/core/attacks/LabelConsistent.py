@@ -597,7 +597,7 @@ class LabelConsistent(Base):
             # copy一份原始数据集的通用转换器
             backup_transform = deepcopy(dataset.transform)
             # 将数据集转换器设置为adv转换器
-            dataset.transform = adv_transform # Compose([transforms.ToTensor()])
+            dataset.transform = adv_transform
             # benign dataset数据加载器
             data_loader = DataLoader(
                 dataset,

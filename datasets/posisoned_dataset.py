@@ -186,7 +186,7 @@ def get_WaNet_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
 
 
 def get_LabelConsistent_trigger(dataset_name):
-    if dataset_name == "CIFAR10" and "GTSRB":
+    if dataset_name in ["CIFAR10","GTSRB"]:
         img_size = (32,32)
         pattern = torch.zeros(img_size, dtype=torch.uint8)
 
@@ -243,18 +243,22 @@ def get_LabelConsistent_dataset(dataset_name:str, model_name:str,poisoned_ids:li
             target_transform=deepcopy(clean_train_dataset.target_transform),
             is_valid_file=None
         )
+    if dataset_name == "CIFAR10":
+        poisoned_transform_index = 0
+    elif dataset_name == "GTSRB":
+        poisoned_transform_index = 2
     poisoned_trainset = LabelConsistentPoisonedDatasetFolder_Trainset(target_adv_dataset,
                  poisoned_ids,
                  pattern,
                  weight,
-                 0)
+                 poisoned_transform_index)
     target_class = config["target_class"]
     poisoned_testset = LabelConsistentPoisonedDatasetFolder_Testset(clean_test_dataset,
                  config["target_class"],
                  1,
                  pattern,
                  weight,
-                 0,
+                 poisoned_transform_index,
                  0)
     filtered_ids = filter_dataset(clean_test_dataset,target_class)
     filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)

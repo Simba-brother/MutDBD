@@ -152,7 +152,7 @@ def pre_work(dataset_name, model_name, attack_name, r_seed):
     proctitle = f'{exp_info["exp_name"]}|{dataset_name}|{model_name}|{attack_name}|{r_seed}'
     setproctitle.setproctitle(proctitle)
     # 获得实验logger
-    log_dir = os.path.join("log","OurDefenseTrain",dataset_name,model_name,attack_name)
+    log_dir = os.path.join("log","OurDefenseTrain",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     log_file_name  = f'{exp_info["exp_name"]}.log'
     logger = get_logger(log_dir,log_file_name)
     logger.info(f'实验时间:{exp_info["exp_time"]}')
@@ -236,5 +236,5 @@ if __name__ == "__main__":
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
     attack_name ="LabelConsistent" # BadNets, IAD, Refool, WaNet, LabelConsistent
     gpu_id = 0
-    r_seed = 1
+    r_seed = 2
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
