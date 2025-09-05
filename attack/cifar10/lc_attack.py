@@ -18,7 +18,7 @@ exp_root_dir = config["exp_root_dir"]
 dataset_name = "CIFAR10"
 attack_name = "LabelConsistent"
 
-model_name = "VGG19"
+model_name = "DenseNet"
 gpu_id = 0
 target_class = config["target_class"]
 global_random_seed = config["global_random_seed"]

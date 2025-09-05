@@ -43,10 +43,10 @@ if __name__ == "__main__":
     dataset_name = "CIFAR10"
     model_name = "DenseNet"
     attack_name = "LabelConsistent"
-    acc = eval_LabelConsistent_benign_model(dataset_name, model_name)
-    print(f"bd_ACC:{acc}")
-    # bd_ASR, bd_ACC, be_ASR, be_ACC = eval_Backdoor_and_Benign_model_For_LabelConsistent(dataset_name, model_name)
-    # print(f"{dataset_name}|{model_name}|{attack_name}")
-    # print(f"bd_ASR:{bd_ASR},bd_ACC:{bd_ACC},be_ASR:{be_ASR},be_ACC:{be_ACC}")
+    # acc = eval_LabelConsistent_benign_model(dataset_name, model_name)
+    # print(f"be_ACC:{acc}")
+    bd_ASR, bd_ACC, be_ASR, be_ACC = eval_Backdoor_and_Benign_model_For_LabelConsistent(dataset_name, model_name)
+    print(f"{dataset_name}|{model_name}|{attack_name}")
+    print(f"bd_ASR:{bd_ASR},bd_ACC:{bd_ACC},be_ASR:{be_ASR},be_ACC:{be_ACC}")
     pass
 
