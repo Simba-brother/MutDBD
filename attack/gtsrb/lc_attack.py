@@ -92,16 +92,18 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
                  adv_model,adv_dataset_dir):
 
     pattern,weight = get_trigger()
-    eps = 8 # Maximum perturbation for PGD adversarial attack. Default: 8. # 
-    alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
-    steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
+    eps = 77 # Maximum perturbation for PGD adversarial attack. Default: 8. # 
+    alpha = 2 # Step size for PGD adversarial attack. Default: 1.5.
+    steps = 40 # Number of steps for PGD adversarial attack. Default: 100.
     max_pixel = 255
+    # attack = torchattacks.PGD(model, eps = 8/255, alpha = 1/255, steps=40, random_start=False)
+    print(f"eps:{eps},alpha:{alpha},steps:{steps}")
     attacker = LabelConsistent(
         train_dataset=trainset,
         test_dataset=testset,
         model=victim_model,
         adv_model=adv_model,
-        adv_dataset_dir=adv_dataset_dir,# os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
+        adv_dataset_dir=adv_dataset_dir, # os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset", f"eps{eps}_alpha{alpha}_steps{steps}_poisoned_rate{poisoned_rate}_seed{global_seed}"),
         loss=nn.CrossEntropyLoss(),
         y_target=attack_class,
         poisoned_rate=poisoned_rate,
@@ -133,7 +135,7 @@ def bengin_main(model,trainset,testset):
     return attacker.best_model
 
 def attack_main(model,trainset,testset):
-    poisoned_rate = 0.1
+    poisoned_rate = 0.5
     # 被对抗模型
     adv_model = copy.deepcopy(model)
     benign_state_dict = get_labelConsistent_benign_model(dataset_name,model_name)
@@ -163,6 +165,7 @@ def attack_main(model,trainset,testset):
     return bd_res
 
 def main():
+    setproctitle.setproctitle(f"{dataset_name}|{model_name}|{attack_name}|attack")
     # 获得受害模型
     victim_model = get_model(dataset_name, model_name)
     # 获得数据集

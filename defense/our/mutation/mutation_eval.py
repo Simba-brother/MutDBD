@@ -246,9 +246,9 @@ if __name__ == "__main__":
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
     dataset_name = "CIFAR10" # CIFAR10,GTSRB,ImageNet2012_subset
-    model_name = "ResNet18" # ResNet18,VGG19,DenseNet
+    model_name = "VGG19" # ResNet18,VGG19,DenseNet
     attack_name = "LabelConsistent" # BadNets,IAD,Refool,WaNet,LabelConsistent
-    gpu_id = 0
+    gpu_id = 1
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
     mutation_rate_list = [0.01, 0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
