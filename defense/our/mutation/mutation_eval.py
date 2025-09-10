@@ -246,7 +246,7 @@ if __name__ == "__main__":
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
     dataset_name = "CIFAR10" # CIFAR10,GTSRB,ImageNet2012_subset
-    model_name = "VGG19" # ResNet18,VGG19,DenseNet
+    model_name = "DenseNet" # ResNet18,VGG19,DenseNet
     attack_name = "LabelConsistent" # BadNets,IAD,Refool,WaNet,LabelConsistent
     gpu_id = 1
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 

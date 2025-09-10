@@ -86,7 +86,6 @@ def get_IAD_dataset(dataset_name:str, model_name:str,poisoned_ids):
     )
     # 投毒测试集
     filtered_ids = filter_dataset(clean_test_dataset,target_class)
-    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
     poisoned_testset =  IADPoisonedDatasetFolder(
         benign_dataset = clean_test_dataset,
         y_target = target_class,
@@ -143,7 +142,6 @@ def get_Refool_dataset(dataset_name:str, poisoned_ids:list):
         max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
 
     filtered_ids = filter_dataset(clean_test_dataset,target_class)
-    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
     poisoned_testset = RefoolPoisonedDatasetFolder(
         clean_test_dataset, 
         target_class, 
@@ -178,7 +176,6 @@ def get_WaNet_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
     target_class = 3
     poisoned_trainset = WaNetPoisonedDatasetFolder(clean_train_dataset,target_class, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
     filtered_ids = filter_dataset(clean_test_dataset,target_class)
-    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
     poisoned_testset = WaNetPoisonedDatasetFolder(clean_test_dataset,target_class,list(range(len(clean_test_dataset))),identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
 
     filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)

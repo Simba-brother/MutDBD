@@ -10,18 +10,17 @@ def draw_box(origin_data,save_path):
     '''origin_data:{m_rate:list}'''
     data = []
     for m_rate in origin_data.keys(): # [0.01,0.03,0.05,0.07,0.09,0.1]
-        data.append(origin_data[m_rate])
-
+        data.append([x*100 for x in origin_data[m_rate]])
     # 设置IEEE/Science风格的绘图参数
     plt.style.use(['science','ieee'])
     mpl.rcParams['font.family'] = 'Times New Roman'
     mpl.rcParams['mathtext.fontset'] = 'stix'
 
 
-    labels = ['1%', '3%', '5%', '7%', '9%', '10%']  # 横轴labels
+    labels = ['1\%', '3\%', '5\%', '7\%', '9\%', '10\%']
 
     # 创建图形和轴
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(3.5, 2.2))
 
     # 绘制箱线图
     boxplot = ax.boxplot(data, labels=labels, patch_artist=True, showmeans=True)
@@ -53,8 +52,8 @@ def draw_box(origin_data,save_path):
     #     ax.text(i+1, mean, f'{mean:.3f}', ha='center', va='top', fontsize=9, color='green', fontweight='bold')
 
     # 添加标签和标题
-    ax.set_xlabel('Mutation Rate', fontsize=14, fontweight='bold')
-    ax.set_ylabel('Rank Ratio', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Mutation Rate', fontsize=8, fontweight='bold')
+    ax.set_ylabel('Rank Percentiles(\%)', fontsize=8, fontweight='bold')
     # ax.set_title('Rank Ratio Distribution at Different Mutation Rates', fontsize=16, fontweight='bold')
 
     # 添加网格
@@ -65,13 +64,13 @@ def draw_box(origin_data,save_path):
 
     # 显示图形
     # plt.show()
-    plt.savefig(save_path)
+    plt.savefig(save_path,dpi=800)
 
 
 def draw_cutoff(CutOff_list,PN_rate_list,ASR_list,ACC_list, save_path):
     '''论文配图，讨论截取阈值对PN/ASR/ACC的影响'''
     # 设置Science期刊风格
-    # plt.style.use(['science','ieee'])
+    plt.style.use(['science','ieee'])
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.serif'] = ['Times New Roman']
     plt.rcParams['mathtext.fontset'] = 'stix'
@@ -83,15 +82,15 @@ def draw_cutoff(CutOff_list,PN_rate_list,ASR_list,ACC_list, save_path):
     ACC = ACC_list
 
     # 创建图形
-    fig, ax = plt.subplots(figsize=(4.0, 2.5))  # IEEE双栏标准宽度3.5英寸
+    fig, ax = plt.subplots(figsize=(3.5, 2.2))  # IEEE双栏标准宽度3.5英寸
     ax.grid(True, linestyle=':', alpha=0.7)
 
     # 绘制三条折线
-    line1, = ax.plot(thresholds, PN_rate, 'o-', color='#1f77b4', linewidth=1.2, markersize=4, 
+    line1, = ax.plot(thresholds, PN_rate, 'o-', color='#1f77b4', linewidth=1.5, markersize=4, 
                     markeredgecolor='w', markeredgewidth=0.3, label='PN Rate')
-    line2, = ax.plot(thresholds, ASR, 's--', color='#d62728', linewidth=1.2, markersize=4, 
+    line2, = ax.plot(thresholds, ASR, 's--', color='#d62728', linewidth=1.5, markersize=4, 
                     markeredgecolor='w', markeredgewidth=0.3, label='ASR')
-    line3, = ax.plot(thresholds, ACC, '^-.', color='#2ca02c', linewidth=1.2, markersize=4, 
+    line3, = ax.plot(thresholds, ACC, '^-.', color='#2ca02c', linewidth=1.5, markersize=4, 
                     markeredgecolor='w', markeredgewidth=0.3, label='ACC')
 
     # 设置坐标轴
@@ -100,7 +99,7 @@ def draw_cutoff(CutOff_list,PN_rate_list,ASR_list,ACC_list, save_path):
     ax.set_xlim(0.05, 1.05)
     ax.set_ylim(0, 1.05)
     ax.set_xticks(thresholds)
-    ax.set_xticklabels([f'{int(t*100)}%' for t in thresholds],rotation=-45)
+    ax.set_xticklabels([f'{int(t*100)}\%' for t in thresholds],rotation=-45)
     ax.yaxis.set_major_formatter(PercentFormatter(1.0))  # 将Y轴显示为百分比
 
     # 添加图例 - 调整位置和样式
