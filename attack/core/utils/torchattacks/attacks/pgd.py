@@ -43,7 +43,7 @@ class PGD(Attack):
         labels = labels.to(self.device)
         labels = self._transform_label(images, labels)
         loss = nn.CrossEntropyLoss()
-
+        
         adv_images = images.clone().detach()
 
         if self.random_start:

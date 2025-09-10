@@ -9,10 +9,11 @@ from torchvision.models import resnet18,vgg19,densenet121
 
 def get_model(dataset_name, model_name):
     if dataset_name == "CIFAR10":
+        num_classes = 10
         if model_name == "ResNet18":
-            model = ResNet(num=18,num_classes=10)
+            model = ResNet(num=18,num_classes=num_classes)
         elif model_name == "VGG19":
-            model = VGG("VGG19")
+            model = VGG("VGG19", num_classes)
         elif model_name == "DenseNet":
             model = densenet_cifar()
     elif dataset_name == "GTSRB":

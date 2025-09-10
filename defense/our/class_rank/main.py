@@ -223,7 +223,7 @@ if __name__ == "__main__":
     # model_name_list = config["model_name_list"]
     # attack_name_list = config["attack_name_list"]
     dataset_name = "CIFAR10"
-    model_name = "ResNet18"
+    model_name = "VGG19"
     attack_name = "LabelConsistent"
     mutation_rate = 0.01
     target_class = config["target_class"]

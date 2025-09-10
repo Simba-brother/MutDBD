@@ -1,2 +1,18 @@
   0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [2:59:19<11:57:17, 10759.36s/it] 40%|████      | 2/5 [3:00:25<3:43:27, 4469.07s/it]   60%|██████    | 3/5 [3:01:19<1:21:46, 2453.14s/it] 80%|████████  | 4/5 [3:02:13<25:05, 1505.89s/it]  100%|██████████| 5/5 [3:03:50<00:00, 997.83s/it] 100%|██████████| 5/5 [3:03:50<00:00, 2206.03s/it]
   0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [25:26<1:41:45, 1526.47s/it] 40%|████      | 2/5 [26:18<32:57, 659.28s/it]    60%|██████    | 3/5 [27:11<12:44, 382.16s/it] 80%|████████  | 4/5 [28:00<04:10, 250.87s/it]100%|██████████| 5/5 [28:48<00:00, 177.68s/it]100%|██████████| 5/5 [28:48<00:00, 345.72s/it]
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/defense/our/defense_train.py", line 240, in <module>
+    one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
+  File "/home/mml/workspace/backdoor_detect/defense/our/defense_train.py", line 186, in one_scene
+    blank_model = get_model(dataset_name, model_name)
+  File "/home/mml/workspace/backdoor_detect/attack/models.py", line 15, in get_model
+    model = VGG("VGG19")
+TypeError: __init__() missing 1 required positional argument: 'class_num'
+Traceback (most recent call last):
+  File "/home/mml/workspace/backdoor_detect/defense/asd/defense_train.py", line 258, in <module>
+    main()
+  File "/home/mml/workspace/backdoor_detect/defense/asd/defense_train.py", line 34, in main
+    victim_model = get_model(dataset_name,model_name)
+  File "/home/mml/workspace/backdoor_detect/attack/models.py", line 15, in get_model
+    model = VGG("VGG19")
+TypeError: __init__() missing 1 required positional argument: 'class_num'

@@ -71,13 +71,13 @@ schedule = {
     'batch_size': 128,
     'num_workers': 4,
 
-    'lr': 0.1,
+    'lr': 0.01,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [150, 180],
+    'schedule': [20],
 
-    'epochs': 200,
+    'epochs': 50,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
@@ -92,11 +92,11 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
                  adv_model,adv_dataset_dir):
 
     pattern,weight = get_trigger()
-    eps = 77 # Maximum perturbation for PGD adversarial attack. Default: 8. # 
-    alpha = 2 # Step size for PGD adversarial attack. Default: 1.5.
-    steps = 40 # Number of steps for PGD adversarial attack. Default: 100.
+    eps = 16 # Maximum perturbation for PGD adversarial attack. Default: 8. # 
+    alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
+    steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
     max_pixel = 255
-    # attack = torchattacks.PGD(model, eps = 8/255, alpha = 1/255, steps=40, random_start=False)
+    # attack = torchattacks.PGD(model, eps = 0.3, alpha = 1/255, steps=40, random_start=False)
     print(f"eps:{eps},alpha:{alpha},steps:{steps}")
     attacker = LabelConsistent(
         train_dataset=trainset,
@@ -107,7 +107,7 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
         loss=nn.CrossEntropyLoss(),
         y_target=attack_class,
         poisoned_rate=poisoned_rate,
-        adv_transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((img_size,img_size))]),
+        adv_transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize((img_size,img_size)), transforms.ToTensor()]),
         pattern=pattern,
         weight=weight,
         eps=eps,
