@@ -519,8 +519,8 @@ class LabelConsistent(Base):
                 adv_model=adv_model,
                 adv_dataset_dir=adv_dataset_dir,
                 adv_transform=adv_transform,
-                eps=eps/max_pixel,
-                alpha=alpha/max_pixel,
+                eps=eps/max_pixel, # 16/255
+                alpha=alpha/max_pixel, # 1.5/255
                 steps=steps,
                 y_target=y_target,
                 poisoned_rate=poisoned_rate)
@@ -595,9 +595,13 @@ class LabelConsistent(Base):
             # adv model放入gpu
             adv_model = adv_model.to(device)
             # copy一份原始数据集的通用转换器
-            backup_transform = deepcopy(dataset.transform)
+            backup_transform = deepcopy(dataset.transform) 
+            '''transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.RandomHorizontalFlip(), # 在这之前加方块
+            transforms.ToTensor(),'''
             # 将数据集转换器设置为adv转换器
-            dataset.transform = adv_transform
+            dataset.transform = adv_transform  # transforms.Compose([transforms.ToPILImage(), transforms.Resize((img_size,img_size)), transforms.ToTensor()]),
             # benign dataset数据加载器
             data_loader = DataLoader(
                 dataset,
@@ -620,16 +624,16 @@ class LabelConsistent(Base):
             for batch in data_loader:
                 # Adversarially perturb image. Note that torchattacks will automatically
                 # move `img` and `target` to the gpu where the attacker.model is located.
-                batch_img = batch[0]
+                batch_img = batch[0] # 像素0-1
                 batch_label = batch[1]
                 batch_img = batch_img.to(device)
                 batch_label = batch_label.to(device)
                 # perturbed image
-                img = attacker(batch_img, batch_label)
+                img = attacker(batch_img, batch_label) # 像素0-255
                 # 原始图片
                 original_imgs.append(torch.round(batch_img * 255).to(dtype=torch.uint8).permute(0, 2, 3, 1).detach().cpu())
                 # perturbed 图片
-                perturbed_imgs.append(img.permute(0, 2, 3, 1).detach().cpu())
+                perturbed_imgs.append(img.permute(0, 2, 3, 1).detach().cpu()) # BCHW -> BHWC
                 # labels
                 targets.append(batch_label.cpu())
             # 数据集的transform复原
@@ -662,6 +666,7 @@ class LabelConsistent(Base):
                 cv2.imwrite(osp.join(adv_dataset_dir, 'whole_adv_dataset', str(target).zfill(2), str(index).zfill(8) + '.png'), perturbed_img)
 
                 if index in poisoned_set:
+                    # 也就是说target_adv_dataset下只有中毒的训练集才被替换成了对抗样本
                     cv2.imwrite(osp.join(adv_dataset_dir, 'target_adv_dataset', str(target).zfill(2), str(index).zfill(8) + '.png'), perturbed_img)
                 else:
                     cv2.imwrite(osp.join(adv_dataset_dir, 'target_adv_dataset', str(target).zfill(2), str(index).zfill(8) + '.png'), original_img)

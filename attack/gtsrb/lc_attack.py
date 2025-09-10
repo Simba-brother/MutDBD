@@ -12,8 +12,8 @@ from commonUtils import read_yaml,set_random_seed
 from attack.core.attacks import LabelConsistent
 from mid_data_loader import get_labelConsistent_benign_model
 from torchvision import transforms
-
-
+from torch.utils.data import DataLoader 
+from collections import Counter
 
 config = read_yaml("config.yaml")
 exp_root_dir = config["exp_root_dir"]
@@ -68,8 +68,8 @@ schedule = {
     'device': f'cuda:{gpu_id}',
 
     'benign_training': is_benign,
-    'batch_size': 128,
-    'num_workers': 4,
+    'batch_size': 256,
+    'num_workers': 8,
 
     'lr': 0.01,
     'momentum': 0.9,
@@ -77,7 +77,7 @@ schedule = {
     'gamma': 0.1,
     'schedule': [20],
 
-    'epochs': 50,
+    'epochs': 100,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,
@@ -93,7 +93,7 @@ def get_attacker(trainset,testset,victim_model,attack_class,poisoned_rate,
 
     pattern,weight = get_trigger()
     eps = 16 # Maximum perturbation for PGD adversarial attack. Default: 8. # 
-    alpha = 1.5 # Step size for PGD adversarial attack. Default: 1.5.
+    alpha = 3 # Step size for PGD adversarial attack. Default: 1.5.
     steps = 100 # Number of steps for PGD adversarial attack. Default: 100.
     max_pixel = 255
     # attack = torchattacks.PGD(model, eps = 0.3, alpha = 1/255, steps=40, random_start=False)
@@ -134,8 +134,27 @@ def bengin_main(model,trainset,testset):
     print("bengin model save in:", os.path.join(attacker.work_dir, "best_model.pth"))
     return attacker.best_model
 
+def check_labels(dataset):
+    
+    train_loader = DataLoader(
+            dataset,
+            batch_size=256,
+            shuffle=False,
+            num_workers=8,
+            drop_last=False,
+            pin_memory=True
+        )
+    labels = []
+    for batch in train_loader:
+        y = batch[1]
+        labels.extend(y.tolist())
+    print(Counter(labels))
+
+
+
+
 def attack_main(model,trainset,testset):
-    poisoned_rate = 0.5
+    poisoned_rate = 0.9
     # 被对抗模型
     adv_model = copy.deepcopy(model)
     benign_state_dict = get_labelConsistent_benign_model(dataset_name,model_name)
@@ -144,6 +163,15 @@ def attack_main(model,trainset,testset):
     adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, attack_name, "adv_dataset")
     attacker = get_attacker(trainset,testset,model,target_class,poisoned_rate,
                             adv_model,adv_dataset_dir)
+    # print("trainset")
+    # check_labels(trainset)
+    # print("testset")
+    # check_labels(testset)
+    # print("p_trainset")
+    # check_labels(attacker.poisoned_train_dataset)
+    # print("p_testset")
+    # check_labels(attacker.poisoned_test_dataset)
+
     attacker.train()
 
     print("LC攻击结束,开始保存攻击数据")

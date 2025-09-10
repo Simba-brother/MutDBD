@@ -30,16 +30,16 @@ class PGD(Attack):
 
     def __init__(self, model, eps=0.3, alpha=2 / 255, steps=40, random_start=False):
         super(PGD, self).__init__("PGD", model)
-        self.eps = eps
-        self.alpha = alpha
-        self.steps = steps
+        self.eps = eps # 16/255 = 0.06 对于归一化到 [0, 1] 的图像，常用 ε=0.03 或 0.05。
+        self.alpha = alpha # 1/255 = 0.005
+        self.steps = steps # 100
         self.random_start = random_start
 
     def forward(self, images, labels):
         r"""
         Overridden.
         """
-        images = images.to(self.device)
+        images = images.to(self.device) # 像素为0-1
         labels = labels.to(self.device)
         labels = self._transform_label(images, labels)
         loss = nn.CrossEntropyLoss()
@@ -52,7 +52,7 @@ class PGD(Attack):
                 -self.eps, self.eps
             )
             adv_images = torch.clamp(adv_images, min=0, max=1)
-
+        
         for i in range(self.steps):
             adv_images.requires_grad = True
             outputs = self.model(adv_images)
