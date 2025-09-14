@@ -64,8 +64,8 @@ def main():
 if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments/"
     dataset_name = "CIFAR10"
-    model_name = "ResNet18"
-    attack_name = "BadNets"
+    model_name = "VGG19"
+    attack_name = "LabelConsistent"
     # 获得backdoor_data
     backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name,attack_name, "backdoor_data.pth")
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")

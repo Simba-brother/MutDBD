@@ -17,7 +17,7 @@ from collections import Counter
 
 config = read_yaml("config.yaml")
 exp_root_dir = config["exp_root_dir"]
-dataset_name = "GTSRB"
+dataset_name = "ImageNet2012_subset"
 attack_name = "LabelConsistent"
 img_size  = 32
 model_name = "DenseNet"

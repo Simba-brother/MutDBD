@@ -23,6 +23,36 @@ class AddTrigger:
         """
         return (self.weight * img + self.res).type(torch.uint8)
     
+class AddDatasetFolderTrigger_2():
+    def __init__(self, trigger_path, trigger_size, img_size, alpha=0.5):
+        with open(trigger_path, "rb") as f:
+            trigger_ptn = Image.open(f).convert("RGB")
+        self.trigger_size = trigger_size
+        self.img_size = img_size
+        self.alpha = alpha
+        self.trigger_ptn = trigger_ptn.resize((trigger_size,trigger_size))
+
+    def __call__(self, img):
+        '''Get the poisoned image.
+
+        Args:
+            img (PIL.Image.Image | numpy.ndarray | torch.Tensor): If img is numpy.ndarray or torch.Tensor, the shape should be (H, W, C) or (H, W).
+
+        Returns:
+            torch.Tensor: The poisoned image.
+        '''
+        if type(img) == PIL.Image.Image: # HWC
+            pass
+        elif type(img) == np.ndarray: # HWC
+            img = Image.fromarray(img)
+        elif type(img) == torch.Tensor: # CHW
+            img = img.permute(1, 2, 0)
+            img = F.to_pil_image(img)
+        img = Image.blend(img,self.trigger_ptn, self.alpha) #  img * (1.0-alpha) + ptn * alpha
+        # img.paste(self.trigger_ptn, (self.img_size-self.trigger_size,self.img_size-self.trigger_size))
+        return img # PIL
+
+
 class AddDatasetFolderTrigger(AddTrigger):
     """Add watermarked trigger to DatasetFolder images.
 
@@ -121,10 +151,10 @@ class PoisonedDatasetFolder_Testset(DatasetFolder):
                  benign_dataset,
                  y_target,
                  poisoned_rate,
-                 pattern,
-                 weight,
-                 poisoned_transform_index,
-                 poisoned_target_transform_index):
+                 pattern=None,
+                 weight=None,
+                 poisoned_transform_index=2,
+                 poisoned_target_transform_index=0):
         super(PoisonedDatasetFolder_Testset, self).__init__(
             benign_dataset.root,
             benign_dataset.loader,
@@ -144,7 +174,13 @@ class PoisonedDatasetFolder_Testset(DatasetFolder):
             self.poisoned_transform = transforms.Compose([])
         else:
             self.poisoned_transform = copy.deepcopy(self.transform)
-        self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(pattern, weight))
+        if pattern is None and weight is None:
+            trigger_path = "attack/core/attacks/new_badnets_trigger.png"
+            trigger_size = 32
+            img_size = 32
+            self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger_2(trigger_path, trigger_size, img_size))
+        else:
+            self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(pattern, weight))
 
         # Modify labels
         if self.target_transform is None:
@@ -180,9 +216,9 @@ class PoisonedDatasetFolder_Trainset(DatasetFolder):
     def __init__(self,
                  target_adv_dataset,
                  poisoned_set,
-                 pattern,
-                 weight,
-                 poisoned_transform_index):
+                 pattern=None,
+                 weight=None,
+                 poisoned_transform_index=2):
         super(PoisonedDatasetFolder_Trainset, self).__init__(
             target_adv_dataset.root,
             target_adv_dataset.loader,
@@ -197,7 +233,13 @@ class PoisonedDatasetFolder_Trainset(DatasetFolder):
             self.poisoned_transform = transforms.Compose([])
         else:
             self.poisoned_transform = copy.deepcopy(self.transform)
-        self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(pattern, weight))
+        if pattern is None and weight is None:
+            trigger_path = "attack/core/attacks/new_badnets_trigger.png"
+            trigger_size = 32
+            img_size = 32
+            self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger_2(trigger_path, trigger_size, img_size))
+        else:
+            self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(pattern, weight))
 
     def __getitem__(self, index):
         """

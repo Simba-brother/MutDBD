@@ -53,12 +53,12 @@ if __name__ == "__main__":
     # 进程名称
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
-    dataset_name = "CIFAR10" # CIFAR10 GTSRB, ImageNet2012_subset
+    dataset_name = "GTSRB" # CIFAR10 GTSRB, ImageNet2012_subset
     model_name = "DenseNet" # ResNet18,VGG19,DenseNet
     attack_name = "LabelConsistent" # BadNets,IAD,Refool,WaNet, LabelConsistent
     class_num = get_class_num(dataset_name)
     # 变异率列表
-    rate_list = [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
+    rate_list = [0.01] # [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
     # 每个变异算子在每个变异率下生成的变异模型数量
     model_id_list = list(range(100))
     proctitle = f"Mutations|{dataset_name}|{model_name}|{attack_name}"

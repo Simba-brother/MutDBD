@@ -252,7 +252,7 @@ if __name__ == "__main__":
     rand_seed = 1
     baseline_name = "ASD_new"
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "VGG19" # ResNet18, VGG19, DenseNet
+    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
     attack_name ="LabelConsistent" # BadNets, IAD, Refool, WaNet, LabelConsistent
     class_num = get_class_num(dataset_name)
     main()

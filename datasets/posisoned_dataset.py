@@ -183,7 +183,7 @@ def get_WaNet_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
 
 
 def get_LabelConsistent_trigger(dataset_name):
-    if dataset_name in ["CIFAR10","GTSRB"]:
+    if dataset_name == "CIFAR10":
         img_size = (32,32)
         pattern = torch.zeros(img_size, dtype=torch.uint8)
 
@@ -220,6 +220,10 @@ def get_LabelConsistent_trigger(dataset_name):
         weight[-3:,:3] = 1.0
         weight[-3:,-3:] = 1.0
         return pattern,weight
+    elif dataset_name == "GTSRB":
+        return None,None
+
+
     
 def my_imread(file_path):
     return cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
