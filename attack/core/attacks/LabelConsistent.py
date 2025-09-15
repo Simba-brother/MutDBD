@@ -43,7 +43,7 @@ class AddTrigger:
 
 
 class AddDatasetFolderTrigger_2():
-    def __init__(self, trigger_path, trigger_size, img_size, alpha=0.5):
+    def __init__(self, trigger_path, trigger_size, img_size, alpha=0.2):
         with open(trigger_path, "rb") as f:
             trigger_ptn = Image.open(f).convert("RGB")
         self.trigger_size = trigger_size
@@ -69,6 +69,23 @@ class AddDatasetFolderTrigger_2():
             img = F.to_pil_image(img)
         img = Image.blend(img,self.trigger_ptn, self.alpha) #  img * (1.0-alpha) + ptn * alpha
         # img.paste(self.trigger_ptn, (self.img_size-self.trigger_size,self.img_size-self.trigger_size))
+
+        # # 获取img的尺寸
+        # width, height = img.size
+
+        # # 定义四个角的位置坐标（左上、右上、左下、右下）
+        # positions = [
+        #     (0, 0),  # 左上角
+        #     (width - 3, 0),  # 右上角
+        #     (0, height - 3),  # 左下角
+        #     (width - 3, height - 3)  # 右下角
+        # ]
+
+        # # 在每个位置粘贴img2
+        # for position in positions:
+        #     img.paste(self.trigger_ptn, position)
+
+
         return img # PIL
 
 class AddDatasetFolderTrigger(AddTrigger):
@@ -272,7 +289,7 @@ class PoisonedDatasetFolder(DatasetFolder):
             self.poisoned_transform = copy.deepcopy(self.transform)
         if pattern is  None and weight is None:
             trigger_path = "attack/core/attacks/new_badnets_trigger.png"
-            trigger_size = 32
+            trigger_size = 3
             img_size = 32
             self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger_2(trigger_path, trigger_size, img_size))
         else:
@@ -456,7 +473,7 @@ class CreatePoisonedTargetDataset(DatasetFolder):
             self.poisoned_transform = copy.deepcopy(self.transform)
         if pattern is None and weight is None:
             trigger_path = "attack/core/attacks/new_badnets_trigger.png"
-            trigger_size = 32
+            trigger_size = 3
             img_size = 32
             self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger_2(trigger_path, trigger_size, img_size))
         else:

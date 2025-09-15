@@ -138,14 +138,14 @@ def get_gtsrb_transform(attack_name):
             transforms.Resize((32, 32)),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
 
         test_transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((32, 32)),
             transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
     else:
         raise ValueError("Invalid input")
