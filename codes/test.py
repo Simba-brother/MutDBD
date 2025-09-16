@@ -372,7 +372,13 @@ def test41():
     res[1][2][3][4] = 5.0
     _res = defaultdict_to_dict(res)
     joblib.dump(_res,"temp_res.pkl")
+
+def test42():
+    def f():
+        return 1,2
+    a = f()
+    print(a)
 if __name__ == "__main__":
-    test41()
+    test42()
 
 

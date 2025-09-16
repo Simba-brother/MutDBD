@@ -14,9 +14,14 @@ from datasets.poisoned_folder.refool_folder import PoisonedDatasetFolder as Refo
 from datasets.poisoned_folder.wanet_folder import PoisonedDatasetFolder as WaNetPoisonedDatasetFolder
 from datasets.poisoned_folder.labelConsistent_folder import PoisonedDatasetFolder_Trainset as LabelConsistentPoisonedDatasetFolder_Trainset
 from datasets.poisoned_folder.labelConsistent_folder import PoisonedDatasetFolder_Testset as LabelConsistentPoisonedDatasetFolder_Testset
+from attack.gtsrb.lc_attack.poisoning import PoisonedDataset
 # 过滤掉原target class样本
 from datasets.filter import filter_dataset
-from torch.utils.data import Subset
+from torch.utils.data import Subset,ConcatDataset
+from datasets.utils import split_dataset
+from attack.models import get_model
+from mid_data_loader import get_labelConsistent_benign_model
+from attack.gtsrb.lc_attack.adv import get_adv_dataset
 # 用于获得触发器
 from mid_data_loader import (
     get_CIFAR10_IAD_attack_dict_path,
@@ -228,43 +233,67 @@ def get_LabelConsistent_trigger(dataset_name):
 def my_imread(file_path):
     return cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
 
+
+def constract_LC_dataset(clean_trainset,clean_testset,adv_ids, target_class,victim_model,device):
+    origin_subset,to_adv_subset = split_dataset(clean_trainset,adv_ids)
+    # 开始对抗
+    victim_model.to(device)
+    adv_subset,adv_asr,unsuccess_indices = get_adv_dataset(victim_model, to_adv_subset, device)
+    # 构建混和(干净+对抗)数据集
+    fusion_dataset = ConcatDataset([origin_subset,adv_subset])
+    M = len(origin_subset)
+    N = len(adv_subset)
+    new_poisoned_ids = list(range(M, M + N))
+    assert len(new_poisoned_ids) == len(adv_subset), "数据错误"
+    poisoned_trainset = PoisonedDataset(fusion_dataset,new_poisoned_ids)
+    poisoned_testset = PoisonedDataset(clean_testset,list(range(len(clean_testset))))
+    filtered_ids = filter_dataset(clean_testset,target_class)
+    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+    return poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset, new_poisoned_ids, adv_asr
+
+
 def get_LabelConsistent_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
     clean_train_dataset, clean_test_dataset = get_clean_dataset(dataset_name,"LabelConsistent")
     backdoor_data = get_backdoor_data(dataset_name,model_name,"LabelConsistent")
     poisoned_ids = backdoor_data["poisoned_ids"]
-    pattern,weight = get_LabelConsistent_trigger(dataset_name)
     config = read_yaml("config.yaml")
-    exp_root_dir = config["exp_root_dir"]
-    adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, "LabelConsistent", "adv_dataset")
-    target_adv_dataset = DatasetFolder(
-            root=os.path.join(adv_dataset_dir, 'target_adv_dataset'),
-            loader=my_imread,
-            extensions=('png',),
-            transform=deepcopy(clean_train_dataset.transform),
-            target_transform=deepcopy(clean_train_dataset.target_transform),
-            is_valid_file=None
-        )
-    if dataset_name == "CIFAR10":
-        poisoned_transform_index = 0
-    elif dataset_name == "GTSRB":
-        poisoned_transform_index = 2
-    poisoned_trainset = LabelConsistentPoisonedDatasetFolder_Trainset(target_adv_dataset,
-                 poisoned_ids,
-                 pattern,
-                 weight,
-                 poisoned_transform_index)
     target_class = config["target_class"]
-    poisoned_testset = LabelConsistentPoisonedDatasetFolder_Testset(clean_test_dataset,
-                 config["target_class"],
-                 1,
-                 pattern,
-                 weight,
-                 poisoned_transform_index,
-                 0)
-    filtered_ids = filter_dataset(clean_test_dataset,target_class)
-    filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
-    return poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset
-
+    if dataset_name == "CIFAR10":
+        pattern,weight = get_LabelConsistent_trigger(dataset_name)
+        exp_root_dir = config["exp_root_dir"]
+        adv_dataset_dir = os.path.join(exp_root_dir,"ATTACK", dataset_name, model_name, "LabelConsistent", "adv_dataset")
+        target_adv_dataset = DatasetFolder(
+                root=os.path.join(adv_dataset_dir, 'target_adv_dataset'),
+                loader=my_imread,
+                extensions=('png',),
+                transform=deepcopy(clean_train_dataset.transform),
+                target_transform=deepcopy(clean_train_dataset.target_transform),
+                is_valid_file=None
+            )
+        poisoned_transform_index = 0
+        poisoned_trainset = LabelConsistentPoisonedDatasetFolder_Trainset(target_adv_dataset,
+                    poisoned_ids,
+                    pattern,
+                    weight,
+                    poisoned_transform_index)
+        poisoned_testset = LabelConsistentPoisonedDatasetFolder_Testset(clean_test_dataset,
+                    config["target_class"],
+                    1,
+                    pattern,
+                    weight,
+                    poisoned_transform_index,
+                    0)
+        filtered_ids = filter_dataset(clean_test_dataset,target_class)
+        filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
+        return poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset
+    elif dataset_name == "GTSRB":
+        benign_state_dict = get_labelConsistent_benign_model(dataset_name,model_name)
+        victim_model = get_model(dataset_name, model_name)
+        victim_model.load_state_dict(benign_state_dict)
+        device = torch.device("cuda:0")
+        poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset, new_poisoned_ids, adv_asr = constract_LC_dataset(clean_train_dataset,clean_test_dataset, poisoned_ids, target_class,victim_model,device)
+        return poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset, new_poisoned_ids,adv_asr
+        
 
 
 def get_all_dataset(dataset_name:str, model_name:str, attack_name:str, poisoned_ids):

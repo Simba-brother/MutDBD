@@ -9,7 +9,7 @@ import setproctitle
 import pandas as pd
 import joblib
 from modelEvalUtils import EvalModel
-from datasets.utils import ExtractDataset
+from datasets.utils import ExtractDataset,ExtractDataset_NoPoisonedFlag
 from commonUtils import read_yaml
 from datasets.posisoned_dataset import get_all_dataset
 
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
     dataset_name = "GTSRB" # CIFAR10,GTSRB,ImageNet2012_subset
-    model_name = "DenseNet" # ResNet18,VGG19,DenseNet
+    model_name = "ResNet18" # ResNet18,VGG19,DenseNet
     attack_name = "LabelConsistent" # BadNets,IAD,Refool,WaNet,LabelConsistent
     gpu_id = 0
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
@@ -280,9 +280,14 @@ if __name__ == "__main__":
         backdoor_model = backdoor_data["backdoor_model"]
         backdoor_model_origin = copy.deepcopy(backdoor_model)
         poisoned_ids = backdoor_data["poisoned_ids"]
-        poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
-        # 花点时间预抽取下中毒训练集，为了加速评估
-        poisoned_trainset = ExtractDataset(poisoned_trainset)
+        if dataset_name == "CIFAR10":
+            poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+            poisoned_trainset = ExtractDataset_NoPoisonedFlag(poisoned_trainset)
+        elif dataset_name == "GTSRB":
+            poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset, new_poisoned_ids,adv_asr = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+            logging.debug(f"对抗攻击成功率:{adv_asr}")
+            # 花点时间预抽取下中毒训练集，为了加速评估
+            poisoned_trainset = ExtractDataset_NoPoisonedFlag(poisoned_trainset)
         logging.debug(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")
         main(f"{sub_exp_name}",save_format="csv")
         logging.debug("End")

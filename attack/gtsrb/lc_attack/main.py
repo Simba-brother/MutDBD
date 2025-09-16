@@ -7,6 +7,13 @@ from torch.utils.data import DataLoader
 from torch import nn
 from modelEvalUtils import EvalModel
 from tqdm import tqdm
+import random
+from custom_dataset import CustomImageDataset
+from torch.utils.data import Subset, ConcatDataset
+from poisoning import PoisonedDataset
+from trainer import NeuralNetworkTrainer
+from adv import construt_fusion_dataset
+import os
 # 读取原始数据集
 dataset_name = "GTSRB"
 attack_name = "LabelConsistent"
@@ -24,51 +31,68 @@ victim_model.to(device)
 # 评估一下对抗前模型性能
 em = EvalModel(victim_model,clean_trainset,device,batch_size=512, num_workers=8)
 acc_clean = em.eval_acc()
-print(f"acc_clean:{acc_clean}")
+print(f"模型在clean_trainset上的acc:{acc_clean}")
 
-# 数据加载器
-batch_size = 128
-data_loader = DataLoader(
-    clean_trainset,
-    batch_size=batch_size,
-    shuffle=False, # importent 
-    num_workers=4,
+# 开始对抗攻击
+target_class = 3
+percent = 0.1
+fusion_dataset,selected_indices,adv_indices = construt_fusion_dataset(victim_model,clean_trainset,device,3,0.1)
+# 包装投毒数据集
+poisoned_trainset = PoisonedDataset(fusion_dataset,adv_indices)
+poisoned_testset = PoisonedDataset(clean_testset,list(range(len(clean_testset))))
+
+# 创建训练器
+trainer = NeuralNetworkTrainer(
+    model=victim_model,
+    device = device,
+    init_lr = 0.01,
+    experiment_name="gtsrb_resnet18"
+)
+
+poisoned_trainset_loader = DataLoader(
+    poisoned_trainset,
+    batch_size=128,
+    shuffle=True,
+    num_workers=1,
     drop_last=False,
     pin_memory=True
 )
-loss_fn = nn.CrossEntropyLoss()
-steps = 100
-alpha = 0.01
-epsilon = 0.3 # 0.3
-# 开始对抗攻击
-pgd = PGD(victim_model,loss_fn,steps,alpha,epsilon)
-success_num = 0 
-total = 0
-all_adv_X = []
-all_labels = []
-all_pred_labels = []
-for batch_id, batch in enumerate(tqdm(data_loader,desc="Processing batches")):
-    X = batch[0].to(device)
-    Y = batch[1].to(device)
-    total += X.shape[0]
-    adv_X = pgd.perturb(X,Y,device)
-    with torch.no_grad():
-        outputs = victim_model(adv_X)
-        pred_Y = torch.argmax(outputs, dim=1)
-        all_adv_X.append(adv_X)
-        all_labels.append(Y)
-        all_pred_labels.append(pred_Y)
-        success_num += (pred_Y != Y).sum()
-combined_adv_X = torch.cat(all_adv_X,dim=0)
-combined_labels = torch.cat(all_labels,dim=0)
-combined_pred_labels = torch.cat(all_pred_labels,dim=0)
 
-mapping_list = (combined_labels == combined_pred_labels).tolist()
-# 获取所有 True 值的索引
-unsuccess_indices = set([i for i, value in enumerate(mapping_list) if value is True])
-asr = round(success_num.item()/total,4)
-print(f"asr:{asr}")
-print(f"unsuccess_indices_nums:{len(unsuccess_indices)}")
+
+poisoned_testset_loader = DataLoader(
+    poisoned_testset,
+    batch_size=128,
+    shuffle=False,
+    num_workers=8,
+    drop_last=False,
+    pin_memory=True
+)
+
+# 训练模型
+history = trainer.fit(
+    train_loader=poisoned_trainset_loader,
+    val_loader=poisoned_testset_loader,  # 这里用测试集作为验证集，实际应用中应使用单独的验证集
+    epochs=50,
+    early_stopping_patience=3,
+    save_best=True
+)
+
+exp_root_dir = "/data/mml/backdoor_detect/experiments"
+backdoor_data = {}
+backdoor_data["backdoor_model"] = trainer.model
+backdoor_data["poisoned_ids"]=selected_indices
+save_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name, attack_name,"backdoor_data.pth")
+torch.save(backdoor_data, save_path)
+print(f"LabelConsistent攻击完成,数据被存入{save_path}")
+
+
+
+
+
+
+
+
+
 
 
 

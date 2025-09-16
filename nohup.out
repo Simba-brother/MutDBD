@@ -1,21 +1,1 @@
-  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [2:59:19<11:57:17, 10759.36s/it] 40%|████      | 2/5 [3:00:25<3:43:27, 4469.07s/it]   60%|██████    | 3/5 [3:01:19<1:21:46, 2453.14s/it] 80%|████████  | 4/5 [3:02:13<25:05, 1505.89s/it]  100%|██████████| 5/5 [3:03:50<00:00, 997.83s/it] 100%|██████████| 5/5 [3:03:50<00:00, 2206.03s/it]
-  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [25:26<1:41:45, 1526.47s/it] 40%|████      | 2/5 [26:18<32:57, 659.28s/it]    60%|██████    | 3/5 [27:11<12:44, 382.16s/it] 80%|████████  | 4/5 [28:00<04:10, 250.87s/it]100%|██████████| 5/5 [28:48<00:00, 177.68s/it]100%|██████████| 5/5 [28:48<00:00, 345.72s/it]
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/defense/our/defense_train.py", line 240, in <module>
-    one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
-  File "/home/mml/workspace/backdoor_detect/defense/our/defense_train.py", line 186, in one_scene
-    blank_model = get_model(dataset_name, model_name)
-  File "/home/mml/workspace/backdoor_detect/attack/models.py", line 15, in get_model
-    model = VGG("VGG19")
-TypeError: __init__() missing 1 required positional argument: 'class_num'
-Traceback (most recent call last):
-  File "/home/mml/workspace/backdoor_detect/defense/asd/defense_train.py", line 258, in <module>
-    main()
-  File "/home/mml/workspace/backdoor_detect/defense/asd/defense_train.py", line 34, in main
-    victim_model = get_model(dataset_name,model_name)
-  File "/home/mml/workspace/backdoor_detect/attack/models.py", line 15, in get_model
-    model = VGG("VGG19")
-TypeError: __init__() missing 1 required positional argument: 'class_num'
-  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [03:42<14:49, 222.35s/it] 40%|████      | 2/5 [03:48<04:45, 95.01s/it]  60%|██████    | 3/5 [03:53<01:48, 54.13s/it] 80%|████████  | 4/5 [03:59<00:34, 34.90s/it]100%|██████████| 5/5 [04:04<00:00, 24.35s/it]100%|██████████| 5/5 [04:04<00:00, 48.96s/it]
-  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [07:02<28:09, 422.31s/it] 40%|████      | 2/5 [07:11<08:57, 179.12s/it] 60%|██████    | 3/5 [07:19<03:22, 101.21s/it] 80%|████████  | 4/5 [07:28<01:04, 64.56s/it] 100%|██████████| 5/5 [07:36<00:00, 44.32s/it]100%|██████████| 5/5 [07:36<00:00, 91.30s/it]
-  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [06:28<25:55, 388.91s/it] 40%|████      | 2/5 [06:39<08:19, 166.46s/it] 60%|██████    | 3/5 [06:51<03:11, 95.65s/it]  80%|████████  | 4/5 [07:01<01:02, 62.04s/it]100%|██████████| 5/5 [07:11<00:00, 43.37s/it]100%|██████████| 5/5 [07:11<00:00, 86.36s/it]
+对抗攻击中:   0%|          | 0/2 [00:00<?, ?it/s]对抗攻击中:  50%|█████     | 1/2 [00:02<00:02,  2.13s/it]对抗攻击中: 100%|██████████| 2/2 [00:03<00:00,  1.76s/it]对抗攻击中: 100%|██████████| 2/2 [00:03<00:00,  1.83s/it]
