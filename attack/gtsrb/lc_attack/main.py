@@ -1,3 +1,4 @@
+import os
 import torch
 from datasets.clean_dataset import get_clean_dataset
 from attack.models import get_model
@@ -5,7 +6,7 @@ from mid_data_loader import get_labelConsistent_benign_model
 from pgd import PGD
 from torch.utils.data import DataLoader
 from torch import nn
-from modelEvalUtils import EvalModel
+from modelEvalUtils import EvalModel,eval_asr_acc
 from tqdm import tqdm
 import random
 from custom_dataset import CustomImageDataset
@@ -13,7 +14,8 @@ from torch.utils.data import Subset, ConcatDataset
 from poisoning import PoisonedDataset
 from trainer import NeuralNetworkTrainer
 from adv import construt_fusion_dataset
-import os
+from datasets.utils import check_labels
+
 # 读取原始数据集
 dataset_name = "GTSRB"
 attack_name = "LabelConsistent"
@@ -35,12 +37,14 @@ print(f"模型在clean_trainset上的acc:{acc_clean}")
 
 # 开始对抗攻击
 target_class = 3
-percent = 0.1
-fusion_dataset,selected_indices,adv_indices = construt_fusion_dataset(victim_model,clean_trainset,device,3,0.1)
+percent = 0.8
+fusion_dataset,selected_indices,adv_indices = construt_fusion_dataset(victim_model,clean_trainset,device,target_class,percent)
 # 包装投毒数据集
-poisoned_trainset = PoisonedDataset(fusion_dataset,adv_indices)
-poisoned_testset = PoisonedDataset(clean_testset,list(range(len(clean_testset))))
+poisoned_trainset = PoisonedDataset(fusion_dataset,adv_indices, target_class, "train")
+poisoned_testset = PoisonedDataset(clean_testset,list(range(len(clean_testset))), target_class, "test")
 
+check_labels(poisoned_trainset)
+check_labels(poisoned_testset)
 # 创建训练器
 trainer = NeuralNetworkTrainer(
     model=victim_model,
@@ -53,7 +57,7 @@ poisoned_trainset_loader = DataLoader(
     poisoned_trainset,
     batch_size=128,
     shuffle=True,
-    num_workers=1,
+    num_workers=8,
     drop_last=False,
     pin_memory=True
 )
@@ -77,6 +81,8 @@ history = trainer.fit(
     save_best=True
 )
 
+asr, acc = eval_asr_acc(trainer.model,poisoned_testset,clean_testset,device)
+print(f"ASR:{asr},ACC:{acc}")
 exp_root_dir = "/data/mml/backdoor_detect/experiments"
 backdoor_data = {}
 backdoor_data["backdoor_model"] = trainer.model

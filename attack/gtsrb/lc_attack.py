@@ -30,54 +30,36 @@ set_random_seed(global_random_seed)
 experiment_name = "benign_train" if is_benign else "attack_train"
 
 def get_trigger():
-    # 图片四角白点
-    pattern = torch.zeros((img_size, img_size), dtype=torch.uint8)
-    # pattern[:3,:3] = 255
-    # pattern[:3,-3:] = 255
-    # pattern[-3:,:3] = 255
-    # pattern[-3:,-3:] = 255
-    pattern[-1, -1] = 255
-    pattern[-1, -3] = 255
-    pattern[-3, -1] = 255
-    pattern[-2, -2] = 255
+    pattern = torch.zeros((32, 32), dtype=torch.uint8)
 
-    pattern[0, -1] = 255
-    pattern[1, -2] = 255
-    pattern[2, -3] = 255
-    pattern[2, -1] = 255
+    k = 3 
 
-    pattern[0, 0] = 255
-    pattern[1, 1] = 255
-    pattern[2, 2] = 255
-    pattern[2, 0] = 255
+    pattern[:k,:k] = 255
+    pattern[:k,-k:] = 255
+    pattern[-k:,:k] = 255
+    pattern[-k:,-k:] = 255
 
-    pattern[-1, 0] = 255
-    pattern[-1, 2] = 255
-    pattern[-2, 1] = 255
-    pattern[-3, 0] = 255
-
-    weight = torch.zeros((img_size, img_size), dtype=torch.float32)
-    weight[:3,:3] = 1.0
-    weight[:3,-3:] = 1.0
-    weight[-3:,:3] = 1.0
-    weight[-3:,-3:] = 1.0
-    return pattern,weight
+    weight = torch.zeros((32, 32), dtype=torch.float32)
+    weight[:k,:k] = 1
+    weight[:k,-k:] = 1
+    weight[-k:,:k] = 1
+    weight[-k:,-k:] = 1
 
 
 schedule = {
     'device': f'cuda:{gpu_id}',
 
-    'benign_training': is_benign,
+    'benign_training': False,
     'batch_size': 256,
     'num_workers': 8,
 
-    'lr': 0.01,
+    'lr': 0.1,
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [20],
+    'schedule': [50,100,150, 180], # [50,100,150, 180], # [20],
 
-    'epochs': 50,
+    'epochs': 200, # 200, # 50,
 
     'log_iteration_interval': 100,
     'test_epoch_interval': 10,

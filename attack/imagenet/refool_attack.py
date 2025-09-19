@@ -5,7 +5,7 @@ import torch.nn as nn
 from attack.core.attacks import Refool
 import setproctitle
 from commonUtils import read_yaml
-from attack.random_util import set_random_seed
+from commonUtils import set_random_seed
 from attack.models import get_model
 from datasets.clean_dataset import get_clean_dataset
 from attack.refool_util import get_reflection_images
@@ -14,7 +14,7 @@ config = read_yaml("config.yaml")
 global_random_seed = config["global_random_seed"]
 set_random_seed(global_random_seed)
 dataset_name = "ImageNet2012_subset"
-model_name = "ResNet18"
+model_name = "VGG19"
 attack_name = "Refool"
 target_class = config["target_class"]
 poisoned_rate = config["poisoned_rate"]

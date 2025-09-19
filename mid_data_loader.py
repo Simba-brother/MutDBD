@@ -124,7 +124,7 @@ def get_labelConsistent_benign_model(dataset_name, model_name):
             "DenseNet":"benign_train_2025-07-16_22:34:07"
         },
         "GTSRB":{
-            "ResNet18":"benign_train_2025-09-10_14:22:49",
+            "ResNet18":"benign_model",
             "VGG19":"benign_train_2025-09-11_11:21:10",
             "DenseNet":"benign_train_2025-09-11_11:23:15" 
         }

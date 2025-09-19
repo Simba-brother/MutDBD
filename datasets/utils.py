@@ -1,5 +1,7 @@
 from torch.utils.data import Dataset
 from torch.utils.data import Subset, ConcatDataset
+from torch.utils.data import DataLoader
+from collections import Counter
 
 class ExtractDataset(Dataset):
     '''
@@ -24,8 +26,6 @@ class ExtractDataset(Dataset):
         sample,label,isPoisoned=self.new_dataset[index]
         return sample,label,isPoisoned
 
-
-
 class ExtractDataset_NoPoisonedFlag(Dataset):
     '''
     抽取数据集到一个list中,目的是加快速度
@@ -48,10 +48,25 @@ class ExtractDataset_NoPoisonedFlag(Dataset):
     def __getitem__(self, index):
         sample,label=self.new_dataset[index]
         return sample,label
-    
+
 def split_dataset(clean_trainset, selected_indices):
     all_indices = set(range(len(clean_trainset)))
     indices_to_keep = list(all_indices-set(selected_indices))
     origin_subset = Subset(clean_trainset, indices_to_keep)
     to_adv_subset = Subset(clean_trainset, selected_indices)
     return origin_subset,to_adv_subset
+
+def check_labels(dataset):
+    train_loader = DataLoader(
+            dataset,
+            batch_size=256,
+            shuffle=False,
+            num_workers=8,
+            drop_last=False,
+            pin_memory=True
+        )
+    labels = []
+    for batch in train_loader:
+        y = batch[1]
+        labels.extend(y.tolist())
+    print(Counter(labels))

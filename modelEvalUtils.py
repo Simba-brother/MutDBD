@@ -48,6 +48,9 @@ class EvalModel(object):
                 X = X.to(self.device)
                 Y = Y.to(self.device)
                 preds = self.model(X)
+                # _, predicted = preds.max(1)
+                # total_num += Y.size(0)
+                # correct_num += predicted.eq(Y).sum().item()
                 correct_num += (torch.argmax(preds, dim=1) == Y).sum()
                 total_num += X.shape[0]
         acc = correct_num/total_num

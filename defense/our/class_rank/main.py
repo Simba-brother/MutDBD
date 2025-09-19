@@ -223,11 +223,11 @@ if __name__ == "__main__":
     # model_name_list = config["model_name_list"]
     # attack_name_list = config["attack_name_list"]
     dataset_name = "GTSRB"
-    model_name = "DenseNet"
+    model_name = "ResNet18"
     attack_name = "LabelConsistent"
     mutation_rate = 0.01
     target_class = config["target_class"]
-    main_scene(dataset_name,model_name,attack_name,mutation_rate=0.01, metric="FP")
+    # main_scene(dataset_name,model_name,attack_name,mutation_rate=0.01, metric="FP")
     look_res()
     print("END")
 

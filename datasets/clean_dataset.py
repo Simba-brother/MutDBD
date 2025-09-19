@@ -16,10 +16,12 @@ def get_clean_dataset(dataset_name,attack_name):
         dataset_dir = config[f"{dataset_name}_dataset_dir"]
         extensions = ('png',)
         train_transform, test_transform = get_gtsrb_transform(attack_name)
-    elif dataset_name == "ImageNet":
+    elif dataset_name == "ImageNet2012_subset":
         dataset_dir = config["ImageNet2012_subset_dir"]
         extensions = ('jpeg',)
         train_transform, test_transform = get_imagenet_transform(attack_name)
+    else:
+        raise ValueError("Invalid input")
     trainset = DatasetFolder(
         root= os.path.join(dataset_dir, "train"), # 文件夹目录
         loader=cv2.imread, # ndarray

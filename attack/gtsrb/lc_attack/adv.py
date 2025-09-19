@@ -101,7 +101,7 @@ def construt_fusion_dataset(victim_model,clean_trainset,device,target_class,perc
 
     # 开始对抗
     adv_subset,adv_asr,unsuccess_indices = get_adv_dataset(victim_model, to_adv_subset, device)
-    print(f"对抗成功率:{adv_asr},对抗失败数据量/对抗总量:{len(unsuccess_indices)/len(to_adv_subset)}")
+    print(f"对抗成功率:{adv_asr},对抗失败数据量/对抗总量:{len(unsuccess_indices)}/{len(to_adv_subset)}")
 
     # 构建混和(干净+对抗)数据集
     fusion_dataset = ConcatDataset([origin_subset,adv_subset])

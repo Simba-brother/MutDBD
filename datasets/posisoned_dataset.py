@@ -71,7 +71,6 @@ def get_IAD_dataset(dataset_name:str, model_name:str,poisoned_ids):
         backdoor_data = get_backdoor_data(dataset_name,model_name,"IAD")
         modelG = Generator("ImageNet")
         modelM = Generator("ImageNet", out_channels=1)
-        backdoor_data = torch.load(backdoor_data, map_location="cpu")
         # # 在数据集转换组合transforms.Compose[]的最后进行中毒植入
         modelG.load_state_dict(backdoor_data["modelG"])
         modelM.load_state_dict(backdoor_data["modelM"])

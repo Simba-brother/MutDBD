@@ -127,7 +127,6 @@ def my_excepthook(exctype, value, traceback):
     # 调用默认的异常钩子，以防程序意外退出
     sys.__excepthook__(exctype, value, traceback)
 
-
 def create_dir(dir_path):
     if os.path.exists(dir_path):
         pass
