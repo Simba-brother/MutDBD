@@ -5,7 +5,7 @@ import torch.nn as nn
 from attack.core.attacks import Refool
 import setproctitle
 from commonUtils import read_yaml
-from attack.random_util import set_random_seed
+from commonUtils import set_random_seed
 from attack.models import get_model
 from datasets.clean_dataset import get_clean_dataset
 from attack.refool_util import get_reflection_images

@@ -5,8 +5,6 @@ from models.densenet import densenet_cifar,DenseNet121 # model = densenet_cifar(
 # ImageNet2012_subset
 import torch.nn as nn
 from torchvision.models import resnet18,vgg19,densenet121,VGG19_Weights,ResNet18_Weights,DenseNet121_Weights
-
-
 def get_model(dataset_name, model_name):
     if dataset_name == "CIFAR10":
         num_classes = 10

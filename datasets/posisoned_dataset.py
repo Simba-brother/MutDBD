@@ -22,6 +22,7 @@ from datasets.utils import split_dataset
 from attack.models import get_model
 from mid_data_loader import get_labelConsistent_benign_model
 from attack.gtsrb.lc_attack.adv import get_adv_dataset
+from attack.refool_util import get_reflection_images
 # 用于获得触发器
 from mid_data_loader import (
     get_CIFAR10_IAD_attack_dict_path,
@@ -125,6 +126,8 @@ def read_image(img_path, type=None):
 def get_Refool_dataset(dataset_name:str, poisoned_ids:list):
     clean_train_dataset, clean_test_dataset = get_clean_dataset(dataset_name,"Refool")
     # backdoor pattern
+    reflection_images = get_reflection_images()
+    '''
     reflection_images = []
     # URL：http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html#devkit
     # "/data/ganguanhao/datasets/VOCdevkit/VOC2012/JPEGImages/" # please replace this with path to your desired reflection set
@@ -133,23 +136,28 @@ def get_Refool_dataset(dataset_name:str, poisoned_ids:list):
     # reflection image dir下所有的img path
     reflection_image_path = os.listdir(reflection_data_dir)
     reflection_images = [read_image(os.path.join(reflection_data_dir,img_path)) for img_path in reflection_image_path[:200]]
+    '''
     # 中毒的数据集
     # 在transforms.Compose([])[:1](ToPIL)之后进行投毒
     target_class = 3
-
     if dataset_name == "CIFAR10":
         poisoned_transform_index=1
+        sigma = -1
+        alpha_b = -1
     elif dataset_name in ["GTSRB","ImageNet2012_subset"]:
         poisoned_transform_index=0
+        sigma = 5
+        alpha_b = 0.1
+        
 
     poisoned_trainset = RefoolPoisonedDatasetFolder(
         clean_train_dataset, 
         target_class, 
         poisoned_ids, 
         poisoned_transform_index=poisoned_transform_index, 
-        poisoned_target_transform_index=1, 
+        poisoned_target_transform_index=0, 
         reflection_cadidates=reflection_images,
-        max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
+        max_image_size=560, ghost_rate=0.49, alpha_b=alpha_b, offset=(0, 0), sigma=sigma, ghost_alpha=-1.)
 
     filtered_ids = filter_dataset(clean_test_dataset,target_class)
     poisoned_testset = RefoolPoisonedDatasetFolder(
@@ -157,9 +165,9 @@ def get_Refool_dataset(dataset_name:str, poisoned_ids:list):
         target_class, 
         list(range(len(clean_test_dataset))), 
         poisoned_transform_index=poisoned_transform_index, 
-        poisoned_target_transform_index=1, 
+        poisoned_target_transform_index=0, 
         reflection_cadidates=reflection_images,
-        max_image_size=560, ghost_rate=0.49, alpha_b=-1., offset=(0, 0), sigma=-1, ghost_alpha=-1.)
+        max_image_size=560, ghost_rate=0.49, alpha_b=alpha_b, offset=(0, 0), sigma=sigma, ghost_alpha=-1.)
     
     filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
     return  poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset
@@ -172,21 +180,28 @@ def get_WaNet_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
         dict_state = torch.load(attack_dict_path, map_location="cpu")
         identity_grid = dict_state["identity_grid"]
         noise_grid = dict_state["noise_grid"]
+        s = 0.5
     elif dataset_name == "GTSRB":
         attack_dict_path = get_GTSRB_WaNet_attack_dict_path(model_name)
         dict_state = torch.load(attack_dict_path, map_location="cpu")
         identity_grid = dict_state["identity_grid"]
         noise_grid = dict_state["noise_grid"]
+        s = 0.5
     elif dataset_name == "ImageNet2012_subset":
         backdoor_data = get_backdoor_data(dataset_name,model_name,"WaNet")
         # trigger
         identity_grid = backdoor_data["identity_grid"]
         noise_grid = backdoor_data["noise_grid"]
+        poisoned_transform_index = 0
+        poisoned_target_transform_index = 0
+        s = 1
     # 在最前面进行投毒
     target_class = 3
-    poisoned_trainset = WaNetPoisonedDatasetFolder(clean_train_dataset,target_class, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
+    poisoned_trainset = WaNetPoisonedDatasetFolder(
+        clean_train_dataset,target_class, poisoned_ids,identity_grid,noise_grid,noise=False,poisoned_transform_index=poisoned_transform_index,poisoned_target_transform_index=poisoned_target_transform_index,s=s)
     filtered_ids = filter_dataset(clean_test_dataset,target_class)
-    poisoned_testset = WaNetPoisonedDatasetFolder(clean_test_dataset,target_class,list(range(len(clean_test_dataset))),identity_grid,noise_grid,noise=False,poisoned_transform_index=-3,poisoned_target_transform_index=0)
+    poisoned_testset = WaNetPoisonedDatasetFolder(
+        clean_test_dataset,target_class,list(range(len(clean_test_dataset))),identity_grid,noise_grid,noise=False,poisoned_transform_index=poisoned_transform_index,poisoned_target_transform_index=poisoned_target_transform_index,s=s)
 
     filtered_poisoned_testset = Subset(poisoned_testset,filtered_ids)
     return poisoned_trainset, filtered_poisoned_testset, clean_train_dataset, clean_test_dataset

@@ -6,7 +6,7 @@ import torch
 from datasets.utils import check_labels
 dataset_name = "ImageNet2012_subset"
 model_name = "VGG19"
-attack_name = "BadNets"
+attack_name = "WaNet"
 
 # model = get_model(dataset_name,model_name)
 # model.load_state_dict(torch.load("models/gtsrb_resnet18/best_model_epoch_6.pth",map_location="cpu")["model_state_dict"])

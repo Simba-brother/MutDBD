@@ -13,7 +13,8 @@ class PoisonedDatasetFolder(DatasetFolder):
                  noise_grid,
                  noise,
                  poisoned_transform_index,
-                 poisoned_target_transform_index):
+                 poisoned_target_transform_index,
+                 s):
         super(PoisonedDatasetFolder, self).__init__(
             benign_dataset.root,
             benign_dataset.loader,
@@ -35,9 +36,9 @@ class PoisonedDatasetFolder(DatasetFolder):
         else:
             self.poisoned_transform = copy.deepcopy(self.transform)
             self.poisoned_transform_noise = copy.deepcopy(self.transform) # add noise
-        self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid,  noise=False))
+        self.poisoned_transform.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid, noise=False, s=s))
         #add noise transform
-        self.poisoned_transform_noise.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid,  noise=True))
+        self.poisoned_transform_noise.transforms.insert(poisoned_transform_index, AddDatasetFolderTrigger(identity_grid, noise_grid, noise=True, s=s))
         # Modify labels
         if self.target_transform is None:
             self.poisoned_target_transform = transforms.Compose([])
