@@ -36,7 +36,7 @@ refool= Refool(
     poisoned_target_transform_index= 0,
     schedule=None,
     seed=global_random_seed,
-    deterministic=True,
+    deterministic=False,
     reflection_candidates = reflection_images,
     max_image_size=560,
     ghost_rate=0.49, # default:0.49 焦点模糊比例+ghost比例 = 1.焦点模糊和ghost是refool攻击的2种模式

@@ -514,7 +514,7 @@ class WaNet(Base):
         self.poisoned_test_dataset = CreatePoisonedDataset(
             test_dataset,
             y_target,
-            1.0, # testset 全被污染！！！ 为评估ASR
+            1.0,
             identity_grid,
             noise_grid,
             noise,

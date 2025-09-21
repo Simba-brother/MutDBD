@@ -12,7 +12,7 @@ import random
 from custom_dataset import CustomImageDataset
 from torch.utils.data import Subset, ConcatDataset
 from poisoning import PoisonedDataset
-from trainer import NeuralNetworkTrainer
+from utils.trainer import NeuralNetworkTrainer
 from adv import construt_fusion_dataset
 from datasets.utils import check_labels
 

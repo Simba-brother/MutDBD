@@ -1,7 +1,3 @@
-'''
-This is the test code of poisoned training on GTSRB, MNIST, CIFAR10, using dataset class of torchvision.datasets.DatasetFolder, torchvision.datasets.MNIST, torchvision.datasets.CIFAR10.
-The attack method is WaNet.
-'''
 import os
 import setproctitle
 import torch
@@ -10,16 +6,17 @@ from attack.core.attacks import WaNet
 from commonUtils import read_yaml
 from datasets.clean_dataset import get_clean_dataset
 from attack.models import get_model
-from attack.random_util import set_random_seed
+from commonUtils import set_random_seed
+
 config = read_yaml("config.yaml")
 global_random_seed = config["global_random_seed"]
 set_random_seed(global_random_seed)
-dataset_name = "GTSRB"
+dataset_name = "ImageNet2012_subset"
 attack_name = "WaNet"
-model_name = "ResNet18"
-target_class = config["tareget_class"]
+model_name = "VGG19"
+target_class = config["target_class"]
 poisoned_rate = config["poisoned_rate"]
-gpu_id = 1
+gpu_id = 0
 clean_trainset,clean_testset = get_clean_dataset(dataset_name,attack_name)
 model = get_model(dataset_name,model_name)
 
@@ -41,9 +38,9 @@ def gen_grid(height, k):
     identity_grid = torch.stack((y, x), 2)[None, ...]  # 1*height*height*2
 
     return identity_grid, noise_grid
-
-identity_grid,noise_grid=gen_grid(224,128)
-
+k = 32
+identity_grid,noise_grid=gen_grid(224,k)
+print(f"K:{k}")
 wanet = WaNet(
     train_dataset=clean_trainset,
     test_dataset=clean_testset,
@@ -58,10 +55,11 @@ wanet = WaNet(
     poisoned_transform_test_index=0,
     poisoned_target_transform_index=0,
     seed=global_random_seed,
-    deterministic=True,
+    deterministic=False,
     s=1
 )
 exp_root_dir = config["exp_root_dir"]
+
 schedule = {
     'device': f'cuda:{gpu_id}',
 
@@ -74,7 +72,7 @@ schedule = {
     'momentum': 0.9,
     'weight_decay': 5e-4,
     'gamma': 0.1,
-    'schedule': [100, 150], # 在 150和180epoch时调整lr
+    'schedule': [150, 180], # 在 150和180epoch时调整lr
 
     'epochs': 200,
 

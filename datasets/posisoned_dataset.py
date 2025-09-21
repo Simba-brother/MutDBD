@@ -35,13 +35,19 @@ def get_BadNets_dataset(dataset_name, poisoned_ids):
     clean_train_dataset, clean_test_dataset = get_clean_dataset(dataset_name,"BadNets")
     if dataset_name in ["CIFAR10","GTSRB"]:
         img_size = (32, 32)
-    else:
+        pattern = torch.zeros(img_size, dtype=torch.uint8)
+        pattern[-3:, -3:] = 255 # 用于归一化前
+        weight = torch.zeros(img_size, dtype=torch.float32)
+        weight[-3:, -3:] = 1.0
+    elif dataset_name == "ImageNet2012_subset":
         img_size = (224, 224)
-    # backdoor pattern
-    pattern = torch.zeros(img_size, dtype=torch.uint8)
-    pattern[-3:, -3:] = 255 # 用于归一化前
-    weight = torch.zeros(img_size, dtype=torch.float32)
-    weight[-3:, -3:] = 1.0
+        pattern = torch.zeros(img_size, dtype=torch.uint8)
+        pattern[-3:, -3:] = 1 # 用于归一化后
+        weight = torch.zeros(img_size, dtype=torch.float32)
+        weight[-3:, -3:] = 1.0
+    else:
+        raise ValueError("数据集名称传入错误")
+    
     target_class = 3
     poisoned_trainset = BadNetsPoisonedDatasetFolder(clean_train_dataset,target_class,poisoned_ids,pattern, weight, -1, 0)
     poisoned_testset = BadNetsPoisonedDatasetFolder(clean_test_dataset,target_class,list(range(len(clean_test_dataset))),pattern, weight, -1, 0)

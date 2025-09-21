@@ -10,14 +10,14 @@ from attack.core.attacks import WaNet
 from commonUtils import read_yaml
 from datasets.clean_dataset import get_clean_dataset
 from attack.models import get_model
-from attack.random_util import set_random_seed
+from commonUtils import set_random_seed
 config = read_yaml("config.yaml")
 global_random_seed = config["global_random_seed"]
 set_random_seed(global_random_seed)
 dataset_name = "GTSRB"
 attack_name = "WaNet"
 model_name = "ResNet18"
-target_class = config["tareget_class"]
+target_class = config["target_class"]
 poisoned_rate = config["poisoned_rate"]
 gpu_id = 1
 clean_trainset,clean_testset = get_clean_dataset(dataset_name,attack_name)
@@ -50,8 +50,8 @@ wanet = WaNet(
     test_dataset=clean_testset,
     model=model,
     loss=nn.CrossEntropyLoss(),
-    y_target=config.target_class_idx,
-    poisoned_rate=config.poisoned_rate,
+    y_target=target_class,
+    poisoned_rate=poisoned_rate,
     identity_grid=identity_grid,
     noise_grid=noise_grid,
     noise=True,
