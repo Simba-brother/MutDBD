@@ -4,7 +4,7 @@ from datasets.posisoned_dataset import get_all_dataset
 from commonUtils import read_yaml
 import os
 import torch
-from attack.models import get_model
+from models.model_loader import get_model
 from modelEvalUtils import eval_asr_acc
 
 

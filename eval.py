@@ -2,7 +2,7 @@
 评估模型性能
 '''
 from commonUtils import read_yaml
-from attack.models import get_model
+from models.model_loader import get_model
 from datasets.clean_dataset import get_clean_dataset
 from modelEvalUtils import EvalModel
 import torch

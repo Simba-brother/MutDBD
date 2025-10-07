@@ -11,7 +11,7 @@ from commonUtils import get_formattedDateTime,convert_to_hms,read_yaml,get_logge
 from modelEvalUtils import EvalModel
 from datasets.posisoned_dataset import get_all_dataset
 from mid_data_loader import get_backdoor_data
-from attack.models import get_model
+from models.model_loader import get_model
 config = read_yaml("config.yaml")
 def main():
     # log_base_dir = "log/temp/"
@@ -27,6 +27,7 @@ def main():
     setproctitle.setproctitle(proctitle)
     logger.info(proctitle)
     logger.info(f"rand_seed:{rand_seed}")
+    logger.info("不冻结vgg19模型")
     # 加载后门攻击配套数据
     backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
     # backdoor_model = backdoor_data["backdoor_model"]

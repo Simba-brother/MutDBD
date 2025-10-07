@@ -6,7 +6,7 @@ import copy
 import torch
 import torch.nn as nn
 import setproctitle
-from attack.models import get_model
+from models.model_loader import get_model
 from datasets.clean_dataset import get_clean_dataset
 from commonUtils import read_yaml,set_random_seed
 from attack.core.attacks import LabelConsistent

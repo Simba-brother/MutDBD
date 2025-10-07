@@ -9,8 +9,8 @@ import torch.nn as nn
 from attack.core.attacks import WaNet
 from commonUtils import read_yaml
 from datasets.clean_dataset import get_clean_dataset
-from attack.models import get_model
-from attack.random_util import set_random_seed
+from models.model_loader import get_model
+from commonUtils import set_random_seed
 config = read_yaml("config.yaml")
 global_random_seed = config["global_random_seed"]
 set_random_seed(global_random_seed)

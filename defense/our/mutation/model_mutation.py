@@ -53,9 +53,9 @@ if __name__ == "__main__":
     # 进程名称
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
-    dataset_name = "GTSRB" # CIFAR10 GTSRB, ImageNet2012_subset
-    model_name = "ResNet18" # ResNet18,VGG19,DenseNet
-    attack_name = "LabelConsistent" # BadNets,IAD,Refool,WaNet, LabelConsistent
+    dataset_name = "ImageNet2012_subset" # CIFAR10 GTSRB, ImageNet2012_subset
+    model_name = "VGG19" # ResNet18,VGG19,DenseNet
+    attack_name = "BadNets" # BadNets,IAD,Refool,WaNet, LabelConsistent
     class_num = get_class_num(dataset_name)
     # 变异率列表
     rate_list = [0.01] # [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]

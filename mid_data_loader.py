@@ -84,7 +84,18 @@ def get_backdoor_data(dataset_name,model_name,attack_name):
             "backdoor_data.pth"
     )
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
+
     return backdoor_data
+
+def update_backdoor_data(backdoor_data, origin_backdoor_path):
+    '''
+    new_backdoor_data = {}
+    new_backdoor_data[] = backdoor_data[]
+    torch.save(new_backdoor_data, origin_backdoor_path)
+    return new_backdoor_data
+    '''
+    pass
+
 
 def get_class_rank(dataset_name,model_name,attack_name):
     '''

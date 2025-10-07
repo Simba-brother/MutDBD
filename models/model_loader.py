@@ -33,12 +33,12 @@ def get_model(dataset_name, model_name):
             model = vgg19(weights=VGG19_Weights.DEFAULT)
             in_features = model.classifier[-1].in_features
             model.classifier[-1] = nn.Linear(in_features, num_classes)
-            # 冻结其他层
-            for param in model.parameters():
-                param.requires_grad = False
-            # 开启头层
-            for param in model.classifier[-1].parameters():
-                param.requires_grad = True
+            # # 冻结其他层
+            # for param in model.parameters():
+            #     param.requires_grad = False
+            # # 开启头层
+            # for param in model.classifier[-1].parameters():
+            #     param.requires_grad = True
         elif model_name == "DenseNet":
             model = densenet121(weights=DenseNet121_Weights.DEFAULT)
             in_features = model.classifier.in_features

@@ -19,7 +19,7 @@ from attack.gtsrb.lc_attack.poisoning import PoisonedDataset
 from datasets.filter import filter_dataset
 from torch.utils.data import Subset,ConcatDataset
 from datasets.utils import split_dataset
-from attack.models import get_model
+from models.model_loader import get_model
 from mid_data_loader import get_labelConsistent_benign_model
 from attack.gtsrb.lc_attack.adv import get_adv_dataset
 from attack.refool_util import get_reflection_images
@@ -175,18 +175,28 @@ def get_Refool_dataset(dataset_name:str, poisoned_ids:list):
 def get_WaNet_dataset(dataset_name:str, model_name:str,poisoned_ids:list):
     clean_train_dataset, clean_test_dataset = get_clean_dataset(dataset_name,"WaNet")
     if dataset_name == "CIFAR10":
-        attack_dict_path = get_CIFAR10_WaNet_attack_dict_path(model_name)
-        # trigger
-        dict_state = torch.load(attack_dict_path, map_location="cpu")
-        identity_grid = dict_state["identity_grid"]
-        noise_grid = dict_state["noise_grid"]
+
+        backdoor_data = get_backdoor_data(dataset_name,model_name,"WaNet")
+        identity_grid = backdoor_data["identity_grid"]
+        noise_grid = backdoor_data["noise_grid"]
+        # attack_dict_path = get_CIFAR10_WaNet_attack_dict_path(model_name)
+        # dict_state = torch.load(attack_dict_path, map_location="cpu")
+        # identity_grid = dict_state["identity_grid"]
+        # noise_grid = dict_state["noise_grid"]
         s = 0.5
+        poisoned_transform_index = 0
+        poisoned_target_transform_index = 0
     elif dataset_name == "GTSRB":
-        attack_dict_path = get_GTSRB_WaNet_attack_dict_path(model_name)
-        dict_state = torch.load(attack_dict_path, map_location="cpu")
-        identity_grid = dict_state["identity_grid"]
-        noise_grid = dict_state["noise_grid"]
+        backdoor_data = get_backdoor_data(dataset_name,model_name,"WaNet")
+        identity_grid = backdoor_data["identity_grid"]
+        noise_grid = backdoor_data["noise_grid"]
+        # attack_dict_path = get_GTSRB_WaNet_attack_dict_path(model_name)
+        # dict_state = torch.load(attack_dict_path, map_location="cpu")
+        # identity_grid = dict_state["identity_grid"]
+        # noise_grid = dict_state["noise_grid"]
         s = 0.5
+        poisoned_transform_index = 0
+        poisoned_target_transform_index = 0
     elif dataset_name == "ImageNet2012_subset":
         backdoor_data = get_backdoor_data(dataset_name,model_name,"WaNet")
         # trigger

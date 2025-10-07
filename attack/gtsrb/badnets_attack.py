@@ -3,7 +3,7 @@ import setproctitle
 import torch
 import torch.nn as nn
 from attack.core.attacks import BadNets
-from attack.models import get_model
+from models.model_loader import get_model
 from commonUtils import read_yaml
 from attack.random_util import set_random_seed
 from datasets.clean_dataset import get_clean_dataset

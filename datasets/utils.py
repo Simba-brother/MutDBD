@@ -69,4 +69,4 @@ def check_labels(dataset):
     for batch in train_loader:
         y = batch[1]
         labels.extend(y.tolist())
-    print(Counter(labels))
+    return Counter(labels)

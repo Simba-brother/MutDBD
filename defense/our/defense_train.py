@@ -21,7 +21,7 @@ from datasets.posisoned_dataset import get_all_dataset
 from commonUtils import get_class_num,read_yaml,get_logger,set_random_seed
 from mid_data_loader import get_backdoor_data, get_class_rank
 from defense.our.sample_select import clean_seed
-from attack.models import get_model
+from models.model_loader import get_model
 from defense.our.sample_select import chose_retrain_set
 
 

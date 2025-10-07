@@ -3,7 +3,7 @@ import joblib
 import os
 from collections import defaultdict
 from commonUtils import read_yaml,get_class_num
-from attack.models import get_model
+from models.model_loader import get_model
 import torch
 from mid_data_loader import get_backdoor_data,get_class_rank
 from datasets.posisoned_dataset import get_all_dataset

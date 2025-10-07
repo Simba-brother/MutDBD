@@ -1,7 +1,7 @@
 import torch
 
 from datasets.clean_dataset import get_clean_dataset
-from attack.models import get_model
+from models.model_loader import get_model
 from utils.trainer import NeuralNetworkTrainer
 from modelEvalUtils import EvalModel
 from utils.dataset import get_data_loder

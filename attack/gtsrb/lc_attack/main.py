@@ -1,7 +1,7 @@
 import os
 import torch
 from datasets.clean_dataset import get_clean_dataset
-from attack.models import get_model
+from models.model_loader import get_model
 from mid_data_loader import get_labelConsistent_benign_model
 from pgd import PGD
 from torch.utils.data import DataLoader
