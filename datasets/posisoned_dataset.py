@@ -43,7 +43,7 @@ def get_BadNets_dataset(dataset_name, poisoned_ids):
     elif dataset_name == "ImageNet2012_subset":
         img_size = (224, 224)
         pattern = torch.zeros(img_size, dtype=torch.uint8)
-        pattern[-3:, -3:] = 1 # 用于归一化后
+        pattern[-3:, -3:] = 255
         weight = torch.zeros(img_size, dtype=torch.float32)
         weight[-3:, -3:] = 1.0
     else:
@@ -61,19 +61,21 @@ def get_IAD_dataset(dataset_name:str, model_name:str,poisoned_ids):
     clean_train_dataset, clean_test_dataset = get_clean_dataset(dataset_name,"IAD")
     # backdoor pattern
     if dataset_name == "CIFAR10":
-        attack_dict_path = get_CIFAR10_IAD_attack_dict_path(model_name)
+        # attack_dict_path = get_CIFAR10_IAD_attack_dict_path(model_name)
+        # dict_state = torch.load(attack_dict_path, map_location="cpu")
+        backdoor_data = get_backdoor_data(dataset_name,model_name,"IAD")
         modelG = Generator("cifar10")
         modelM = Generator("cifar10", out_channels=1)
-        dict_state = torch.load(attack_dict_path, map_location="cpu")
-        modelG.load_state_dict(dict_state["modelG"])
-        modelM.load_state_dict(dict_state["modelM"])
+        modelG.load_state_dict(backdoor_data["modelG"])
+        modelM.load_state_dict(backdoor_data["modelM"])
     elif dataset_name == "GTSRB":
-        attack_dict_path = get_GTSRB_IAD_attack_dict_path(model_name)
+        # attack_dict_path = get_GTSRB_IAD_attack_dict_path(model_name)
+        # dict_state = torch.load(attack_dict_path, map_location="cpu")
+        backdoor_data = get_backdoor_data(dataset_name,model_name,"IAD")
         modelG = Generator("gtsrb")
         modelM = Generator("gtsrb", out_channels=1)
-        dict_state = torch.load(attack_dict_path, map_location="cpu")
-        modelG.load_state_dict(dict_state["modelG"])
-        modelM.load_state_dict(dict_state["modelM"])
+        modelG.load_state_dict(backdoor_data["modelG"])
+        modelM.load_state_dict(backdoor_data["modelM"])
     elif dataset_name == "ImageNet2012_subset":
         backdoor_data = get_backdoor_data(dataset_name,model_name,"IAD")
         modelG = Generator("ImageNet")

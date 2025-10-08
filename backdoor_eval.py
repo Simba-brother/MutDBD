@@ -30,9 +30,10 @@ def main_one_sence(dataset_name,model_name,attack_name):
 
 if __name__ == "__main__":
     
+    '''
     dataset_name = "GTSRB"
     model_name = "DenseNet"
-    attack_name = "WaNet"
+    attack_name = "IAD"
     asr,acc,filtered_poisoned_testset_label_count,clean_testset_label_count = main_one_sence(dataset_name, model_name, attack_name)
     print(f"sence:{dataset_name}|{model_name}|{attack_name}|ASR:{asr}|ACC:{acc}")
     print(f"ASR:{asr}|ACC:{acc}")
@@ -41,25 +42,24 @@ if __name__ == "__main__":
     print("clean_testset_label_count:")
     print(f"\t{clean_testset_label_count}")
     print("END")
-    
-
     '''
+
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["VGG19","DenseNet"]
+    model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     for dataset_name in dataset_name_list:
         for model_name in model_name_list:
-            for attack_name in attack_name_list:
-                if dataset_name_list == "ImageNet2012_subset" and model_name  == "VGG19":
+            if dataset_name_list == "ImageNet2012_subset" and model_name  == "VGG19":
                     continue
+            for attack_name in attack_name_list:
                 asr,acc,filtered_poisoned_testset_label_count,clean_testset_label_count = main_one_sence(dataset_name, model_name, attack_name)
-                print(f"* sence:{dataset_name}|{model_name}|{attack_name}|ASR:{asr}|ACC:{acc}")
+                print(f"Sence:{dataset_name}|{model_name}|{attack_name}|ASR:{asr}|ACC:{acc}")
                 print(f"ASR:{asr}|ACC:{acc}")
                 print("filtered_poisoned_testset_label_count:")
                 print(f"\t{filtered_poisoned_testset_label_count}")
                 print("clean_testset_label_count:")
                 print(f"\t{clean_testset_label_count}")
-    '''
+    
     
 
 

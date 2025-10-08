@@ -157,14 +157,14 @@ def get_imagenet_transform(attack_name):
             transforms.ToPILImage(),
             transforms.RandomResizedCrop(size=224), 
             transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) BadNets不要用
         ])
         # 测试集transform
         test_transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) BadNets不要用
         ])
     elif attack_name == "IAD":
         train_transform = transforms.Compose([
