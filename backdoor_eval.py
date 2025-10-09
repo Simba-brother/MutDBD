@@ -1,10 +1,9 @@
+import torch
 from models.model_loader import get_model
 from mid_data_loader import get_backdoor_data
 from datasets.posisoned_dataset import get_all_dataset
-from modelEvalUtils import EvalModel,eval_asr_acc
-import torch
+from utils.model_eval_utils import eval_asr_acc
 from datasets.utils import check_labels
-
 
 
 def main_one_sence(dataset_name,model_name,attack_name):

@@ -5,7 +5,7 @@ from mid_data_loader import get_class_rank
 
 import torch.nn as nn
 import torch
-from commonUtils import Record
+from utils.common_utils import Record
 import queue
 import scienceplots
 import matplotlib

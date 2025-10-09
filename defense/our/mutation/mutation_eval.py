@@ -8,9 +8,9 @@ import logging
 import setproctitle
 import pandas as pd
 import joblib
-from modelEvalUtils import EvalModel
+from utils.model_eval_utils import EvalModel
 from datasets.utils import ExtractDataset,ExtractDataset_NoPoisonedFlag
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 from datasets.posisoned_dataset import get_all_dataset
 
 

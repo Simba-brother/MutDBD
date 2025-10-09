@@ -8,7 +8,7 @@ import torch.nn as nn
 import setproctitle
 from models.model_loader import get_model
 from datasets.clean_dataset import get_clean_dataset
-from commonUtils import read_yaml,set_random_seed
+from utils.common_utils import read_yaml,set_random_seed
 from attack.core.attacks import LabelConsistent
 from mid_data_loader import get_labelConsistent_benign_model
 from torchvision import transforms

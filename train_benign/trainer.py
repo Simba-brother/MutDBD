@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-import numpy as np
+
 from pathlib import Path
 import time
 import json
-from typing import Dict, List, Tuple, Optional, Callable, Union
+from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 
 class NeuralNetworkTrainer:

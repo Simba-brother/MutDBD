@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from sklearn.metrics import classification_report
 
-from commonUtils import set_random_seed, read_yaml
+from utils.common_utils import set_random_seed, read_yaml
 config = read_yaml("config.yaml")
 
 set_random_seed(config["global_random_seed"])

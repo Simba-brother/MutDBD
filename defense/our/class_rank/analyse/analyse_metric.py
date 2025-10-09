@@ -1,7 +1,7 @@
 '''分析不同度量对class rank的影响'''
 import os
 import joblib
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 config = read_yaml("config.yaml")
 exp_root_dir = config["exp_root_dir"]
 

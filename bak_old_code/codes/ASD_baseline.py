@@ -298,7 +298,7 @@ if __name__ == "__main__":
 
     gpu_id = 1
     rand_seed = 10
-    baseline_name = "ASD_new"
+    baseline_name = "ASD"
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
     attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
@@ -307,7 +307,7 @@ if __name__ == "__main__":
 
     
     # gpu_id = 1
-    # baseline_name = "ASD_new"
+    # baseline_name = "ASD"
     # rand_seed = 1
     # dataset_name = "CIFAR10"
     # class_num = get_classNum(dataset_name)

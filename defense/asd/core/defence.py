@@ -6,7 +6,7 @@ import setproctitle
 import os
 import time
 from copy import deepcopy
-from commonUtils import convert_to_hms,create_dir,get_class_num,read_yaml
+from utils.common_utils import convert_to_hms,create_dir,get_class_num,read_yaml
 import cv2
 import numpy as np
 import torch

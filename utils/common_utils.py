@@ -8,6 +8,24 @@ import numpy as np
 import random
 import time
 import sys
+
+class Record(object):
+    '''
+    一个批次一个批次的记录数据
+    '''
+    def __init__(self, name, size):
+        self.name = name
+        self.size = size
+        self.reset()
+
+    def reset(self):
+        self.ptr = 0
+        self.data = torch.zeros(self.size)
+
+    def update(self, batch_data):
+        self.data[self.ptr : self.ptr + len(batch_data)] = batch_data
+        self.ptr += len(batch_data)
+
 def read_yaml(file_path):
     with open(file_path, "r") as f:
         return yaml.safe_load(f)
@@ -88,23 +106,6 @@ def set_random_seed(random_seed):
     torch.manual_seed(random_seed)
     np.random.seed(random_seed)
     random.seed(random_seed)
-
-class Record(object):
-    '''
-    一个批次一个批次的记录数据
-    '''
-    def __init__(self, name, size):
-        self.name = name
-        self.size = size
-        self.reset()
-
-    def reset(self):
-        self.ptr = 0
-        self.data = torch.zeros(self.size)
-
-    def update(self, batch_data):
-        self.data[self.ptr : self.ptr + len(batch_data)] = batch_data
-        self.ptr += len(batch_data)
 
 def convert_to_hms(seconds):
     hours = int(seconds // 3600)

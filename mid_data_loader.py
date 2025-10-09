@@ -2,7 +2,7 @@
 用于中间数据加载
 '''
 import os
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 import torch
 import joblib
 
@@ -110,8 +110,8 @@ def get_class_rank(dataset_name,model_name,attack_name):
 
 def get_our_method_state(dataset_name, model_name, attack_name, random_seed):
     '''获得我们方法fine_tuned_backdoor_model和defensed_model'''
-    defensed_state_dict_path = os.path.join(exp_root_dir,"OurMethod_v2", dataset_name, model_name, attack_name, f"exp_{random_seed}", "last_defense_model.pth") 
-    selected_state_dict_path = os.path.join(exp_root_dir,"OurMethod_v2", dataset_name, model_name, attack_name, f"exp_{random_seed}", "best_BD_model.pth") 
+    defensed_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours", dataset_name, model_name, attack_name, f"exp_{random_seed}", "last_defense_model.pth") 
+    selected_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours", dataset_name, model_name, attack_name, f"exp_{random_seed}", "best_BD_model.pth") 
     return defensed_state_dict_path, selected_state_dict_path
 
 def get_asd_method_state(dataset_name, model_name, attack_name, random_seed):
@@ -121,9 +121,9 @@ def get_asd_method_state(dataset_name, model_name, attack_name, random_seed):
     exp_id = f"exp_{random_seed}"
     time_str = data[dataset_name][model_name][attack_name][exp_id]
     # 获得防御模型路径
-    defensed_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","latest_model.pt") # key:"model_state_dict"
+    defensed_state_dict_path = os.path.join(exp_root_dir,"Defense","ASD",dataset_name,model_name,attack_name,time_str,"ckpt","latest_model.pt") # key:"model_state_dict"
     # 获得选择模型路径
-    selected_state_dict_path = os.path.join(exp_root_dir,"ASD_new",dataset_name,model_name,attack_name,time_str,"ckpt","secondtolast.pth")
+    selected_state_dict_path = os.path.join(exp_root_dir,"Defense","ASD",dataset_name,model_name,attack_name,time_str,"ckpt","secondtolast.pth")
     return defensed_state_dict_path, selected_state_dict_path
 
 def get_labelConsistent_benign_model(dataset_name, model_name):

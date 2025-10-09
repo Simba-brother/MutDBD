@@ -4,7 +4,7 @@ import torch.nn as nn
 from attack.core.attacks import IAD
 from attack.core.attacks.IAD import Generator 
 import setproctitle
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 from datasets.clean_dataset import get_clean_dataset
 from attack.iad_utils import IADPoisonedDatasetFolder
 from attack.random_util import set_random_seed

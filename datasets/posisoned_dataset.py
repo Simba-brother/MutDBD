@@ -5,7 +5,7 @@ import torch
 
 from datasets.clean_dataset import get_clean_dataset
 from torchvision.datasets import DatasetFolder
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 from copy import deepcopy
 # 数据投毒
 from datasets.poisoned_folder.badnets_folder import PoisonedDatasetFolder as BadNetsPoisonedDatasetFolder

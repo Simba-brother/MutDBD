@@ -5,10 +5,10 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 from sklearn.metrics import classification_report,confusion_matrix
-
-from codes.utils import nested_defaultdict,entropy
+from utils.small_utils import nested_defaultdict
+from utils.calcu_utils import entropy
 import numpy as np
-from commonUtils import read_yaml,get_class_num
+from utils.common_utils import read_yaml,get_class_num
 from defense.our.mutation.mutation_select import get_top_k_global_ids
 
 

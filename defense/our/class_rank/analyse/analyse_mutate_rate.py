@@ -1,7 +1,7 @@
 '''分析不同变异率对class rank的影响'''
 import os
 import joblib
-from commonUtils import read_yaml,get_class_num
+from utils.common_utils import read_yaml,get_class_num
 import matplotlib as mpl
 import scienceplots
 import matplotlib.pyplot as plt

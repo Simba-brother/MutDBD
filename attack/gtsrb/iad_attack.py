@@ -4,10 +4,10 @@ import torch.nn as nn
 from attack.core.attacks import IAD
 from attack.core.attacks.IAD import Generator 
 import setproctitle
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 from datasets.clean_dataset import get_clean_dataset
 from attack.iad_utils import IADPoisonedDatasetFolder
-from commonUtils import set_random_seed
+from utils.common_utils import set_random_seed
 from models.model_loader import get_model
 
 config = read_yaml("config.yaml")

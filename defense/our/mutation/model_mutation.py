@@ -7,7 +7,7 @@ import torch
 import logging
 import setproctitle
 from defense.our.mutation.mutation_operator import MutaionOperator
-from commonUtils import read_yaml,get_class_num
+from utils.common_utils import read_yaml,get_class_num
 
 
 class OpType(object):

@@ -2,7 +2,7 @@
 import os
 import cv2
 from torchvision.datasets import DatasetFolder
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 from datasets.transform import get_cifar10_transform,get_gtsrb_transform,get_imagenet_transform
 config = read_yaml("config.yaml")
 

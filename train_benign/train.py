@@ -2,10 +2,24 @@ import torch
 
 from datasets.clean_dataset import get_clean_dataset
 from models.model_loader import get_model
-from utils.trainer import NeuralNetworkTrainer
-from modelEvalUtils import EvalModel
-from utils.dataset import get_data_loder
+from trainer import NeuralNetworkTrainer
+from utils.model_eval_utils import EvalModel
+from torch.utils.data import DataLoader
 
+def get_data_loder(dataset,shuffle,
+                   batch_size:int = 128,
+                   num_workers:int = 8,
+                   drop_last:bool = False,
+                   pin_memory:bool = True
+                   ):
+    return DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            drop_last=drop_last,
+            pin_memory=pin_memory
+            )
 
 def main():
     # 加载数据集

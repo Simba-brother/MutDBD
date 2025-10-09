@@ -1,14 +1,11 @@
-'''
-评估模型性能
-'''
-from commonUtils import read_yaml
+from utils.common_utils import read_yaml
 from models.model_loader import get_model
 from datasets.clean_dataset import get_clean_dataset
-from modelEvalUtils import EvalModel
+from utils.model_eval_utils import EvalModel
 import torch
 from mid_data_loader import get_labelConsistent_benign_model, get_backdoor_data
 from datasets.posisoned_dataset import get_all_dataset
-from modelEvalUtils import eval_asr_acc
+from utils.model_eval_utils import eval_asr_acc
 
 
 def eval_LabelConsistent_benign_model(dataset_name, model_name):

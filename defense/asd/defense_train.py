@@ -1,5 +1,5 @@
 import sys
-from commonUtils import my_excepthook,get_class_num
+from utils.common_utils import my_excepthook,get_class_num
 sys.excepthook = my_excepthook
 import os
 import time
@@ -7,8 +7,8 @@ import torch
 import setproctitle
 from torch.utils.data import DataLoader
 from defense.asd.core import defence_train
-from commonUtils import get_formattedDateTime,convert_to_hms,read_yaml,get_logger
-from modelEvalUtils import EvalModel
+from utils.common_utils import get_formattedDateTime,convert_to_hms,read_yaml,get_logger
+from utils.model_eval_utils import EvalModel
 from datasets.posisoned_dataset import get_all_dataset
 from mid_data_loader import get_backdoor_data
 from models.model_loader import get_model
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     exp_root_dir = config["exp_root_dir"]
     gpu_id = 1
     rand_seed = 1
-    baseline_name = "ASD_new"
+    baseline_name = "ASD"
     dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "VGG19" # ResNet18, VGG19, DenseNet
     attack_name ="BadNets" # BadNets, IAD, Refool, WaNet, LabelConsistent
@@ -260,7 +260,7 @@ if __name__ == "__main__":
 
     
     # gpu_id = 1
-    # baseline_name = "ASD_new"
+    # baseline_name = "ASD"
     # rand_seed = 1
     # dataset_name = "CIFAR10"
     # class_num = get_classNum(dataset_name)
