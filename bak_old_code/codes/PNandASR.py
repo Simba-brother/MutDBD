@@ -14,7 +14,7 @@ import statsmodels.formula.api as smf
 from scipy.stats import spearmanr,pearsonr
 
 def get_unit_data(dataset_name, model_name, attack_name):
-    save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
+    save_dir = os.path.join(exp_root_dir, "Exp_Results", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
     save_file_name = "res_1.pkl"  # res.pkl
     save_path = os.path.join(save_dir, save_file_name)

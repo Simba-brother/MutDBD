@@ -78,7 +78,7 @@ def main():
 
 
     # 保存数据
-    # save_dir = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name)
+    # save_dir = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name)
     # os.makedirs(save_dir,exist_ok=True)
     # save_file_name = "res.joblib"
     # save_path = os.path.join(save_dir,save_file_name)
@@ -286,7 +286,7 @@ def discussion_metric(metric_name:str):
 
 def discussion_rate(mutation_rate):
     '''
-    讨论不同变异率对类排序影响
+    讨论不同变异率对ClassRank影响
     '''
     
     
@@ -314,7 +314,7 @@ def discussion_rate(mutation_rate):
 
 def look():
     # 保存数据
-    data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    data_path = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,"res.joblib")
     data = joblib.load(data_path)
     print(f"{dataset_name}|{model_name}|{attack_name}")
     print(data)
@@ -374,7 +374,7 @@ def compare_WTL(our_list, baseline_list,expect:str, method:str):
 
 def draw_box():
     # 加载数据
-    read_data = joblib.load(os.path.join(exp_root_dir,"实验结果","disscution_mutation_rate_for_class_rank.pkl"))
+    read_data = joblib.load(os.path.join(exp_root_dir,"Exp_Results","disscution_mutation_rate_for_class_rank.pkl"))
     # {mutation_rate:list}
     conver_data = defaultdict(list)
     for m_rate in [0.01,0.03,0.05,0.07,0.09,0.1]:
@@ -460,7 +460,7 @@ if __name__ == "__main__":
     #                 rank_rate = discussion_rate(m_rate)
     #                 res[dataset_name][model_name][attack_name][m_rate] = rank_rate
     # _res = defaultdict_to_dict(res)
-    # save_dir = os.path.join(exp_root_dir,"实验结果")
+    # save_dir = os.path.join(exp_root_dir,"Exp_Results")
     # save_file_name = "disscution_mutation_rate_for_class_rank.pkl"
     # save_path = os.path.join(save_dir,save_file_name)
     # joblib.dump(_res,save_path)

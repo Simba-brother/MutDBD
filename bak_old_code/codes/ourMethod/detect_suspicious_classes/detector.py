@@ -379,7 +379,7 @@ def f(dataset_name,model_name:str,attack_name:str,class_num:int,mutated_rate,det
     data = nested_defaultdict(5)
     data[dataset_name][model_name][attack_name][mutated_rate]["top50_model_id_list"] = mutated_model_global_id_list
     data = defaultdict_to_dict(data)
-    save_dir = os.path.join(config.exp_root_dir, "实验结果")
+    save_dir = os.path.join(config.exp_root_dir, "Exp_Results")
     os.makedirs(save_dir,exist_ok=True)
     save_file_name = "ImageNet_grid.joblib"
     save_path = os.path.join(save_dir,save_file_name)
@@ -447,7 +447,7 @@ def main():
                     #     data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["target_class_ranking_percent"] = target_class_ranking_percent
                     #     data[dataset_name][model_name][attack_name][mutated_rate][detect_method]["class_dataList_dict"] = class_dataList_dict
                     
-    save_dir = os.path.join(config.exp_root_dir, "实验结果")
+    save_dir = os.path.join(config.exp_root_dir, "Exp_Results")
     save_file_name = "grid.joblib"
     save_path = os.path.join(save_dir,save_file_name)
     joblib.dump(data,save_path)
@@ -500,7 +500,7 @@ def look_res_2():
 
 def data_visualization():
     # 加载数据
-    data = joblib.load(os.path.join(config.exp_root_dir,"实验结果","grid.joblib"))
+    data = joblib.load(os.path.join(config.exp_root_dir,"Exp_Results","grid.joblib"))
     class_datalist_dict = data["CIFAR10"]["ResNet18"]["BadNets"][0.01]["Precision_mean"]["class_dataList_dict"]
     box_data = []
     class_i_list = list(range(10))

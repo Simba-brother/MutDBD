@@ -13,14 +13,14 @@ exp_root_dir = config["exp_root_dir"]
 def one_scene(dataset_name,model_name,attack_name,metric="FP"): 
     mutation_rate_list = [0.01,0.03,0.05,0.07,0.09,0.1]
     for mutation_rate in mutation_rate_list:
-        res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),f"{metric}.joblib"))
+        res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),f"{metric}.joblib"))
         res["target_class_rank_ratio"]
         print(f"mutation_rate:{mutation_rate},rank_rate:{res["target_class_rank_ratio"]}")
 
 def draw_box():
     '''论文插图：不同变异率对FP class rank的影响'''
     # 加载数据
-    read_data = joblib.load(os.path.join(exp_root_dir,"实验结果","disscution_mutation_rate_for_class_rank.pkl"))
+    read_data = joblib.load(os.path.join(exp_root_dir,"Exp_Results","disscution_mutation_rate_for_class_rank.pkl"))
     # {mutation_rate:list}
     conver_data = defaultdict(list)
     for m_rate in [0.01,0.03,0.05,0.07,0.09,0.1]:

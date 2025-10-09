@@ -7,12 +7,12 @@ exp_root_dir = config["exp_root_dir"]
 
 
 def one_scene(dataset_name,model_name,attack_name,mutation_rate=0.01): 
-    FP_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"FP.joblib"))
-    Precision_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"Precision.joblib"))
-    Recall_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"Recall.joblib"))
-    F1_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"F1.joblib"))
-    LCR_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"LCR.joblib"))
-    Entropy_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"Entropy.joblib"))
+    FP_res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),"FP.joblib"))
+    Precision_res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),"Precision.joblib"))
+    Recall_res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),"Recall.joblib"))
+    F1_res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),"F1.joblib"))
+    LCR_res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),"LCR.joblib"))
+    Entropy_res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),"Entropy.joblib"))
     print(f'FP:rank_rate:{FP_res["target_class_rank_ratio"]}')
     print(f'Precision:rank_rate:{Precision_res["target_class_rank_ratio"]}')
     print(f'Recall:rank_rate:{Recall_res["target_class_rank_ratio"]}')

@@ -30,7 +30,7 @@ def motivation_FPs():
     class_nums = 10 # 数据集类别数量
     selected_mutation_model_num = 50 # 选择的变异模型数量
     data = joblib.load(os.path.join(exp_root_dir,
-                                    "实验结果",
+                                    "Exp_Results",
                                     "标签迁移",
                                     "变异率0.01",
                                     dataset_name,model_name,attack_name,
@@ -94,7 +94,7 @@ def motivation_FPs():
 
 def discussion_mutation_rate():
     # 加载数据
-    read_data = joblib.load(os.path.join(exp_root_dir,"实验结果","disscution_mutation_rate_for_class_rank.pkl"))
+    read_data = joblib.load(os.path.join(exp_root_dir,"Exp_Results","disscution_mutation_rate_for_class_rank.pkl"))
     # {mutation_rate:list}
     conver_data = defaultdict(list)
     for m_rate in [0.01,0.03,0.05,0.07,0.09,0.1]:

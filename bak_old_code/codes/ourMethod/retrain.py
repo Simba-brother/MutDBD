@@ -785,7 +785,7 @@ def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
     return classes_rank
 
 def get_classes_rank_v2(exp_root_dir,dataset_name,model_name,attack_name):
-    data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    data_path = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,"res.joblib")
     data = joblib.load(data_path)
     return data["class_rank"]
 

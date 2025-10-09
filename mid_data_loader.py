@@ -102,9 +102,9 @@ def get_class_rank(dataset_name,model_name,attack_name):
     获得所有场景（dataset+model+attack）的类别排序信息
     '''
     if attack_name != "LabelConsistent":
-        data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+        data_path = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,"res.joblib")
     else:
-        data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(0.01),"FP.joblib")
+        data_path = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(0.01),"FP.joblib")
     data = joblib.load(data_path)
     return data["class_rank"]
 

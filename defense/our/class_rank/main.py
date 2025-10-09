@@ -32,7 +32,7 @@ def main_scene(dataset_name, model_name, attack_name, mutation_rate=0.01, metric
     else:
         raise ValueError("Invalid input")
     # 保存数据
-    save_dir = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate))
+    save_dir = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate))
     os.makedirs(save_dir,exist_ok=True)
     save_file_name = f"{metric}.joblib"
     save_path = os.path.join(save_dir,save_file_name)
@@ -213,7 +213,7 @@ def entropy_metrics(df:pd.DataFrame,mutated_model_global_id_list:list,class_num:
     return res
 
 def look_res():
-    FP_res = joblib.load(os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,str(mutation_rate),"FP.joblib"))
+    FP_res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),"FP.joblib"))
     print(FP_res)
 
 if __name__ == "__main__":

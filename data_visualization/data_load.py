@@ -14,7 +14,7 @@ from defense.our.sample_select import chose_retrain_set
 config = read_yaml("config.yaml")
 exp_root_dir = config["exp_root_dir"]
 def load_m_rate_scence_class_rank():
-    read_data = joblib.load(os.path.join(exp_root_dir,"实验结果","disscution_mutation_rate_for_class_rank.pkl"))
+    read_data = joblib.load(os.path.join(exp_root_dir,"Exp_Results","disscution_mutation_rate_for_class_rank.pkl"))
     # {mutation_rate:list}
     ans = defaultdict(list)
     for m_rate in [0.01,0.03,0.05,0.07,0.09,0.1]:

@@ -67,7 +67,7 @@ def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
     return classes_rank
 
 def get_classes_rank_v2(exp_root_dir,dataset_name,model_name,attack_name):
-    data_path = os.path.join(exp_root_dir,"实验结果","类排序",dataset_name,model_name,attack_name,"res.joblib")
+    data_path = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,"res.joblib")
     data = joblib.load(data_path)
     return data["class_rank"]
 
@@ -404,7 +404,7 @@ def main_scene():
         "asd_p_num_list":asd_p_num_list,
     }
 
-    save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
+    save_dir = os.path.join(exp_root_dir, "Exp_Results", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
     save_file_name = "res_818.pkl"
     save_path = os.path.join(save_dir, save_file_name)
@@ -439,7 +439,7 @@ def main_scene():
 
 
 def look():
-    save_dir = os.path.join(exp_root_dir, "实验结果", dataset_name, model_name, attack_name)
+    save_dir = os.path.join(exp_root_dir, "Exp_Results", dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
     save_file_name = "res_818.pkl"  # res.pkl
     save_path = os.path.join(save_dir, save_file_name)
