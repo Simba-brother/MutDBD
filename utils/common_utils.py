@@ -1,6 +1,5 @@
 import yaml
-from scipy.stats import wilcoxon,mannwhitneyu,ks_2samp
-from cliffs_delta import cliffs_delta
+
 import logging
 import os
 import torch
@@ -30,56 +29,6 @@ def read_yaml(file_path):
     with open(file_path, "r") as f:
         return yaml.safe_load(f)
     
-def get_class_num(dataset_name):
-    if dataset_name == "CIFAR10":
-        class_num = 10
-    elif dataset_name == "GTSRB":
-        class_num = 43
-    elif dataset_name == "ImageNet2012_subset":
-        class_num = 30
-    else:
-        raise ValueError("Invalid input")
-    return class_num
-
-def compare_WTL(our_list, baseline_list,expect:str, method:str):
-    ans = ""
-    # 计算W/T/L
-    # Wilcoxon:https://blog.csdn.net/TUTO_TUTO/article/details/138289291
-    # Wilcoxon：主要来判断两组数据是否有显著性差异。
-    if method == "wilcoxon": # 配对
-        statistic, p_value = wilcoxon(our_list, baseline_list) # statistic:检验统计量
-    elif method == "mannwhitneyu": # 不配对
-        statistic, p_value = mannwhitneyu(our_list, baseline_list) # statistic:检验统计量
-    elif method == "ks_2samp":
-        statistic, p_value = ks_2samp(our_list, baseline_list) # statistic:检验统计量
-    # 如果p_value < 0.05则说明分布有显著差异
-    # cliffs_delta：比较大小
-    # 如果参数1较小的话，则d趋近-1,0.147(negligible)
-    d,res = cliffs_delta(our_list, baseline_list)
-    if p_value >= 0.05:
-        # 值分布没差别
-        ans = "Tie"
-        return ans
-    else:
-        # 值分布有差别
-        if expect == "small":
-            # 指标越小越好，d越接近-1越好
-            if d < 0 and res != "negligible":
-                ans = "Win"
-            elif d > 0 and res != "negligible":
-                ans = "Lose"
-            else:
-                ans = "Tie"
-        else:
-            # 指标越大越好，d越接近1越好
-            if d > 0 and res != "negligible":
-                ans = "Win"
-            elif d < 0 and res != "negligible":
-                ans = "Lose"
-            else:
-                ans = "Tie"
-    return ans
-
 def get_logger(log_dir,log_file_name):
     # 创建一个logger
     logger = logging.getLogger()
@@ -133,3 +82,4 @@ def create_dir(dir_path):
         pass
     else:
         os.makedirs(dir_path)
+

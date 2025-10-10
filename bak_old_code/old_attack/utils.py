@@ -11,6 +11,29 @@ from codes.common.eval_model import EvalModel
 from codes.scripts.dataset_constructor import ExtractDataset
 
 
+def get_classes_rank(dataset_name, model_name, attack_name, exp_root_dir)->list:
+    '''获得类别排序'''
+    mutated_rate = 0.01
+    measure_name = "Precision_mean"
+    if dataset_name in ["CIFAR10","GTSRB"]:
+        grid = joblib.load(os.path.join(exp_root_dir,"grid.joblib"))
+        classes_rank = grid[dataset_name][model_name][attack_name][mutated_rate][measure_name]["class_rank"]
+    elif dataset_name == "ImageNet2012_subset":
+        classRank_data = joblib.load(os.path.join(
+            exp_root_dir,
+            "ClassRank",
+            dataset_name,
+            model_name,
+            attack_name,
+            str(mutated_rate),
+            measure_name,
+            "ClassRank.joblib"
+        ))
+        classes_rank =classRank_data["class_rank"]
+    else:
+        raise Exception("数据集名称错误")
+    return classes_rank
+
 def update_backdoor_data(backdoor_data_path):
     backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
     poisoned_trainset = backdoor_data["poisoned_trainset"]

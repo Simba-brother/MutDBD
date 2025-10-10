@@ -133,8 +133,6 @@ def chose_retrain_set(ranker_model, device,
     remainSet = Subset(poisoned_trainset,remain_sample_id_list)
     return choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN
 
-
-
 def draw(isPoisoned_list_1, isPoisoned_list_2 ,file_name):
     '''
     论文配图，动机章节：热力图

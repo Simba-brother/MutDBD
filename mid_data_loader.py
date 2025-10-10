@@ -96,7 +96,6 @@ def update_backdoor_data(backdoor_data, origin_backdoor_path):
     '''
     pass
 
-
 def get_class_rank(dataset_name,model_name,attack_name):
     '''
     获得所有场景（dataset+model+attack）的类别排序信息
