@@ -5,8 +5,7 @@ import os
 import time
 
 import torch
-
-from codes import config
+import joblib
 from codes.common.eval_model import EvalModel
 from codes.scripts.dataset_constructor import ExtractDataset
 
