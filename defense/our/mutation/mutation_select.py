@@ -6,8 +6,7 @@ import os
 import queue
 import pandas as pd
 from sklearn.metrics import classification_report
-from codes.utils import priorityQueue_2_list
-from codes import config
+from utils.small_utils import priorityQueue_to_list
 
 
 
@@ -28,19 +27,23 @@ def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
             item = (-acc_dif, m_i)
         q.put(item)
     
-    priority_list = priorityQueue_2_list(q)
+    priority_list = priorityQueue_to_list(q)
     selected_m_i_list = [m_i for priority, m_i in  priority_list[0:top_k]]
     return selected_m_i_list
 
 if __name__ == "__main__":
-    rate = 0.05
+    mutation_rate = 0.01
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name = "CIFAR10" # CIFAR10|GTSRB|ImageNet2012_subset
+    model_name = "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name = "BadNets" # BadNets, IAD, Refool, WaNet
     csv_path = os.path.join(
-        config.exp_root_dir,
+        exp_root_dir,
         "EvalMutationToCSV",
-        config.dataset_name,
-        config.model_name,
-        config.attack_name,
-        str(rate),
+        dataset_name,
+        model_name,
+        attack_name,
+        str(mutation_rate),
         "preLabel.csv"
         )
     df = pd.read_csv(csv_path)

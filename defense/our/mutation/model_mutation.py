@@ -7,8 +7,8 @@ import torch
 import logging
 import setproctitle
 from defense.our.mutation.mutation_operator import MutaionOperator
-from utils.common_utils import read_yaml,get_class_num
-
+from utils.common_utils import read_yaml
+from utils.dataset_utils import get_class_num
 
 class OpType(object):
     GF  = 'GF' # Gaussian Fuzzing
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     dataset_name = "ImageNet2012_subset" # CIFAR10 GTSRB, ImageNet2012_subset
     model_name = "VGG19" # ResNet18,VGG19,DenseNet
     attack_name = "BadNets" # BadNets,IAD,Refool,WaNet, LabelConsistent
-    class_num = get_class_num(dataset_name)
+    class_num = get_class_num(dataset_name) # 该数据集的class nums
     # 变异率列表
     rate_list = [0.01] # [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
     # 每个变异算子在每个变异率下生成的变异模型数量

@@ -8,7 +8,8 @@ Reference:
 
 
 from cv2 import compare
-from codes.core.attacks.base import *
+
+from attack.core.attacks.base import *
 from copy import deepcopy
 import torch.nn.functional as F
 from math import ceil

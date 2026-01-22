@@ -1,6 +1,8 @@
 import sys
-from utils.common_utils import my_excepthook,get_class_num
+from utils.common_utils import my_excepthook
+from utils.dataset_utils import get_class_num
 sys.excepthook = my_excepthook
+
 import os
 import time
 import torch
@@ -12,22 +14,31 @@ from utils.model_eval_utils import EvalModel
 from datasets.posisoned_dataset import get_all_dataset
 from mid_data_loader import get_backdoor_data
 from models.model_loader import get_model
-config = read_yaml("config.yaml")
+
 def main():
-    # log_base_dir = "log/temp/"
-    log_base_dir = f"log/{baseline_name}/"
-    # 获得实验时间戳年月日时分秒
-    _time = get_formattedDateTime()
-    log_dir = os.path.join(log_base_dir,dataset_name,model_name,attack_name)
-    log_file_name = f"retrain_r_seed_{rand_seed}_{_time}.log"
+    exp_id = "No20260122"
+    exp_dir= os.path.join(
+                    exp_root_dir,
+                    "Defense",
+                    exp_id,
+                    f"{baseline_name}", 
+                    dataset_name, 
+                    model_name, 
+                    attack_name, 
+                    f"r_seed_{rand_seed}",
+                    )
+    os.makedirs(exp_dir,exist_ok=True)
+    log_dir = os.path.join(exp_dir,"logs")
+    # log_file_name = f"retrain_r_seed_{rand_seed}_{_time}.log"
+    log_file_name = f"exp.log"
     logger = get_logger(log_dir,log_file_name)
     
     # 进程名称
     proctitle = f"{baseline_name}|{dataset_name}|{model_name}|{attack_name}|{rand_seed}"
     setproctitle.setproctitle(proctitle)
-    logger.info(proctitle)
-    logger.info(f"rand_seed:{rand_seed}")
-    logger.info("不冻结vgg19模型")
+    logger.info(proctitle) # 记录进程名称
+    logger.info(f"rand_seed:{rand_seed}") # 记录随机种子值
+    # logger.info("不冻结vgg19模型")
     # 加载后门攻击配套数据
     backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
     # backdoor_model = backdoor_data["backdoor_model"]
@@ -183,15 +194,7 @@ def main():
     # 开始防御式训练
     logger.info("开始ASD防御式训练")
     time_1 = time.perf_counter()
-    exp_dir= os.path.join(
-                    exp_root_dir, 
-                    f"{baseline_name}", 
-                    dataset_name, 
-                    model_name, 
-                    attack_name, 
-                    time.strftime("%Y-%m-%d_%H:%M:%S")
-                    )
-    logger.info(f"实验目录:{exp_dir}")
+
     best_ckpt_path, latest_ckpt_path = defence_train(
             model = victim_model, # victim model
             class_num = class_num, # 分类数量
@@ -212,12 +215,13 @@ def main():
             # extracted_poisoned_trainset_2 = extracted_poisoned_trainset_2
             )
     time_2 = time.perf_counter()
-    cost_time = time_2 - time_1
-    hours, minutes, seconds = convert_to_hms(cost_time)
+    defense_train_cost_time = time_2 - time_1
+    hours, minutes, seconds = convert_to_hms(defense_train_cost_time)
     logger.info(f"防御式训练完成，共耗时:{hours}时{minutes}分{seconds:.3f}秒")
-    # 评估防御结果
-    logger.info("开始评估防御结果")
+    logger.info(f"defense train cost time(s):{defense_train_cost_time}")
 
+    # 评估防御结果
+    logger.info("开始评估防御performance")
     best_model_ckpt = torch.load(best_ckpt_path, map_location="cpu")
     victim_model.load_state_dict(best_model_ckpt["model_state_dict"])
     new_model = victim_model
@@ -241,24 +245,22 @@ def main():
     logger.info(f"LastModel: ACC:{clean_test_acc}, ASR:{poisoned_test_acc}")
 
 
-    time_4 = time.perf_counter()
-    cost_time = time_4 - time_2
-    hours, minutes, seconds = convert_to_hms(cost_time)
+    time_3 = time.perf_counter()
+    total_cost_time = time_3 - time_1
+    hours, minutes, seconds = convert_to_hms(total_cost_time)
     logger.info(f"评估防御结果结束，共耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 if __name__ == "__main__":
-    config = read_yaml("config.yaml")
-    exp_root_dir = config["exp_root_dir"]
-    gpu_id = 1
-    rand_seed = 1
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    gpu_id = 0
+    rand_seed = 11
     baseline_name = "ASD"
-    dataset_name= "ImageNet2012_subset" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "VGG19" # ResNet18, VGG19, DenseNet
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
     attack_name ="BadNets" # BadNets, IAD, Refool, WaNet, LabelConsistent
     class_num = get_class_num(dataset_name)
     main()
 
-    
     # gpu_id = 1
     # baseline_name = "ASD"
     # rand_seed = 1

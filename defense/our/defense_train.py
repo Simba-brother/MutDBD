@@ -18,7 +18,8 @@ import torch.nn as nn
 import torch.optim as optim
 from utils.model_eval_utils import eval_asr_acc
 from datasets.posisoned_dataset import get_all_dataset
-from utils.common_utils import get_class_num,read_yaml,get_logger,set_random_seed
+from utils.common_utils import read_yaml,get_logger,set_random_seed
+from utils.dataset_utils import get_class_num
 from mid_data_loader import get_backdoor_data, get_class_rank
 from defense.our.sample_select import clean_seed
 from models.model_loader import get_model
@@ -135,7 +136,7 @@ def get_class_weights(dataset,class_num):
     return label_counts, weights
 
 def get_exp_info():
-    # 获得实验时间戳年月日时分秒
+    # 获得实验时间戳: 年月日时分秒
     _time = get_formattedDateTime()
     exp_dir = os.path.join(exp_root_dir,"OurDefenseTrain",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     os.makedirs(exp_dir,exist_ok=True)
@@ -169,8 +170,12 @@ def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_
 
 
 def one_scene(dataset_name, model_name, attack_name, r_seed):
+    '''
+    一个场景(dataset/model/attack)下的defense train
+    '''
     # 实验开始计时
     start_time = time.perf_counter()
+    # 实验开始前先设置好实验的一些元信息
     logger,exp_info= pre_work(dataset_name, model_name, attack_name, r_seed)
 
     # 加载后门攻击配套数据
@@ -179,15 +184,18 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     backdoor_model = backdoor_data["backdoor_model"]
     # 训练数据集中中毒样本id
     poisoned_ids = backdoor_data["poisoned_ids"]
+    # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
     # 获得设备
     device = torch.device(f"cuda:{gpu_id}")
     # 空白模型
-    blank_model = get_model(dataset_name, model_name)
-    seedSet = clean_seed(poisoned_trainset, poisoned_ids)
-    # 种子微调
+    blank_model = get_model(dataset_name, model_name) # 得到该数据集的模型
+    seedSet = clean_seed(poisoned_trainset, poisoned_ids) # 从中毒训练集中每个class选择10个clean seed
+    # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
     freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
+    # 种子微调训练30个轮次
     last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,num_epoch=30,lr=1e-3,logger=logger)
+    # 把在种子训练集上表现最好的那个model保存下来，记为 best_BD_model.pth
     save_path = os.path.join(exp_info["exp_dir"], "best_BD_model.pth")
     asr,acc = eval_and_save(best_fine_tuned_mmodel, filtered_poisoned_testset, clean_testset, device, save_path)
     logger.info(f"best_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
@@ -196,22 +204,24 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     logger.info(f"last_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
 
     # 样本选择
-    choice_rate = 0.6
-    class_rank = get_class_rank(dataset_name,model_name,attack_name)
+    choice_rate = 0.6 # 打算选择60%的样本进行retrain
+    class_rank = get_class_rank(dataset_name,model_name,attack_name) # 加载 class rank
     choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = chose_retrain_set(
         best_fine_tuned_mmodel, device, choice_rate, poisoned_trainset, poisoned_ids, class_rank=class_rank)
     logger.info(f"截取阈值:{choice_rate},中毒样本含量:{PN}/{len(choicedSet)}")
-    # 防御重训练
+    # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
     availableSet = ConcatDataset([seedSet,choicedSet])
-    epoch_num = 100
+    epoch_num = 100 # 这次训练100个epoch
     lr = 1e-3
     batch_size = 512
     weight_decay=1e-3
     class_num = get_class_num(dataset_name)
+    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
     label_counter,weights = get_class_weights(availableSet, class_num)
     logger.info(f"label_counter:{label_counter}")
     logger.info(f"class_weights:{weights}")
     class_weights = torch.FloatTensor(weights)
+    # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
     last_defense_model,best_defense_model = train(
         best_fine_tuned_mmodel,device,availableSet,num_epoch=epoch_num,
         lr=lr, batch_size=batch_size, logger=logger, 

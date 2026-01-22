@@ -8,7 +8,8 @@ from sklearn.metrics import classification_report,confusion_matrix
 from utils.small_utils import nested_defaultdict
 from utils.calcu_utils import entropy
 import numpy as np
-from utils.common_utils import read_yaml,get_class_num
+from utils.common_utils import read_yaml
+from utils.dataset_utils import get_class_num
 from defense.our.mutation.mutation_select import get_top_k_global_ids
 
 
@@ -217,11 +218,9 @@ def look_res():
     print(FP_res)
 
 if __name__ == "__main__":
+    # 脚本需要的全局变量参数
     config = read_yaml("config.yaml")
     exp_root_dir = config["exp_root_dir"]
-    # dataset_name_list = config["dataset_name_list"]
-    # model_name_list = config["model_name_list"]
-    # attack_name_list = config["attack_name_list"]
     dataset_name = "GTSRB"
     model_name = "ResNet18"
     attack_name = "LabelConsistent"

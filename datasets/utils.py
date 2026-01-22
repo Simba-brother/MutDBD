@@ -28,7 +28,7 @@ class ExtractDataset(Dataset):
 
 class ExtractDataset_NoPoisonedFlag(Dataset):
     '''
-    抽取数据集到一个list中,目的是加快速度
+    抽取数据集到一个list中（内存中）,目的是加快数据批次的load, 从而加快模型的评估与训练
     '''
     def __init__(self, old_dataset):
         self.old_dataset = old_dataset

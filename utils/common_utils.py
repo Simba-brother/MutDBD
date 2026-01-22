@@ -30,7 +30,7 @@ def read_yaml(file_path):
         return yaml.safe_load(f)
     
 def get_logger(log_dir,log_file_name):
-    # 创建一个logger
+    # 创建一个logger实例
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
