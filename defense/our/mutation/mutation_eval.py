@@ -9,10 +9,9 @@ import setproctitle
 import pandas as pd
 import joblib
 from utils.model_eval_utils import EvalModel
-from datasets.utils import ExtractDataset,ExtractDataset_NoPoisonedFlag
-from utils.common_utils import read_yaml
+from datasets.utils import ExtractDataset_NoPoisonedFlag
 from datasets.posisoned_dataset import get_all_dataset
-
+from models.model_loader import get_model
 
 def get_mutation_models_pred_labels(dataset):
     mutations_dir = os.path.join(
@@ -217,6 +216,8 @@ def main(exp_sub,save_format):
     logging.debug(f"开始:将结果整理为csv文件")
     for rate in mutation_rate_list:
         data_dict = mutation_models_pred_dict[rate]
+        logging.debug(f"{rate}完成")
+        '''
         save_dir = os.path.join(
             exp_root_dir,
             main_exp_name,
@@ -240,20 +241,20 @@ def main(exp_sub,save_format):
             save_file_name = f"{exp_sub}.parquet"
             save_file_path = os.path.join(save_dir,save_file_name)
             ansToParquet(data_dict,save_file_path)
+        '''
 
 if __name__ == "__main__":
-    # 进程名称
-    config = read_yaml("config.yaml")
-    exp_root_dir = config["exp_root_dir"]
-    dataset_name = "GTSRB" # CIFAR10,GTSRB,ImageNet2012_subset
-    model_name = "ResNet18" # ResNet18,VGG19,DenseNet
-    attack_name = "LabelConsistent" # BadNets,IAD,Refool,WaNet,LabelConsistent
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name = "CIFAR10" # CIFAR10,GTSRB,ImageNet2012_subset
+    model_name = "VGG19" # ResNet18,VGG19,DenseNet
+    attack_name = "WaNet" # BadNets,IAD,Refool,WaNet,LabelConsistent
     gpu_id = 0
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
     sub_exp_name = "preLabel"
     mutation_rate_list = [0.01] # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
     mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
     mutation_model_num = 100 # 每个变异算子生成了100个模型，总共5个变异算子，500个。
+    # 进程名称
     proctitle = f"{main_exp_name}|{dataset_name}|{model_name}|{attack_name}"
     setproctitle.setproctitle(proctitle)
     device = torch.device(f"cuda:{gpu_id}")
@@ -277,7 +278,15 @@ if __name__ == "__main__":
             attack_name, 
             "backdoor_data.pth")
         backdoor_data = torch.load(backdoor_data_path, map_location="cpu")
-        backdoor_model = backdoor_data["backdoor_model"]
+
+        if "backdoor_model" in backdoor_data.keys():
+            backdoor_model = backdoor_data["backdoor_model"]
+        else:
+            model = get_model(dataset_name, model_name)
+            state_dict = backdoor_data["backdoor_model_weights"]
+            model.load_state_dict(state_dict)
+            backdoor_model = model
+       
         backdoor_model_origin = copy.deepcopy(backdoor_model)
         poisoned_ids = backdoor_data["poisoned_ids"]
         if dataset_name == "CIFAR10":

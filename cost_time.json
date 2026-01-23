@@ -1,0 +1,242 @@
+{
+    "ours":{
+        "CIFAR10":{
+            "ResNet18":{
+                "BadNets":{
+                    "defense_train":"00:05:27",
+                    "mutation":"2025-08-01 10:54:24to2025-08-01 12:45:05",
+                    "class_rank":"2025-07-29 19:15:18to2025-07-29 19:38:31"
+                },
+                "IAD":{
+                    "defense_train":"00:06:26",
+                    "mutation":"2025-07-29 19:27:24to2025-07-29 21:03:08",
+                    "class_rank":"2025-07-30 17:32:48to2025-07-30 18:29:29"
+                },
+                "Refool":{
+                    "defense_train":"00:05:16",
+                    "mutation":"2025-07-29 20:43:04to2025-07-29 22:14:49",
+                    "class_rank":"2025-07-30 17:41:44to2025-07-30 21:01:28"
+                },
+                "WaNet":{
+                    "defense_train":"00:03:52",
+                    "mutation":"2025-07-30 17:42:06to2025-07-30 19:47:27",
+                    "class_rank":"2025-07-30 19:52:38to2025-07-30 20:15:02"
+                }
+            },
+            "VGG19":{
+                "BadNets":{
+                    "defense_train":"00:06:14",
+                    "mutation":"2025-07-30 19:50:04to2025-07-30 23:53:53",
+                    "class_rank":"2025-07-31 14:39:21to2025-07-31 15:08:22"
+                },
+                "IAD":{
+                    "defense_train":"00:07:54",
+                    "mutation":"2025-07-30 20:54:53to2025-07-31 01:07:15",
+                    "class_rank":"2025-07-31 20:36:05to2025-07-31 21:24:26"
+                },
+                "Refool":{
+                    "defense_train":"00:06:12",
+                    "mutation":"2025-07-31 11:18:22to2025-07-31 14:19:05",
+                    "class_rank":"2025-08-01 09:35:44to2025-08-01 12:51:23"
+                },
+                "WaNet":{
+                    "defense_train":"00:04:16",
+                    "mutation":"2025-07-31 14:38:21to2025-07-31 17:55:50",
+                    "class_rank":"2026-01-23 17:29:21to2026-01-23 17:47:55"
+                }
+            },
+            "DenseNet":{
+                "BadNets":{
+                    "defense_train":"00:06:48",
+                    "mutation":"2025-07-31 16:04:51to2025-07-31 16:33:22",
+                    "class_rank":"2025-08-14 19:00:16to2025-08-14 19:27:48"
+                },
+                "IAD":{
+                    "defense_train":"00:10:09",
+                    "mutation":"2025-07-31 18:09:27to2025-07-31 18:34:09",
+                    "class_rank":"2025-08-14 20:46:03to2025-08-14 22:05:53"
+                },
+                "Refool":{
+                    "defense_train":"00:11:39",
+                    "mutation":"2025-07-31 18:09:30to2025-07-31 18:33:58",
+                    "class_rank":"2025-08-14 20:47:10to2025-08-14 21:14:49"
+                },
+                "WaNet":{
+                    "defense_train":"00:10:03",
+                    "mutation":"2025-07-31 20:36:01to2025-07-31 21:04:55",
+                    "class_rank":"2025-08-14 20:45:28to2025-08-14 22:05:07"
+                }
+            }
+        },
+        "GTSRB":{
+            "ResNet18":{
+                "BadNets":{
+                    "defense_train":"00:05:52",
+                    "mutation":"2025-08-01 09:48:49to2025-08-01 11:37:13",
+                    "class_rank":"2025-08-15 15:57:30to2025-08-15 16:11:09"
+                },
+                "IAD":{
+                    "defense_train":"00:06:45",
+                    "mutation":"2025-08-15 16:03:27to2025-08-15 16:49:03",
+                    "class_rank":"2025-08-15 19:10:42to2025-08-15 19:24:54"
+                },
+                "Refool":{
+                    "defense_train":"00:06:20",
+                    "mutation":"2025-08-15 16:03:41to2025-08-15 16:50:04",
+                    "class_rank":"2025-08-15 20:40:41to2025-08-15 21:02:13"
+                },
+                "WaNet":{
+                    "defense_train":"00:06:13",
+                    "mutation":"2025-08-15 16:03:42to2025-08-15 16:50:39",
+                    "class_rank":"2025-08-15 20:38:55to2025-08-15 20:54:35"
+                }
+            },
+            "VGG19":{
+                "BadNets":{
+                    "defense_train":"00:06:11",
+                    "mutation":"2025-08-15 20:39:01to2025-08-15 22:23:26",
+                    "class_rank":"2025-08-16 12:22:33to2025-08-16 12:39:57"
+                },
+                "IAD":{
+                    "defense_train":"00:06:58",
+                    "mutation":"2025-08-15 20:39:09to2025-08-15 22:20:33",
+                    "class_rank":"2025-08-16 12:23:34to2025-08-16 12:42:13"
+                },
+                "Refool":{
+                    "defense_train":"00:06:51",
+                    "mutation":"2025-08-16 12:20:29to2025-08-16 13:55:03",
+                    "class_rank":"2025-08-17 15:09:37to2025-08-17 15:29:36"
+                },
+                "WaNet":{
+                    "defense_train":"00:06:19",
+                    "mutation":"2025-08-16 19:34:32to2025-08-16 21:20:51",
+                    "class_rank":"2025-08-17 15:08:18to2025-08-17 15:25:38"
+                }
+            },
+            "DenseNet":{
+                "BadNets":{
+                    "defense_train":"00:13:02",
+                    "mutation":"2025-08-16 19:32:41to2025-08-16 21:59:04",
+                    "class_rank":"2025-08-17 18:35:32to2025-08-17 19:31:53"
+                },
+                "IAD":{
+                    "defense_train":"00:13:25",
+                    "mutation":"2025-08-16 19:32:51to2025-08-16 22:03:16",
+                    "class_rank":"2025-08-02 15:29:08to2025-08-02 16:32:13"
+                },
+                "Refool":{
+                    "defense_train":"00:13:34",
+                    "mutation":"2025-08-17 15:10:41to2025-08-17 17:43:09",
+                    "class_rank":"2025-08-17 18:38:02to2025-08-17 20:33:21"
+                },
+                "WaNet":{
+                    "defense_train":"00:13:10",
+                    "mutation":"2025-08-17 15:10:51to2025-08-17 17:43:44",
+                    "class_rank":"2025-08-17 18:37:26to2025-08-17 20:32:28"
+                }
+            }
+        },
+        "ImageNet2012_subset":{
+            "ResNet18":{
+                "BadNets":{
+                    "defense_train":"00:52:01",
+                    "mutation":"2025-08-18 12:40:42to2025-08-18 13:22:06",
+                    "class_rank":"2025-08-18 15:44:17to2025-08-18 18:38:37"
+                },
+                "IAD":{
+                    "defense_train":"03:58:19",
+                    "mutation":"2025-08-01 10:30:39to2025-08-01 12:18:10",
+                    "class_rank":"2025-08-02 15:32:30to2025-08-03 04:16:40"
+                },
+                "Refool":{
+                    "defense_train":"00:59:23",
+                    "mutation":"2025-08-18 12:41:59to2025-08-18 13:21:49",
+                    "class_rank":"2025-08-19 16:35:26to2025-08-19 19:24:39"
+                },
+                "WaNet":{
+                    "defense_train":"01:46:48",
+                    "mutation":"2025-08-18 13:58:36to2025-08-18 14:38:31",
+                    "class_rank":"2025-08-19 17:08:14to2025-08-19 20:00:45"
+                }
+            },
+            "DenseNet":{
+                "BadNets":{
+                    "defense_train":"01:03:34",
+                    "mutation":"2025-08-18 14:47:38to2025-08-18 16:51:44",
+                    "class_rank":"2025-08-03 09:36:27to2025-08-03 14:05:54"
+                },
+                "IAD":{
+                    "defense_train":"01:10:27",
+                    "mutation":"2025-08-18 14:48:02to2025-08-18 16:49:30",
+                    "class_rank":"2025-08-19 17:07:18to2025-08-19 21:08:41"
+                },
+                "Refool":{
+                    "defense_train":"01:01:37",
+                    "mutation":"2025-08-18 17:57:41to2025-08-18 20:05:26",
+                    "class_rank":"2025-08-14 12:13:09to2025-08-14 13:59:27"
+                },
+                "WaNet":{
+                    "defense_train":"01:48:46",
+                    "mutation":"2025-08-18 17:57:51to2025-08-18 20:04:24",
+                    "class_rank":"2025-08-14 12:13:50to2025-08-14 14:04:12"
+                }
+            }
+        }
+    },
+    "ASD":{
+        "CIFAR10":{
+            "ResNet18":{
+                "BadNets":{"defense_train":"03:59:21"},
+                "IAD":{"defense_train":"12:10:03"},
+                "Refool":{"defense_train":"18:34:01"},
+                "WaNet":{"defense_train":"20:26:03"}
+            },
+            "VGG19":{
+                "BadNets":{"defense_train":"12:48:51"},
+                "IAD":{"defense_train":"05:43:40"},
+                "Refool":{"defense_train":"30:48:59"},
+                "WaNet":{"defense_train":"07:34:30"}
+            },
+            "DenseNet":{
+                "BadNets":{"defense_train":"19:03:24"},
+                "IAD":{"defense_train":"11:04:17"},
+                "Refool":{"defense_train":"39:33:22"},
+                "WaNet":{"defense_train":"13:36:41"}
+            }
+        },
+        "GTSRB":{
+            "ResNet18":{
+                "BadNets":{"defense_train":"06:30:29"},
+                "IAD":{"defense_train":"03:28:51"},
+                "Refool":{"defense_train":"03:10:52"},
+                "WaNet":{"defense_train":"03:10:05"}
+            },
+            "VGG19":{
+                "BadNets":{"defense_train":"01:40:12"},
+                "IAD":{"defense_train":"34:30:40"},
+                "Refool":{"defense_train":"03:41:45"},
+                "WaNet":{"defense_train":"04:31:39"}
+            },
+            "DenseNet":{
+                "BadNets":{"defense_train":"08:39:25"},
+                "IAD":{"defense_train":"09:48:53"},
+                "Refool":{"defense_train":"07:49:19"},
+                "WaNet":{"defense_train":"15:04:13"}
+            }
+        },
+        "ImageNet2012_subset":{
+            "ResNet18":{
+                "BadNets":{"defense_train":"06:15:34"},
+                "IAD":{"defense_train":"19:14:55"},
+                "Refool":{"defense_train":"12:41:29"},
+                "WaNet":{"defense_train":"13:31:24"}
+            },
+            "DenseNet":{
+                "BadNets":{"defense_train":"18:35:41"},
+                "IAD":{"defense_train":"27:14:35"},
+                "Refool":{"defense_train":"22:37:08"},
+                "WaNet":{"defense_train":"29:14:18"}
+            }
+        }
+    }
+}
