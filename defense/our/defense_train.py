@@ -26,7 +26,6 @@ from models.model_loader import get_model
 from defense.our.sample_select import chose_retrain_set
 
 
-
 def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
           logger=None,lr_scheduler=None, class_weight = None, weight_decay=None):
     model.train()

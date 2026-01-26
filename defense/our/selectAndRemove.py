@@ -1,5 +1,5 @@
 '''
-选择top50变异模型
+选择top50变异模型,并删除other mutated modes来减少硬盘压力
 '''
 import os
 import queue
