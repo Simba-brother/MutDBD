@@ -57,9 +57,8 @@ def clean_seed(poisoned_trainset,poisoned_ids,strict_clean:bool=True):
         p_ids = random.sample(poisoned_ids, 2)
         seed_sample_id_list.extend(p_ids)
     seed_p_id_set = set(seed_sample_id_list) & set(poisoned_ids)
-    print(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}")
     clean_seedSet = Subset(poisoned_trainset,seed_sample_id_list)
-    return clean_seedSet
+    return clean_seedSet,seed_sample_id_list
 
 def sigmoid(x: float) -> float:
     # stable for large |x|

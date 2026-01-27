@@ -193,8 +193,9 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     device = torch.device(f"cuda:{gpu_id}")
     # 空白模型
     blank_model = get_model(dataset_name, model_name) # 得到该数据集的模型
-    seedSet = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=False) # 从中毒训练集中每个class选择10个clean seed
-
+    seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=False) # 从中毒训练集中每个class选择10个clean seed
+    seed_p_id_set = set(seed_id_list) & set(poisoned_ids)
+    logger.info(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}")
     # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
     freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
     # 种子微调训练30个轮次
@@ -247,7 +248,7 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet, LabelConsistent
-    gpu_id = 1
+    attack_name ="IAD" # BadNets, IAD, Refool, WaNet, LabelConsistent
+    gpu_id = 0
     r_seed = 1
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)

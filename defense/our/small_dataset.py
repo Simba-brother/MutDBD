@@ -114,7 +114,6 @@ def build_clean_seedSet(poisoned_trainset,poisoned_ids):
     for class_id,sample_id_list in clean_sample_dict.items():
         seed_sample_id_list.extend(random.sample(sample_id_list, 10))
     clean_seedSet = Subset(poisoned_trainset,seed_sample_id_list)
-    
     return clean_seedSet
 
 def sample_id_list(id_list: list[int], rate:float=0.2) -> list[int]:
