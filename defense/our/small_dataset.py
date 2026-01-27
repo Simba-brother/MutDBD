@@ -128,17 +128,29 @@ def build_small_dataset(poisoned_trainset:DatasetFolder, poisoned_ids:list[int])
     small_poisoned_trainset = None
     small_poisoned_ids = None
     id_list = list(range(len(poisoned_trainset)))
+    # 原来数据集中的id
     sampled_ids = sample_id_list(id_list,rate)
+    # 摘取的subset
     small_poisoned_trainset = Subset(poisoned_trainset, sampled_ids)
-    small_poisoned_ids = list(set(sampled_ids) & set(poisoned_ids))
+    
+
+    subset_sample_id_list = []
+    subset_poisoned_id_list = []
+    # 重新映射subset的id
+    for id, sample_id in enumerate(sampled_ids):
+        subset_sample_id_list.append(id)
+        if sample_id in poisoned_ids:
+            subset_poisoned_id_list.append(id)
+
+
     print(f"原始数据集大小:{len(poisoned_trainset)}")
     print(f"原始数据集中毒样本数量:{len(poisoned_ids)}")
     print(f"数据集大小缩小比:{rate}")
     print(f"缩小数据集大小:{len(small_poisoned_trainset)}")
-    print(f"缩小数据集含有的中毒样本数量:{len(small_poisoned_ids)}")
-    return (small_poisoned_trainset,small_poisoned_ids)
+    print(f"缩小数据集含有的中毒样本数量:{len(subset_poisoned_id_list)}")
+    return (small_poisoned_trainset,subset_poisoned_id_list)
 
-def main(save_dir):
+def main_one_scence(save_dir):
     start_time = time.perf_counter()
     # 得到ranker model
     blank_model = get_model(dataset_name, model_name)
@@ -203,9 +215,12 @@ def main(save_dir):
     end_time = time.perf_counter()
     cost_time = end_time - start_time
     hours, minutes, seconds = convert_to_hms(cost_time)
-    print(f"总耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    print(f"one-sence总耗时:{hours}时{minutes}分{seconds:.1f}秒")
 
 if __name__ == "__main__":
+
+    # one-scence
+    '''
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name = "ImageNet2012_subset"
     model_name = "DenseNet"
@@ -229,4 +244,40 @@ if __name__ == "__main__":
                                                 "exp_1","best_BD_model.pth")
     save_dir = os.path.join(exp_root_dir,"small_dataset_defense_train",dataset_name,model_name,attack_name)
     os.makedirs(save_dir,exist_ok=True)
-    main(save_dir)
+    main_one_scence(save_dir)
+    '''
+
+    # all-scence
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    r_seed_list = [1]
+    device =  torch.device("cuda:1")
+    for dataset_name in dataset_name_list:
+        for model_name in model_name_list:
+            for attack_name in attack_name_list:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for r_seed in r_seed_list:
+
+                    random.seed(r_seed)
+                    backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
+                    # 后门模型
+                    if "backdoor_model" in backdoor_data.keys():
+                        backdoor_model = backdoor_data["backdoor_model"]
+                    else:
+                        model = get_model(dataset_name, model_name)
+                        state_dict = backdoor_data["backdoor_model_weights"]
+                        model.load_state_dict(state_dict)
+                        backdoor_model = model
+                    # 训练数据集中中毒样本id
+                    poisoned_ids = backdoor_data["poisoned_ids"]
+                    # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
+                    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+                    ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
+                                                                f"exp_{r_seed}","best_BD_model.pth")
+                    save_dir = os.path.join(exp_root_dir,"small_dataset_defense_train",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+                    os.makedirs(save_dir,exist_ok=True)
+                    print(f"{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
+                    main_one_scence(save_dir)

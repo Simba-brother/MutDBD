@@ -195,7 +195,7 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     blank_model = get_model(dataset_name, model_name) # 得到该数据集的模型
     seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=False) # 从中毒训练集中每个class选择10个clean seed
     seed_p_id_set = set(seed_id_list) & set(poisoned_ids)
-    logger.info(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}")
+    logger.info(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}/{len(seed_id_list)}")
     # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
     freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
     # 种子微调训练30个轮次
@@ -245,6 +245,8 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     logger.info(f"共耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 if __name__ == "__main__":
+    # one-scence
+    '''
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
     model_name= "ResNet18" # ResNet18, VGG19, DenseNet
@@ -252,3 +254,21 @@ if __name__ == "__main__":
     gpu_id = 0
     r_seed = 1
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
+    '''
+
+    # all-scence
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    r_seed_list = [1]
+    gpu_id = 0
+    
+    for dataset_name in dataset_name_list:
+        for model_name in model_name_list:
+            for attack_name in attack_name_list:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for r_seed in r_seed_list:
+                    print(f"OursDefenseTrain|{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
+                    one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
