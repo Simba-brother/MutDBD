@@ -135,8 +135,8 @@ def build_small_dataset(poisoned_trainset:DatasetFolder, poisoned_ids:list[int])
     print(f"原始数据集大小:{len(poisoned_trainset)}")
     print(f"原始数据集中毒样本数量:{len(poisoned_ids)}")
     print(f"数据集大小缩小比:{rate}")
-    print(f"缩小数据集大小:{small_poisoned_trainset}")
-    print(f"缩小数据集中毒样本数量:{small_poisoned_ids}")
+    print(f"缩小数据集大小:{len(small_poisoned_trainset)}")
+    print(f"缩小数据集含有的中毒样本数量:{len(small_poisoned_ids)}")
     return (small_poisoned_trainset,small_poisoned_ids)
 
 def main(save_dir):
@@ -168,8 +168,8 @@ def main(save_dir):
     select_end_time = time.perf_counter()
     select_cost_time = select_end_time - select_start_time
     hours, minutes, seconds = convert_to_hms(select_cost_time)
+    print(f"PN:{PN}")
     print(f"选择样本耗时:{hours}时{minutes}分{seconds:.1f}秒")
-    
     # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
     availableSet = ConcatDataset([seedSet,choicedSet])
     epoch_num = 100 # 这次训练100个epoch
@@ -208,11 +208,11 @@ def main(save_dir):
 
 if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    dataset_name = "CIFAR10"
-    model_name = "ResNet18"
-    attack_name = "BadNets"
-    device =  torch.device("cuda:0")
-
+    dataset_name = "ImageNet2012_subset"
+    model_name = "DenseNet"
+    attack_name = "WaNet"
+    device =  torch.device("cuda:1")
+    random.seed(1)
     backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
     # 后门模型
     if "backdoor_model" in backdoor_data.keys():
@@ -231,5 +231,3 @@ if __name__ == "__main__":
     save_dir = os.path.join(exp_root_dir,"small_dataset_defense_train",dataset_name,model_name,attack_name)
     os.makedirs(save_dir,exist_ok=True)
     main(save_dir)
-
-

@@ -137,11 +137,11 @@ def get_class_weights(dataset,class_num):
 def get_exp_info():
     # 获得实验时间戳: 年月日时分秒
     _time = get_formattedDateTime()
-    exp_dir = os.path.join(exp_root_dir,"OurDefenseTrain",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+    exp_dir = os.path.join(exp_root_dir,"CleanSeedWithPoison",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     os.makedirs(exp_dir,exist_ok=True)
     exp_info = {}
     exp_info["exp_time"] = _time
-    exp_info["exp_name"] = "OurDefenseTrain"
+    exp_info["exp_name"] = "CleanSeedWithPoison"
     exp_info["exp_dir"] = exp_dir
     return exp_info
     
@@ -152,7 +152,7 @@ def pre_work(dataset_name, model_name, attack_name, r_seed):
     proctitle = f'{exp_info["exp_name"]}|{dataset_name}|{model_name}|{attack_name}|{r_seed}'
     setproctitle.setproctitle(proctitle)
     # 获得实验logger
-    log_dir = os.path.join("log","OurDefenseTrain",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+    log_dir = os.path.join("log","CleanSeedWithPoison",dataset_name,model_name,attack_name,f"exp_{r_seed}")
     log_file_name  = f'{exp_info["exp_name"]}.log'
     logger = get_logger(log_dir,log_file_name)
     logger.info(f'实验时间:{exp_info["exp_time"]}')
@@ -167,7 +167,6 @@ def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_
     torch.save(model.state_dict(), save_path)
     return asr,acc
 
-
 def one_scene(dataset_name, model_name, attack_name, r_seed):
     '''
     一个场景(dataset/model/attack)下的defense train
@@ -179,8 +178,13 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
 
     # 加载后门攻击配套数据
     backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
-    # 后门模型
-    backdoor_model = backdoor_data["backdoor_model"]
+    if "backdoor_model" in backdoor_data.keys():
+        backdoor_model = backdoor_data["backdoor_model"]
+    else:
+        model = get_model(dataset_name, model_name)
+        state_dict = backdoor_data["backdoor_model_weights"]
+        model.load_state_dict(state_dict)
+        backdoor_model = model
     # 训练数据集中中毒样本id
     poisoned_ids = backdoor_data["poisoned_ids"]
     # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
@@ -189,7 +193,8 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     device = torch.device(f"cuda:{gpu_id}")
     # 空白模型
     blank_model = get_model(dataset_name, model_name) # 得到该数据集的模型
-    seedSet = clean_seed(poisoned_trainset, poisoned_ids) # 从中毒训练集中每个class选择10个clean seed
+    seedSet = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=False) # 从中毒训练集中每个class选择10个clean seed
+
     # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
     freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
     # 种子微调训练30个轮次
@@ -239,11 +244,10 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     logger.info(f"共耗时:{hours}时{minutes}分{seconds:.3f}秒")
 
 if __name__ == "__main__":
-    config = read_yaml("config.yaml")
-    exp_root_dir = config["exp_root_dir"]
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "DenseNet" # ResNet18, VGG19, DenseNet
-    attack_name ="LabelConsistent" # BadNets, IAD, Refool, WaNet, LabelConsistent
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet, LabelConsistent
     gpu_id = 1
     r_seed = 1
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)

@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import json
 import time
+import random
 
-
-def clean_seed(poisoned_trainset,poisoned_ids):
+def clean_seed(poisoned_trainset,poisoned_ids,strict_clean:bool=True):
     '''
     选择干净种子
     '''
@@ -46,8 +46,19 @@ def clean_seed(poisoned_trainset,poisoned_ids):
     seed_sample_id_list = []
     for class_id,sample_id_list in clean_sample_dict.items():
         seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
+    if strict_clean is False:
+        # 种子种混入了2个poisoned samples
+        # 随机删除2个clean seed id
+        first_element = random.choice(seed_sample_id_list)
+        seed_sample_id_list.remove(first_element)
+        second_element = random.choice(seed_sample_id_list)
+        seed_sample_id_list.remove(second_element)
+        # 从p ids 中随机找2个id 放入 seed_sample_id_list
+        p_ids = random.sample(poisoned_ids, 2)
+        seed_sample_id_list.extend(p_ids)
+    seed_p_id_set = set(seed_sample_id_list) & set(poisoned_ids)
+    print(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}")
     clean_seedSet = Subset(poisoned_trainset,seed_sample_id_list)
-    
     return clean_seedSet
 
 def sigmoid(x: float) -> float:
@@ -248,6 +259,7 @@ def atomic_json_dump(obj, out_path, indent=2):
 
 if __name__ == "__main__":
 
+    # 单场景
     '''
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name = "CIFAR10"
@@ -273,14 +285,16 @@ if __name__ == "__main__":
                                                 "exp_1","best_BD_model.pth")
     main_one_sence()
     '''
-
+    
+    '''
+    # 全场景
     records = []
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name_list = ["CIFAR10","GTSRB","ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    beta_list = [1.0, 0.75, 0.5, 0.25, 0.0]
-    sigmoid_flag = False
+    beta_list = [1.0] # [1.0, 0.75, 0.5, 0.25, 0.0]
+    sigmoid_flag = True
     device = torch.device("cuda:0")
     total_start_time = time.perf_counter()
     for dataset_name in dataset_name_list:
@@ -334,10 +348,29 @@ if __name__ == "__main__":
                     cost_time = end_time - start_time
                     hours, minutes, seconds = convert_to_hms(cost_time)
                     print(f"耗时:{hours}时{minutes}分{seconds:.1f}秒")
-    out_path = os.path.join(exp_root_dir, "Exp_Results", "discussion_beta", "records.json")
+    out_path = os.path.join(exp_root_dir, "Exp_Results", "discussion_sigmoid", "records.json")
     atomic_json_dump({"meta": {"n": len(records)}, "records": records}, out_path)
     print("saved:", out_path)
     total_end_time = time.perf_counter()
     total_cost_time = total_end_time - total_start_time
     hours, minutes, seconds = convert_to_hms(total_cost_time)
     print(f"全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    '''
+    
+    '''
+    # 查看结果
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    records_path = os.path.join(exp_root_dir,"Exp_Results","discussion_sigmoid","records.json")
+    with open(records_path,mode="r") as f:
+        records_json = json.load(f)
+    records = records_json["records"]
+    for record in records:
+        record_info = {
+            "dataset_name":record["dataset"],
+            "model_name":record["model"],
+            "attack_name":record["attack"],
+            "beta":record["beta"],
+            "PN":record["PN"]
+        }
+        print(record_info)
+    '''
