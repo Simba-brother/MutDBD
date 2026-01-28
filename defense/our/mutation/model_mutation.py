@@ -1,6 +1,7 @@
 '''
 基于Backdoor model生成变异模型
 '''
+import time
 from tqdm import tqdm
 import os
 import torch
@@ -10,6 +11,7 @@ from defense.our.mutation.mutation_operator import MutaionOperator
 from utils.common_utils import read_yaml
 from utils.dataset_utils import get_class_num
 from models.model_loader import get_model
+from utils.common_utils import convert_to_hms
 
 class OpType(object):
     GF  = 'GF' # Gaussian Fuzzing
@@ -107,12 +109,24 @@ if __name__ == "__main__":
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    rate_list = [0.001] # [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
+    rate_list = [0.005] # [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
     # 每个变异算子在每个变异率下生成的变异模型数量
     model_id_list = list(range(100))
     # 变异模型的生成使用cpu设备即可
     device = torch.device(f"cpu")
     r_seed_list = [1]
+
+    exp_sence_params =  {
+        "exp_root_dir":exp_root_dir,
+        "dataset_name_list":dataset_name_list,
+        "model_name_list":model_name_list,
+        "attack_name_list":attack_name_list,
+        "rate_list":rate_list,
+        "r_seed_list":r_seed_list
+    }
+    print(exp_sence_params)
+
+    all_scence_start_time = time.perf_counter()
     for dataset_name in dataset_name_list:
         for model_name in model_name_list:
             for attack_name in attack_name_list:
@@ -128,16 +142,17 @@ if __name__ == "__main__":
                     attack_name,
                     )
                 # 日志保存目录
-                LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
-                LOG_FILE_DIR = os.path.join("log","Mutations",dataset_name,model_name,attack_name)
-                os.makedirs(LOG_FILE_DIR,exist_ok=True)
-                LOG_FILE_NAME = f"Mutations_{rate_list[0]*100}%.log"
-                LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
-                logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
-                logging.debug(f"Mutations|{dataset_name}|{model_name}|{attack_name}")
+                # LOG_FORMAT = "时间：%(asctime)s - 日志等级：%(levelname)s - 日志信息：%(message)s"
+                # LOG_FILE_DIR = os.path.join("log","Mutations",dataset_name,model_name,attack_name)
+                # os.makedirs(LOG_FILE_DIR,exist_ok=True)
+                # LOG_FILE_NAME = f"Mutations_{rate_list[0]*100}%.log"
+                # LOG_FILE_PATH = os.path.join(LOG_FILE_DIR,LOG_FILE_NAME)
+                # logging.basicConfig(level=logging.DEBUG,format=LOG_FORMAT,filename=LOG_FILE_PATH,filemode="w")
+                # logging.debug(f"Mutations|{dataset_name}|{model_name}|{attack_name}")
                 print(f"Mutations|{dataset_name}|{model_name}|{attack_name}")
                 print(f"mutation_rate_list: {rate_list}")
                 print(f"save_dir:{save_dir}")
+                one_scence_start_time = time.perf_counter()
                 try:
                     # 获得backdoor_data
                     backdoor_data_path = os.path.join(exp_root_dir, "ATTACK", dataset_name, model_name,attack_name, "backdoor_data.pth")
@@ -152,10 +167,18 @@ if __name__ == "__main__":
                         backdoor_model = model
 
                     for op in tqdm([OpType.GF,OpType.WS,OpType.NAI,OpType.NB,OpType.NS]):
-                        logging.debug(op)
+                        print(op)
                         gen_mutation_models(backdoor_model,save_dir,op,model_id_list)
-                    logging.debug("End")
+                    print("End")
                 except Exception as e:
                     logging.error("发生异常:%s",e)
-    
+                one_scence_end_time = time.perf_counter()
+                one_scence_cost_time = one_scence_end_time - one_scence_start_time
+                hours, minutes, seconds = convert_to_hms(one_scence_cost_time)
+                print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    all_scence_end_time = time.perf_counter()
+    all_scence_cost_time = all_scence_end_time - all_scence_start_time
+    hours, minutes, seconds = convert_to_hms(all_scence_cost_time)
+    print(f"all-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
 
