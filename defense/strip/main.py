@@ -1,0 +1,284 @@
+
+
+import os
+import time
+import random
+from collections import Counter
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader,Dataset
+import torch.optim as optim
+from torch.optim.lr_scheduler import StepLR,MultiStepLR,CosineAnnealingLR
+from torch.utils.data import DataLoader,Subset,ConcatDataset,random_split
+
+from models.model_loader import get_model
+from mid_data_loader import get_backdoor_data
+from datasets.posisoned_dataset import get_all_dataset
+from defense.our.sample_select import clean_seed
+from utils.common_utils import convert_to_hms,set_random_seed
+from datasets.utils import ExtractDataset_NoPoisonedFlag
+from utils.dataset_utils import get_class_num
+from utils.model_eval_utils import eval_asr_acc
+
+
+def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_path):
+    asr, acc = eval_asr_acc(model,filtered_poisoned_testset,clean_testset,device)
+    torch.save(model.state_dict(), save_path)
+    return asr,acc
+
+def calc_entropy(_output: torch.Tensor) -> torch.Tensor:
+        p = torch.nn.Softmax(dim=1)(_output) + 1e-8
+        return (-p * p.log()).sum(1)
+
+def superimpose(_input1: torch.Tensor, _input2: torch.Tensor, alpha: float = 0.5):
+        result = _input1 + alpha * _input2
+        return result
+
+def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:int) -> torch.Tensor:
+        # 存储该batch中每个sample与N个干净样本扰动下的的entropy
+        _list = []
+        samples = list(range(len(source_set)))
+        random.shuffle(samples)
+        samples = samples[:N] # N 个干净数据集
+        with torch.no_grad():
+            for i in samples:
+                X, Y, isP = source_set[i]
+                X = X.to(device)
+                # batch 与X的扰动
+                _test = superimpose(_input, X)
+                _output = model(_test)
+                # 该batch在X扰动下的entrop
+                entropy = calc_entropy(_output).cpu().detach()
+                _list.append(entropy)
+
+        return torch.stack(_list).mean(0) # 该batch的entropy
+
+def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,device,defense_fpr:float=0.1):
+    clean_entropy = []
+    clean_set_loader = DataLoader(clean_dataset, batch_size=128, shuffle=False)
+    # 按照批次遍历clean set
+    for i, (_input, _label, _isP) in enumerate(clean_set_loader):
+        _input = _input.to(device)
+        entropies = check(model,_input, clean_dataset, device, N=100)
+        for e in entropies:
+            clean_entropy.append(e)
+    clean_entropy = torch.FloatTensor(clean_entropy)
+
+    clean_entropy, _ = clean_entropy.sort()
+    threshold_low = float(clean_entropy[int(defense_fpr * len(clean_entropy))])
+    threshold_high = np.inf
+
+    # now cleanse the poisoned dataset with the chosen boundary
+    poisoned_dataset_loader = DataLoader(poisoned_dataset, batch_size=128, shuffle=False)
+    # 所有样本的熵
+    all_entropy = []
+    for i, (_input, _label, _isP) in enumerate(poisoned_dataset_loader):
+        _input = _input.to(device)
+        entropies = check(model,_input, clean_dataset, device, N=100)
+        for e in entropies:
+            all_entropy.append(e)
+    all_entropy = torch.FloatTensor(all_entropy)
+    suspicious_indices = torch.logical_or(all_entropy < threshold_low, all_entropy > threshold_high).nonzero().reshape(-1)
+    return all_entropy,suspicious_indices
+
+def train(model:nn.Module,device,dataset:Dataset,num_epoch:int=30, lr=1e-3, batch_size:int=64,
+          lr_scheduler=None, class_weight = None, weight_decay=None):
+    model.train()
+    model.to(device)
+    dataset_loader = DataLoader(
+            dataset, # 非预制
+            batch_size=batch_size,
+            shuffle=True, # 打乱
+            num_workers=4)
+    if weight_decay:
+        optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=weight_decay)
+    else:
+        optimizer = optim.Adam(model.parameters(),lr=lr)
+    if lr_scheduler == "MultiStepLR":
+        scheduler = MultiStepLR(optimizer, milestones=[30,60,90], gamma=0.1)
+    elif lr_scheduler == "CosineAnnealingLR":
+        scheduler = CosineAnnealingLR(optimizer,T_max=num_epoch,eta_min=1e-6)
+    if class_weight is None:
+        loss_function = nn.CrossEntropyLoss()
+    else:
+        loss_function = nn.CrossEntropyLoss(class_weight.to(device))
+    loss_function.to(device)
+    optimal_loss = float('inf')
+    best_model = model
+    for epoch in range(num_epoch):
+        step_loss_list = []
+        for _, batch in enumerate(dataset_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+            step_loss_list.append(loss.item())
+        if lr_scheduler:
+            scheduler.step()
+        epoch_loss = sum(step_loss_list) / len(step_loss_list)
+        if epoch_loss < optimal_loss:
+            optimal_loss = epoch_loss
+            best_model = model
+        if epoch % 10 == 0: # 每10个epoch一打印
+            print(f"epoch:{epoch},loss:{epoch_loss}")
+    return model,best_model
+
+def get_class_weights(dataset,class_num):
+    label_counts = Counter()
+    for sample_id in range(len(dataset)):
+        label = dataset[sample_id][1]
+        label_counts[label] += 1
+    most_num = label_counts.most_common(1)[0][1]
+    weights = []
+    for cls in range(class_num):
+        num = label_counts[cls]
+        weights.append(round(most_num / num,1))
+    return label_counts, weights
+
+
+def get_backdoor_base_data(dataset_name, model_name, attack_name):
+     # 加载后门攻击配套数据
+    backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
+    if "backdoor_model" in backdoor_data.keys():
+        backdoor_model = backdoor_data["backdoor_model"]
+    else:
+        model = get_model(dataset_name, model_name)
+        state_dict = backdoor_data["backdoor_model_weights"]
+        model.load_state_dict(state_dict)
+        backdoor_model = model
+    # 训练数据集中中毒样本id
+    poisoned_ids = backdoor_data["poisoned_ids"]
+    # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
+    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+    return backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset
+
+
+def sample_select(clean_seedSet,poisoned_trainset,backdoor_model):
+    backdoor_model.eval()
+    backdoor_model.to(device)
+    all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,defense_fpr=0.1)
+    return all_entropy,suspicious_indices
+
+def defense_train(poisoned_trainset,remain_ids, clean_seedSet, model):
+    choicedSet = Subset(poisoned_trainset,remain_ids)
+    availableSet = ConcatDataset([clean_seedSet,choicedSet])
+    epoch_num = 100 # 这次训练100个epoch
+    lr = 1e-3
+    batch_size = 512
+    weight_decay=1e-3
+    class_num = get_class_num(dataset_name)
+    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
+    label_counter,weights = get_class_weights(availableSet, class_num)
+    print(f"label_counter:{label_counter}")
+    print(f"class_weights:{weights}")
+    class_weights = torch.FloatTensor(weights)
+    last_defense_model,best_defense_model = train(
+        model,device,choicedSet,num_epoch=epoch_num,
+        lr=lr, batch_size=batch_size,
+        lr_scheduler="CosineAnnealingLR",
+        class_weight=class_weights,weight_decay=weight_decay)
+    return last_defense_model,best_defense_model
+
+def one_scene(dataset_name, model_name, attack_name,save_dir):
+
+    # 先得到后门攻击基础数据
+    backdoor_model,poisoned_ids,poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
+        get_backdoor_base_data(dataset_name, model_name, attack_name)
+
+    # select samples
+    sample_select_start_time = time.perf_counter()
+    clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
+    all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model)
+    sample_select_end_time = time.perf_counter()
+    sample_select_cost_time = sample_select_end_time - sample_select_start_time
+    hours, minutes, seconds = convert_to_hms(sample_select_cost_time)
+    print(f"select samples耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
+    # 保存 select samples 结果
+    os.makedirs(save_dir,exist_ok=True)
+    save_path = os.path.join(save_dir,"entropy.pt")
+    torch.save(all_entropy,save_path)
+    print(f"训练集中所有样本的熵保存在: {save_path}")
+    save_path = os.path.join(save_dir,"suspicious_indices.pt")
+    torch.save(suspicious_indices,save_path)
+    print(f"训练集中可疑的样本索引保存在: {save_path}")
+    suspicious_ids = suspicious_indices.tolist()
+    all_ids = list(range(len(poisoned_trainset)))
+    remain_ids = list(set(all_ids) - set(suspicious_ids))
+    PN = len(list(set(remain_ids) & set(poisoned_ids)))
+    print(f"准备用于retrain的数据集{PN}/{len(remain_ids)}")
+
+    # defense retrain
+    retrain_start_time = time.perf_counter()
+    last_defense_model,best_defense_model = defense_train(poisoned_trainset,remain_ids, clean_seedSet, backdoor_model)
+    retrain_end_time = time.perf_counter()
+    retrain_cost_time = retrain_end_time - retrain_start_time
+    hours, minutes, seconds = convert_to_hms(retrain_cost_time)
+    print(f"retrain耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
+    # 保存 defense retrain 结果
+    save_path = os.path.join(save_dir, "best_defense_model.pth")
+    asr,acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
+    print(f"best_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+    save_path = os.path.join(save_dir, "last_defense_model.pth")
+    asr,acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
+    print(f"last_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+
+if __name__ == "__main__":
+    # one-scence
+    '''
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet, LabelConsistent
+    gpu_id = 1
+    r_seed = 1
+    
+    device = torch.device(f"cuda:{gpu_id}")
+    start_time = time.perf_counter()
+    print("==="*30)
+    print(f"Strip|sample select|{dataset_name}|{model_name}|{attack_name}|r_seed:{r_seed}")
+    set_random_seed(r_seed)
+    save_dir = os.path.join(exp_root_dir,"Defense","Strip",dataset_name,model_name,attack_name)
+    one_scene(dataset_name, model_name, attack_name, save_dir)
+    end_time = time.perf_counter()
+    cost_time = end_time - start_time
+    hours, minutes, seconds = convert_to_hms(cost_time)
+    print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    '''
+
+    # all scence
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    r_seed_list = [1]
+    gpu_id = 1
+    device = torch.device(f"cuda:{gpu_id}")
+
+    all_start_time = time.perf_counter()
+    for dataset_name in dataset_name_list:
+        for model_name in model_name_list:
+            for attack_name in attack_name_list:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for r_seed in r_seed_list:    
+                    one_sence_start_time = time.perf_counter()
+                    print("==="*30)
+                    print(f"Strip|sample select|{dataset_name}|{model_name}|{attack_name}|r_seed:{r_seed}")
+                    set_random_seed(r_seed)
+                    save_dir = os.path.join(exp_root_dir,"Defense","Strip",dataset_name,model_name,attack_name)
+                    one_scene(dataset_name, model_name, attack_name, save_dir)
+                    one_scence_end_time = time.perf_counter()
+                    one_scence_cost_time = one_scence_end_time - one_sence_start_time
+                    hours, minutes, seconds = convert_to_hms(one_scence_cost_time)
+                    print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    all_end_time = time.perf_counter()
+    all_cost_time = all_end_time - all_start_time
+    hours, minutes, seconds = convert_to_hms(one_scence_cost_time)
+    print(f"all-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")

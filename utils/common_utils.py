@@ -50,11 +50,25 @@ def get_logger(log_dir,log_file_name):
     logger.addHandler(file_handler)
     return logger
 
+import sys, logging
+sys.path.append('../../')
+
+import random
+import numpy as np
+import torch
+import torchvision.transforms as transforms
+
+
 def set_random_seed(random_seed):
-    # cpu种子
-    torch.manual_seed(random_seed)
-    np.random.seed(random_seed)
-    random.seed(random_seed)
+    '''
+    设置运行时的随机种子
+    '''
+    random.seed(random_seed) # random 标准库
+    np.random.seed(random_seed) # np.random 库
+    torch.manual_seed(random_seed) # torch
+    torch.cuda.manual_seed_all(random_seed) # torch.cuda
+    torch.backends.cudnn.deterministic = True # torch.backends.cudnn
+    torch.backends.cudnn.benchmark = False # # torch.backends.cudnn
 
 def convert_to_hms(seconds):
     hours = int(seconds // 3600)

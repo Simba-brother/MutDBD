@@ -259,7 +259,6 @@ def atomic_json_dump(obj, out_path, indent=2):
 if __name__ == "__main__":
 
     # 单场景
-    '''
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name = "CIFAR10"
     model_name = "ResNet18"
@@ -283,7 +282,7 @@ if __name__ == "__main__":
     ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
                                                 "exp_1","best_BD_model.pth")
     main_one_sence()
-    '''
+
     
     '''
     # 全场景
@@ -355,7 +354,7 @@ if __name__ == "__main__":
     hours, minutes, seconds = convert_to_hms(total_cost_time)
     print(f"全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")
     '''
-    
+
     '''
     # 查看结果
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
