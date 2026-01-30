@@ -11,19 +11,22 @@ from utils.common_utils import convert_to_hms
 import time
 from collections import Counter
 import torch
-from torch.optim.lr_scheduler import StepLR,MultiStepLR,CosineAnnealingLR
+from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingLR
+
 import setproctitle
-from torch.utils.data import DataLoader,ConcatDataset,random_split
+from torch.utils.data import DataLoader,ConcatDataset
 import torch.nn as nn
 import torch.optim as optim
 from utils.model_eval_utils import eval_asr_acc
 from datasets.posisoned_dataset import get_all_dataset
-from utils.common_utils import read_yaml,get_logger,set_random_seed
+from utils.common_utils import set_random_seed
 from utils.dataset_utils import get_class_num
 from mid_data_loader import get_backdoor_data, get_class_rank
 from defense.our.sample_select import clean_seed
 from models.model_loader import get_model
 from defense.our.sample_select import chose_retrain_set
+from defense.our.semi_train_utils import semi_train
+
 
 
 def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
@@ -69,6 +72,8 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
             best_model = model
         print(f"epoch:{epoch},loss:{epoch_loss}")
     return model,best_model
+
+
 
 def unfreeze(model):
     for name, param in model.named_parameters():
@@ -137,11 +142,12 @@ def get_class_weights(dataset,class_num):
 def get_exp_info():
     # 获得实验时间戳: 年月日时分秒
     _time = get_formattedDateTime()
-    exp_dir = os.path.join(exp_root_dir,"CleanSeedWithPoison",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+    exp_name = "Ours_SemiTrain" # CleanSeedWithPoison | Ours_SemiTrain
+    exp_dir = os.path.join(exp_root_dir,exp_name,dataset_name,model_name,attack_name,f"exp_{r_seed}")
     os.makedirs(exp_dir,exist_ok=True)
     exp_info = {}
     exp_info["exp_time"] = _time
-    exp_info["exp_name"] = "CleanSeedWithPoison"
+    exp_info["exp_name"] = exp_name
     exp_info["exp_dir"] = exp_dir
     return exp_info
     
@@ -167,7 +173,7 @@ def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_
     torch.save(model.state_dict(), save_path)
     return asr,acc
 
-def one_scene(dataset_name, model_name, attack_name, r_seed):
+def one_scene(dataset_name, model_name, attack_name, r_seed,strict_clean=True,semi=False):
     '''
     一个场景(dataset/model/attack)下的defense train
     '''
@@ -193,7 +199,7 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     device = torch.device(f"cuda:{gpu_id}")
     # 空白模型
     # blank_model = get_model(dataset_name, model_name) # 得到该数据集的模型
-    seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=False) # 从中毒训练集中每个class选择10个clean seed
+    seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=strict_clean) # 从中毒训练集中每个class选择10个clean seed
     seed_p_id_set = set(seed_id_list) & set(poisoned_ids)
     print(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}/{len(seed_id_list)}")
     # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
@@ -214,24 +220,36 @@ def one_scene(dataset_name, model_name, attack_name, r_seed):
     choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = chose_retrain_set(
         best_fine_tuned_mmodel, device, choice_rate, poisoned_trainset, poisoned_ids, class_rank=class_rank)
     print(f"截取阈值:{choice_rate},中毒样本含量:{PN}/{len(choicedSet)}")
-    # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
-    availableSet = ConcatDataset([seedSet,choicedSet])
-    epoch_num = 100 # 这次训练100个epoch
-    lr = 1e-3
-    batch_size = 512
-    weight_decay=1e-3
     class_num = get_class_num(dataset_name)
-    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
-    label_counter,weights = get_class_weights(availableSet, class_num)
-    print(f"label_counter:{label_counter}")
-    print(f"class_weights:{weights}")
-    class_weights = torch.FloatTensor(weights)
-    # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
-    last_defense_model,best_defense_model = train(
-        best_fine_tuned_mmodel,device,availableSet,num_epoch=epoch_num,
-        lr=lr, batch_size=batch_size,
-        lr_scheduler="CosineAnnealingLR",
-        class_weight=class_weights,weight_decay=weight_decay)
+    if semi == True:
+        epochs = 120
+        lr = 2e-3
+        all_id_list = list(range(len(poisoned_trainset)))
+        labeled_id_set = set(seed_id_list) | set(choiced_sample_id_list) 
+        unlabeled_id_set = set(all_id_list) - labeled_id_set
+        last_defense_model,best_defense_model = semi_train(
+            model,device,class_num,seedSet,epochs,lr,poisoned_trainset,
+            labeled_id_set,unlabeled_id_set,all_id_list)
+
+    else:
+        # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
+        availableSet = ConcatDataset([seedSet,choicedSet])
+        epoch_num = 100 # 这次训练100个epoch
+        lr = 1e-3
+        batch_size = 512
+        weight_decay=1e-3
+        # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
+        label_counter,weights = get_class_weights(availableSet, class_num)
+        print(f"label_counter:{label_counter}")
+        print(f"class_weights:{weights}")
+        class_weights = torch.FloatTensor(weights)
+        # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
+
+        last_defense_model,best_defense_model = train(
+            best_fine_tuned_mmodel,device,availableSet,num_epoch=epoch_num,
+            lr=lr, batch_size=batch_size,
+            lr_scheduler="CosineAnnealingLR",
+            class_weight=class_weights,weight_decay=weight_decay)
     save_path = os.path.join(exp_info["exp_dir"], "best_defense_model.pth")
     asr,acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
     print(f"best_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
@@ -272,8 +290,8 @@ if __name__ == "__main__":
                     continue
                 for r_seed in r_seed_list:
                     print("==="*10)
-                    print(f"OursDefenseTrain|{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
-                    one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
+                    print(f"OursDefenseTrain|SemiTrain|{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
+                    one_scene(dataset_name, model_name, attack_name, r_seed=r_seed,strict_clean=True,semi=True)
     all_end_time = time.perf_counter()
     all_cost_time = all_end_time - all_start_time
     hours, minutes, seconds = convert_to_hms(all_cost_time)

@@ -59,8 +59,8 @@ class RegressionModel(nn.Module):
     def __init__(self, device, init_mask, init_pattern, classifier, normalizer=None, denormalizer=None, epsilon=1e-7):
         super(RegressionModel, self).__init__()
         self._EPSILON = epsilon
-        self.mask_tanh = nn.Parameter(torch.tensor(init_mask))
-        self.pattern_tanh = nn.Parameter(torch.tensor(init_pattern))
+        self.mask_tanh = nn.Parameter(torch.tensor(init_mask, dtype=torch.float32))
+        self.pattern_tanh = nn.Parameter(torch.tensor(init_pattern, dtype=torch.float32))
         self.classifier = classifier
         self.normalizer = normalizer
         self.denormalizer = denormalizer
@@ -159,9 +159,9 @@ def train_step(regression_model, optimizer, dataloader, recorder, epoch, target_
 
     inner_early_stop_flag = False
 
-    for batch_idx, (inputs, labels) in enumerate(dataloader):
+    for batch_idx, (inputs, labels, isP) in enumerate(dataloader):
         optimizer.zero_grad()
-        inputs = inputs.to(device)
+        inputs = inputs.to(device).float()
         sample_num = inputs.shape[0]
         total_pred += sample_num
 
@@ -246,7 +246,7 @@ def train_step(regression_model, optimizer, dataloader, recorder, epoch, target_
     return inner_early_stop_flag
 
 
-def train_mask(classifier, dataloader, target_label, device, dataset_name,
+def train_mask(classifier, dataloader, target_label, device, dataset_name, attack_name,
                nc_epoch=10, mask_lr=0.1, init_cost=1e-3):
     """为特定目标标签训练触发器"""
     # 获取数据形状
@@ -257,13 +257,31 @@ def train_mask(classifier, dataloader, target_label, device, dataset_name,
     init_mask = np.random.randn(1, *input_shape)
     init_pattern = np.random.randn(1, *input_shape)
 
-    # 获取normalizer和denormalizer
+    # 根据数据集和攻击类型获取normalizer和denormalizer
     if dataset_name.upper() == "CIFAR10":
-        normalizer = Normalize([0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261], n_channels=3)
-        denormalizer = Denormalize([0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261], n_channels=3)
+        if attack_name == "IAD":
+            normalizer = Normalize([0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261], n_channels=3)
+            denormalizer = Denormalize([0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261], n_channels=3)
+        elif attack_name in ["Refool", "LabelConsistent"]:
+            normalizer = Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225], n_channels=3)
+            denormalizer = Denormalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225], n_channels=3)
+        else:  # BadNets, WaNet
+            normalizer = None
+            denormalizer = None
     elif dataset_name.upper() == "GTSRB":
-        normalizer = None
-        denormalizer = None
+        if attack_name in ["Refool", "LabelConsistent"]:
+            normalizer = Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225], n_channels=3)
+            denormalizer = Denormalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225], n_channels=3)
+        else:  # BadNets, IAD, WaNet
+            normalizer = None
+            denormalizer = None
+    elif dataset_name.upper() == "IMAGENET2012_SUBSET":
+        if attack_name in ["Refool", "LabelConsistent"]:
+            normalizer = Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225], n_channels=3)
+            denormalizer = Denormalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225], n_channels=3)
+        else:  # BadNets, IAD, WaNet
+            normalizer = None
+            denormalizer = None
     else:
         normalizer = None
         denormalizer = None
@@ -367,7 +385,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
         print(f"\n训练目标标签 {target_label}...")
         mask, pattern, reg = train_mask(
             backdoor_model, nc_dataloader, target_label, device,
-            dataset_name, nc_epoch=nc_epoch, mask_lr=mask_lr
+            dataset_name, attack_name, nc_epoch=nc_epoch, mask_lr=mask_lr
         )
 
         mask_list.append(mask)
@@ -382,6 +400,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
     l1_norm_list = torch.stack(l1_norm_list)
 
     # target class rank
+    flag_list = []
     for target_label in range(num_classes):
         flag_list.append((target_label, l1_norm_list[target_label]))
     flag_list = sorted(flag_list, key=lambda x: x[1])
@@ -423,7 +442,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
 
     # 添加unlearning samples（应用触发器但保持原始标签）
     for i in range(num_clean, total_samples):
-        img, label = clean_seedSet[i]
+        img, label, isP = clean_seedSet[i]
         # 应用触发器
         triggered_img = apply_trigger(img, backdoor_mask, backdoor_pattern)
         x_new.append(triggered_img)
@@ -437,6 +456,8 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
 
     # ==================== 模型Unlearning ====================
     print("\n开始模型Unlearning（微调）...")
+    for param in backdoor_model.parameters():
+        param.requires_grad = True
     backdoor_model.train()
     optimizer = optim.SGD(backdoor_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
     criterion = nn.CrossEntropyLoss()
@@ -448,7 +469,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
         total = 0
 
         for inputs, labels in finetune_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
+            inputs, labels = inputs.to(device).float(), labels.to(device)
 
             optimizer.zero_grad()
             outputs = backdoor_model(inputs)
@@ -478,21 +499,54 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
 
 if __name__ == "__main__":
     # one-scence
-    exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
-    model_name= "ResNet18" # ResNet18, VGG19, DenseNet
-    attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
-    gpu_id = 1
-    r_seed = 1
+    # exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    # dataset_name= "CIFAR10" # CIFAR10, GTSRB, ImageNet2012_subset
+    # model_name= "ResNet18" # ResNet18, VGG19, DenseNet
+    # attack_name ="BadNets" # BadNets, IAD, Refool, WaNet
+    # gpu_id = 1
+    # r_seed = 1
 
+    # device = torch.device(f"cuda:{gpu_id}")
+    # start_time = time.perf_counter()
+    # print("="*60)
+    # print(f"Neural Cleanse|{dataset_name}|{model_name}|{attack_name}|r_seed:{r_seed}")
+    # set_random_seed(r_seed)
+    # save_dir = os.path.join(exp_root_dir,"Defense","NC",dataset_name,model_name,attack_name)
+    # os.makedirs(save_dir,exist_ok=True)
+    # one_scence(dataset_name, model_name, attack_name, save_dir)
+    # end_time = time.perf_counter()
+    # cost_time = end_time - start_time
+    # hours, minutes, seconds = convert_to_hms(cost_time)
+    # print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
+    # all-scence
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    r_seed_list = [1]
+    gpu_id = 1
     device = torch.device(f"cuda:{gpu_id}")
-    start_time = time.perf_counter()
-    print("==="*30)
-    print(f"Neural Cleanse|{dataset_name}|{model_name}|{attack_name}|r_seed:{r_seed}")
-    set_random_seed(r_seed)
-    save_dir = os.path.join(exp_root_dir,"Defense","NC",dataset_name,model_name,attack_name)
-    one_scence(dataset_name, model_name, attack_name, save_dir)
-    end_time = time.perf_counter()
-    cost_time = end_time - start_time
-    hours, minutes, seconds = convert_to_hms(cost_time)
-    print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
+    all_start_time = time.perf_counter()
+    for dataset_name in dataset_name_list:
+        for model_name in model_name_list:
+            for attack_name in attack_name_list:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for r_seed in r_seed_list:    
+                    one_sence_start_time = time.perf_counter()
+                    print("="*60)
+                    print(f"Neural Cleanse|{dataset_name}|{model_name}|{attack_name}|r_seed:{r_seed}")
+                    set_random_seed(r_seed)
+                    save_dir = os.path.join(exp_root_dir,"Defense","NC",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+                    os.makedirs(save_dir,exist_ok=True)
+                    one_scence(dataset_name, model_name, attack_name, save_dir)
+                    one_scence_end_time = time.perf_counter()
+                    one_scence_cost_time = one_scence_end_time - one_sence_start_time
+                    hours, minutes, seconds = convert_to_hms(one_scence_cost_time)
+                    print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    all_end_time = time.perf_counter()
+    all_cost_time = all_end_time - all_start_time
+    hours, minutes, seconds = convert_to_hms(one_scence_cost_time)
+    print(f"all-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
