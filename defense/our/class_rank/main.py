@@ -260,7 +260,7 @@ if __name__ == "__main__":
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
     print("mutation_rate_list:",mutation_rate_list)
-    print("target class:",3)
+    print("target class:",target_class)
 
     all_start_time = time.perf_counter()
     # 创建一个默认的defaultdict，其默认值为另一个defaultdict
