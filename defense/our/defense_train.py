@@ -3,6 +3,7 @@ OurMethod主程序
 '''
 
 import sys
+import json
 from utils.common_utils import my_excepthook
 sys.excepthook = my_excepthook
 from utils.common_utils import get_formattedDateTime
@@ -139,48 +140,19 @@ def get_class_weights(dataset,class_num):
         weights.append(round(most_num / num,1))
     return label_counts, weights
 
-def get_exp_info():
-    # 获得实验时间戳: 年月日时分秒
-    _time = get_formattedDateTime()
-    exp_name = "Ours_SemiTrain" # CleanSeedWithPoison | Ours_SemiTrain
-    exp_dir = os.path.join(exp_root_dir,exp_name,dataset_name,model_name,attack_name,f"exp_{r_seed}")
-    os.makedirs(exp_dir,exist_ok=True)
-    exp_info = {}
-    exp_info["exp_time"] = _time
-    exp_info["exp_name"] = exp_name
-    exp_info["exp_dir"] = exp_dir
-    return exp_info
-    
-def pre_work(dataset_name, model_name, attack_name, r_seed):
-    set_random_seed(r_seed)
-    exp_info = get_exp_info()
-    # 进程名称
-    proctitle = f'{exp_info["exp_name"]}|{dataset_name}|{model_name}|{attack_name}|{r_seed}'
-    setproctitle.setproctitle(proctitle)
-    # 获得实验logger
-    # log_dir = os.path.join("log","CleanSeedWithPoison",dataset_name,model_name,attack_name,f"exp_{r_seed}")
-    # log_file_name  = f'{exp_info["exp_name"]}.log'
-    # logger = get_logger(log_dir,log_file_name)
-    # logger.info(f'实验时间:{exp_info["exp_time"]}')
-    # logger.info(f'实验名称:{exp_info["exp_name"]}')
-    # logger.info(f'实验目录:{exp_info["exp_dir"]}')
-    # logger.info(f"随机种子:{r_seed}")
-    # logger.info(f'进程title:{proctitle}')
-    return exp_info
+
 
 def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_path):
     asr, acc = eval_asr_acc(model,filtered_poisoned_testset,clean_testset,device)
     torch.save(model.state_dict(), save_path)
     return asr,acc
 
-def one_scene(dataset_name, model_name, attack_name, r_seed,strict_clean=True,semi=False):
+def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
     '''
     一个场景(dataset/model/attack)下的defense train
     '''
     # 实验开始计时
     start_time = time.perf_counter()
-    # 实验开始前先设置好实验的一些元信息
-    exp_info= pre_work(dataset_name, model_name, attack_name, r_seed)
 
     # 加载后门攻击配套数据
     backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
@@ -197,28 +169,36 @@ def one_scene(dataset_name, model_name, attack_name, r_seed,strict_clean=True,se
     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
     # 获得设备
     device = torch.device(f"cuda:{gpu_id}")
-    # 空白模型
-    # blank_model = get_model(dataset_name, model_name) # 得到该数据集的模型
     seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=strict_clean) # 从中毒训练集中每个class选择10个clean seed
-    seed_p_id_set = set(seed_id_list) & set(poisoned_ids)
-    print(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}/{len(seed_id_list)}")
-    # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
-    freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
-    # 种子微调训练30个轮次
-    last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,num_epoch=30,lr=1e-3)
-    # 把在种子训练集上表现最好的那个model保存下来，记为 best_BD_model.pth
-    save_path = os.path.join(exp_info["exp_dir"], "best_BD_model.pth")
-    asr,acc = eval_and_save(best_fine_tuned_mmodel, filtered_poisoned_testset, clean_testset, device, save_path)
-    print(f"best_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
-    save_path = os.path.join(exp_info["exp_dir"], "last_BD_model.pth")
-    asr,acc = eval_and_save(last_fine_tuned_model, filtered_poisoned_testset, clean_testset, device, save_path)
-    print(f"last_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+    if resume_ranker_mode is False:
+        seed_p_id_set = set(seed_id_list) & set(poisoned_ids)
+        print(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}/{len(seed_id_list)}")
+        # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
+        freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
+        # 种子微调训练30个轮次
+        last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,num_epoch=30,lr=1e-3)
+        # 把在种子训练集上表现最好的那个model保存下来，记为 best_BD_model.pth
+        save_path = os.path.join(save_dir, "best_BD_model.pth")
+        asr,acc = eval_and_save(best_fine_tuned_mmodel, filtered_poisoned_testset, clean_testset, device, save_path)
+        print(f"best_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+        save_path = os.path.join(save_dir, "last_BD_model.pth")
+        asr,acc = eval_and_save(last_fine_tuned_model, filtered_poisoned_testset, clean_testset, device, save_path)
+        print(f"last_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+        ranker_model = best_fine_tuned_mmodel
+    else:
+        ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
+                                                f"exp_{r_seed}","best_BD_model.pth")
+        ranker_model_state_dict = torch.load(ranker_model_state_dict_path,map_location="cpu")
+        model = get_model(dataset_name, model_name)
+        model.load_state_dict(ranker_model_state_dict)
+        ranker_model = model
 
     # 样本选择
     choice_rate = 0.6 # 打算选择60%的样本进行retrain
     class_rank = get_class_rank(dataset_name,model_name,attack_name) # 加载 class rank
     choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = chose_retrain_set(
-        best_fine_tuned_mmodel, device, choice_rate, poisoned_trainset, poisoned_ids, class_rank=class_rank)
+        ranker_model, device, choice_rate, poisoned_trainset, poisoned_ids, class_rank=class_rank,
+        beta=beta,sigmoid_fag=sigmoid_fag)
     print(f"截取阈值:{choice_rate},中毒样本含量:{PN}/{len(choicedSet)}")
     class_num = get_class_num(dataset_name)
     if semi == True:
@@ -246,21 +226,44 @@ def one_scene(dataset_name, model_name, attack_name, r_seed,strict_clean=True,se
         # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
 
         last_defense_model,best_defense_model = train(
-            best_fine_tuned_mmodel,device,availableSet,num_epoch=epoch_num,
+            ranker_model,device,availableSet,num_epoch=epoch_num,
             lr=lr, batch_size=batch_size,
             lr_scheduler="CosineAnnealingLR",
             class_weight=class_weights,weight_decay=weight_decay)
-    save_path = os.path.join(exp_info["exp_dir"], "best_defense_model.pth")
-    asr,acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
-    print(f"best_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
-    save_path = os.path.join(exp_info["exp_dir"], "last_defense_model.pth")
-    asr,acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
-    print(f"last_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+    
+    if save_model:
+        save_path = os.path.join(save_dir, "best_defense_model.pth")
+        asr,acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
+        print(f"best_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+        save_path = os.path.join(save_dir, "last_defense_model.pth")
+        asr,acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
+        print(f"last_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+    else:
+        best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+        last_asr, last_acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+        print(f"best_defense_model|ASR:{best_asr},ACC:{best_acc}")
+        print(f"last_defense_model|ASR:{last_asr},ACC:{last_acc}")
+
 
     end_time = time.perf_counter()
     cost_time = end_time - start_time
     hours, minutes, seconds = convert_to_hms(cost_time)
     print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
+    record = {
+        "dataset_name":dataset_name,
+        "model_name":model_name,
+        "attack_name":attack_name,
+        "r_seed":r_seed,
+        "beta":beta,
+        "PN":PN,
+        "best_acc":best_acc,
+        "best_asr":best_asr,
+        "last_acc":last_acc,
+        "last_asr":last_asr
+    }
+
+    return record
 
 if __name__ == "__main__":
     # one-scence
@@ -273,25 +276,67 @@ if __name__ == "__main__":
     r_seed = 1
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
     '''
+    
+    exp_name = "OursDefense_DisBeta" # CleanSeedWithPoison | Ours_SemiTrain
+    exp_time = get_formattedDateTime()
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
 
     # all-scence
-    exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = [1]
-    gpu_id = 0
+
+    gpu_id = 1
+
+    # 超参数
+    resume_ranker_mode=True,
+    beta = 0.75
+    sigmoid_fag = False
+    strict_clean=True,
+    semi=False # 是否采用半监督训练
+    save_model = False
+
+    
+    print("exp_root_dir:",exp_root_dir)
+    print("exp_name:",exp_name)
+    print("exp_time:",exp_time)
+    print("dataset_name_list:",dataset_name_list)
+    print("model_name_list:",model_name_list)
+    print("attack_name_list:",attack_name_list)
+    print("r_seed_list:",r_seed_list)
+    print("gpu_id:",gpu_id)
+    
+    print("==选择样本超参数==")
+    print("resume_ranker_mode:",resume_ranker_mode)
+    print("beta:",beta)
+    print("sigmoid_fag:",sigmoid_fag)
+    print("strict_clean:",strict_clean)
+    print("==训练超参数==")
+    print("semi:",semi)
+    print("==其他超参数==")
+    print("save_model:",save_model)
 
     all_start_time = time.perf_counter()
+    record_list = []
     for dataset_name in dataset_name_list:
         for model_name in model_name_list:
             for attack_name in attack_name_list:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
                 for r_seed in r_seed_list:
-                    print("==="*10)
-                    print(f"OursDefenseTrain|SemiTrain|{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
-                    one_scene(dataset_name, model_name, attack_name, r_seed=r_seed,strict_clean=True,semi=True)
+                    set_random_seed(r_seed)
+                    print("="*30)
+                    print(f"{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
+                    record = one_scene(dataset_name, model_name, attack_name,r_seed)
+                    record_list.append(record)
+    records_save_dir = os.path.join(exp_root_dir,"Exp_Results","discussion_beta",f"exp_{r_seed_list[0]}")
+    os.makedirs(records_save_dir,exist_ok=True)
+    records_save_file_name = "beta=0.75.json"
+    record_save_path = os.path.join(records_save_dir,records_save_file_name)
+    with open(record_save_path, 'w') as f:
+        json.dump(record_list, f)
+    print(f"records json is saved in {record_save_path}")
     all_end_time = time.perf_counter()
     all_cost_time = all_end_time - all_start_time
     hours, minutes, seconds = convert_to_hms(all_cost_time)

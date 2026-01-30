@@ -1,21 +1,18 @@
 '''分析不同变异率对class rank的影响'''
 import os
 import joblib
-from utils.common_utils import read_yaml,get_class_num
 import matplotlib as mpl
 import scienceplots
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from utils.dataset_utils import get_class_num
 
-config = read_yaml("config.yaml")
-exp_root_dir = config["exp_root_dir"]
+
 
 def one_scene(dataset_name,model_name,attack_name,metric="FP"): 
-    mutation_rate_list = [0.01,0.03,0.05,0.07,0.09,0.1]
     for mutation_rate in mutation_rate_list:
         res = joblib.load(os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate),f"{metric}.joblib"))
-        res["target_class_rank_ratio"]
-        print(f"mutation_rate:{mutation_rate},rank_rate:{res["target_class_rank_ratio"]}")
+        print(f"mutation_rate:{mutation_rate},rank_rate:{res['target_class_rank_ratio']}")
 
 def draw_box():
     '''论文插图：不同变异率对FP class rank的影响'''
@@ -91,7 +88,9 @@ def draw_box():
 
 
 if __name__ == "__main__":
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name = "CIFAR10"
     model_name = "ResNet18"
     attack_name = "BadNets"
+    mutation_rate_list = [0.001,0.01,0.03,0.05,0.07,0.09,0.1]
     one_scene(dataset_name,model_name,attack_name)

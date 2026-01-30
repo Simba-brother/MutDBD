@@ -1,6 +1,7 @@
 # 用于计算class rank
 import os
 import joblib
+import json
 from collections import defaultdict
 import pandas as pd
 import numpy as np
@@ -8,12 +9,14 @@ from sklearn.metrics import classification_report,confusion_matrix
 from utils.small_utils import nested_defaultdict
 from utils.calcu_utils import entropy
 import numpy as np
-from utils.common_utils import read_yaml
+import time
 from utils.dataset_utils import get_class_num
 from defense.our.mutation.mutation_select import get_top_k_global_ids
+from utils.common_utils import convert_to_hms
+from utils.common_utils import get_formattedDateTime
+from collections import defaultdict
 
-
-def main_scene(dataset_name, model_name, attack_name, mutation_rate=0.01, metric="FP"):
+def one_scene(dataset_name, model_name, attack_name, mutation_rate=0.01, metric="FP", save_dir=None):
     '''获得class rank list and rank top'''
     df_predicted_labels = pd.read_csv(os.path.join(exp_root_dir,"EvalMutationToCSV",dataset_name,model_name,attack_name,str(mutation_rate),"preLabel.csv"))
     mutated_model_id_list = get_top_k_global_ids(df_predicted_labels,top_k=50,trend="bigger")
@@ -32,14 +35,18 @@ def main_scene(dataset_name, model_name, attack_name, mutation_rate=0.01, metric
         res = entropy_metrics(df_predicted_labels, mutated_model_id_list, class_num)
     else:
         raise ValueError("Invalid input")
-    # 保存数据
-    save_dir = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate))
-    os.makedirs(save_dir,exist_ok=True)
-    save_file_name = f"{metric}.joblib"
-    save_path = os.path.join(save_dir,save_file_name)
-    joblib.dump(res,save_path)
-    print("保存:",save_path)
-    return 
+    if save_dir:
+        # 保存数据
+        save_file_name = f"{metric}.joblib"
+        save_path = os.path.join(save_dir,save_file_name)
+        joblib.dump(res,save_path)
+        print("保存:",save_path)
+    record = {
+        "metric":metric,
+        "data_save_dir":save_dir,
+        "rank_ratio":res["target_class_rank_ratio"]
+    }
+    return record
 
 def main_batch_sciences(dataset_name_list, model_name_list, attack_name_list):
     for dataset_name in dataset_name_list:
@@ -48,7 +55,7 @@ def main_batch_sciences(dataset_name_list, model_name_list, attack_name_list):
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
                 print(f"{dataset_name}|{model_name}|{attack_name}")
-                main_scene(dataset_name, model_name, attack_name, metric="FP")
+                one_scene(dataset_name, model_name, attack_name, metric="FP")
     
 def recall_metrics(df:pd.DataFrame,mutated_model_global_id_list:list, class_num:int):
     '''从小到大'''
@@ -218,15 +225,69 @@ def look_res():
     print(FP_res)
 
 if __name__ == "__main__":
-    # 脚本需要的全局变量参数
-    config = read_yaml("config.yaml")
-    exp_root_dir = config["exp_root_dir"]
-    dataset_name = "GTSRB"
+    
+    # one-scence
+    '''
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    dataset_name = "CIFAR10"
     model_name = "ResNet18"
-    attack_name = "LabelConsistent"
-    mutation_rate = 0.01
-    target_class = config["target_class"]
-    # main_scene(dataset_name,model_name,attack_name,mutation_rate=0.01, metric="FP")
-    look_res()
-    print("END")
+    attack_name = "BadNets"
+    mutation_rate = 0.001
+    target_class = 3
+    start_time = time.perf_counter()
+    one_scene(dataset_name,model_name,attack_name,mutation_rate=mutation_rate, metric="FP")
+    # look_res()
+    end_time = time.perf_counter()
+    cost_time = end_time - start_time
+    hours, minutes, seconds = convert_to_hms(cost_time)
+    print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    '''
+
+    # all-scence
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    exp_name = "discussion_mutation_rate"
+    exp_time = get_formattedDateTime()
+    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    target_class = 3
+    mutation_rate_list = [0.001,0.005,0.007,0.01,0.03,0.05,0.07,0.09,0.1]
+
+    print("exp_root_dir:",exp_root_dir)
+    print("exp_name:","discussion_mutation_rate")
+    print("exp_time:",exp_time)
+    print("dataset_name_list:",dataset_name_list)
+    print("model_name_list:",model_name_list)
+    print("attack_name_list:",attack_name_list)
+    print("mutation_rate_list:",mutation_rate_list)
+    print("target class:",3)
+
+    all_start_time = time.perf_counter()
+    # 创建一个默认的defaultdict，其默认值为另一个defaultdict
+    multi_level_dict = defaultdict(lambda: defaultdict(dict))
+    for dataset_name in dataset_name_list:
+        for model_name in model_name_list:
+            for attack_name in attack_name_list:
+                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                    continue
+                for mutation_rate in mutation_rate_list:
+                    print("="*30)
+                    print(f"{dataset_name}|{model_name}|{attack_name}|mutation_rate:{mutation_rate}")
+                    save_dir = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate))
+                    os.makedirs(save_dir,exist_ok=True)
+                    record = one_scene(dataset_name,model_name,attack_name,mutation_rate=mutation_rate, metric="FP",save_di=save_dir)
+                    # 现在你可以直接添加键值对，如果不存在会自动创建新的层级
+                    multi_level_dict[dataset_name][model_name][attack_name][mutation_rate] = record
+    multi_level_dict_save_dir = os.path.join(exp_root_dir,"Exp_Results",exp_name)
+    os.makedirs(multi_level_dict_save_dir,exist_ok=True)
+    multi_level_dict_save_file_name = "records.json"
+    record_save_path = os.path.join(multi_level_dict_save_dir,multi_level_dict_save_file_name)
+    with open(record_save_path, 'w') as f:
+        json.dump(multi_level_dict, f)
+    print(f"multi_level_dict json is saved in {record_save_path}")
+    all_end_time = time.perf_counter()
+    all_cost_time = all_end_time - all_start_time
+    hours, minutes, seconds = convert_to_hms(all_cost_time)
+    print(f"all-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
 

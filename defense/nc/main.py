@@ -548,5 +548,5 @@ if __name__ == "__main__":
                     print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
     all_end_time = time.perf_counter()
     all_cost_time = all_end_time - all_start_time
-    hours, minutes, seconds = convert_to_hms(one_scence_cost_time)
+    hours, minutes, seconds = convert_to_hms(all_cost_time)
     print(f"all-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
