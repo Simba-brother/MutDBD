@@ -19,7 +19,7 @@ from models.model_loader import get_model
 from datasets.posisoned_dataset import get_all_dataset
 from defense.our.sample_select import chose_retrain_set
 from defense.our.defense_train import train
-
+from defense.our.semi_train_utils import semi_train
 
 
 def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_path):
@@ -114,7 +114,7 @@ def build_clean_seedSet(poisoned_trainset,poisoned_ids):
     for class_id,sample_id_list in clean_sample_dict.items():
         seed_sample_id_list.extend(random.sample(sample_id_list, 10))
     clean_seedSet = Subset(poisoned_trainset,seed_sample_id_list)
-    return clean_seedSet
+    return clean_seedSet,seed_sample_id_list
 
 def sample_id_list(id_list: list[int], rate:float=0.2) -> list[int]:
     # 计算采样数量
@@ -169,7 +169,7 @@ def main_one_scence(save_dir):
     sigmoid_flag = False
 
     # 构建干净seedset
-    seedSet = build_clean_seedSet(small_poisoned_trainset,small_poisoned_ids)
+    seedSet,seed_sample_id_list = build_clean_seedSet(small_poisoned_trainset,small_poisoned_ids)
     select_start_time = time.perf_counter()
     # 选择样本
     choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = \
@@ -181,27 +181,39 @@ def main_one_scence(save_dir):
     hours, minutes, seconds = convert_to_hms(select_cost_time)
     print(f"PN:{PN}")
     print(f"选择样本耗时:{hours}时{minutes}分{seconds:.1f}秒")
-    # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
-    availableSet = ConcatDataset([seedSet,choicedSet])
-    epoch_num = 100 # 这次训练100个epoch
-    lr = 1e-3
-    batch_size = 512
-    weight_decay=1e-3
-    class_num = get_class_num(dataset_name)
-    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
-    label_counter,weights = get_class_weights(availableSet, class_num)
 
-    print(f"label_counter:{label_counter}")
-    print(f"class_weights:{weights}")
-    class_weights = torch.FloatTensor(weights)
-    # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
-    train_start_time = time.perf_counter()
-    last_defense_model,best_defense_model = train(
-        ranker_model,device,availableSet,num_epoch=epoch_num,
-        lr=lr, batch_size=batch_size,
-        lr_scheduler="CosineAnnealingLR",
-        class_weight=class_weights,
-        weight_decay=weight_decay)
+    # defense retrain. 种子样本+选择的样本对模型进进下一步的 train
+    class_num = get_class_num(dataset_name)
+    if semi_train_flag is True:
+        epochs = 100
+        lr = 2e-3
+        all_id_list = list(range(len(small_poisoned_trainset)))
+        labeled_id_set = set(seed_sample_id_list) | set(choiced_sample_id_list) 
+        unlabeled_id_set = set(all_id_list) - labeled_id_set
+        train_start_time = time.perf_counter()
+        last_defense_model,best_defense_model = semi_train(
+            ranker_model,device,class_num,seedSet,epochs,lr,small_poisoned_trainset,
+            labeled_id_set,unlabeled_id_set,all_id_list)
+    else:
+        availableSet = ConcatDataset([seedSet,choicedSet])
+        epoch_num = 100 # 这次训练100个epoch
+        lr = 1e-3
+        batch_size = 512
+        weight_decay=1e-3
+        # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
+        label_counter,weights = get_class_weights(availableSet, class_num)
+
+        print(f"label_counter:{label_counter}")
+        print(f"class_weights:{weights}")
+        class_weights = torch.FloatTensor(weights)
+        # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
+        train_start_time = time.perf_counter()
+        last_defense_model,best_defense_model = train(
+            ranker_model,device,availableSet,num_epoch=epoch_num,
+            lr=lr, batch_size=batch_size,
+            lr_scheduler="CosineAnnealingLR",
+            class_weight=class_weights,
+            weight_decay=weight_decay)
     train_end_time = time.perf_counter()
     train_cost_time = train_end_time - train_start_time
     hours, minutes, seconds = convert_to_hms(train_cost_time)
@@ -248,12 +260,20 @@ if __name__ == "__main__":
     '''
 
     # all-scence
+    current_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = [1]
-    device =  torch.device("cuda:1")
+    device =  torch.device("cuda:0")
+
+    # 超参数
+    semi_train_flag = True
+
+    print("PID:",current_pid)
+    print("semi_train_flag:",semi_train_flag)
+
     for dataset_name in dataset_name_list:
         for model_name in model_name_list:
             for attack_name in attack_name_list:
@@ -277,7 +297,7 @@ if __name__ == "__main__":
                     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
                     ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
                                                                 f"exp_{r_seed}","best_BD_model.pth")
-                    save_dir = os.path.join(exp_root_dir,"small_dataset_defense_train",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+                    save_dir = os.path.join(exp_root_dir,"small_dataset_defense_semitrain",dataset_name,model_name,attack_name,f"exp_{r_seed}")
                     os.makedirs(save_dir,exist_ok=True)
                     print(f"{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
                     main_one_scence(save_dir)

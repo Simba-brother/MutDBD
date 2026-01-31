@@ -1,6 +1,6 @@
 
 from itertools import cycle,islice
-
+import copy
 import numpy as np
 import torch
 import torch.nn as nn
@@ -184,14 +184,15 @@ def semi_train(
         model,
         device,
         class_num,
-        clean_seed, 
+        clean_seed,
         epochs,
         lr,
         poisoned_trainset,
         labeled_id_set,
         unlabeled_id_set,
         all_id_list):
-    
+    model.train()
+    model.to(device)
     split_indice = []
     for id in all_id_list:
         if id in labeled_id_set:
@@ -214,11 +215,19 @@ def semi_train(
     # 损失函数对象放到gpu上
     semi_criterion.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr = lr)
-    semi_mixmatch = {"train_iteration": 1024,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
+
+    # 根据标注数据量自适应设置train_iteration，避免过多迭代
+    # 每个epoch的迭代次数应该大致覆盖标注数据集即可
+    labeled_batches = max(len(xloader), 1)
+    train_iteration = min(max(labeled_batches * 2, 128), 512)
+
+    semi_mixmatch = {"train_iteration": train_iteration,"temperature": 0.5, "alpha": 0.75,"num_classes": class_num}
 
     
     best_model = model
-    best_clean_seed_acc = 0
+    best_clean_seed_acc = -float('inf')
+    patience = 10                                                                   
+    no_improve_count = 0
     for epoch in range(epochs):
         mixmatch_train_one_epoch(
             model,
@@ -234,6 +243,12 @@ def semi_train(
         clean_seed_acc = e.eval_acc()
         print(f"epoch:{epoch},clean_seed_acc:{clean_seed_acc}")
         if clean_seed_acc > best_clean_seed_acc:
-            best_model = model
-    last_model = model
+            best_model = copy.deepcopy(model)
+            best_clean_seed_acc = clean_seed_acc
+        else:
+            no_improve_count += 1
+            if no_improve_count >= patience:
+                print(f"Early stopping at epoch {epoch}")
+                break  
+    last_model = copy.deepcopy(model)
     return last_model, best_model

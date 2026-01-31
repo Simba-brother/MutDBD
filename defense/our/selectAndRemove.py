@@ -6,7 +6,7 @@ import queue
 import torch
 from sklearn.metrics import classification_report
 import pandas as pd
-from codes.utils import priorityQueue_2_list
+from utils.small_utils import priorityQueue_to_list
 
 def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
     # 优先级队列q,值越小优先级越高
@@ -25,10 +25,9 @@ def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
             item = (-acc_dif, m_i)
         q.put(item)
     
-    priority_list = priorityQueue_2_list(q)
+    priority_list = priorityQueue_to_list(q)
     selected_m_i_list = [m_i for priority, m_i in  priority_list[0:top_k]]
     return selected_m_i_list
-
 
 def global_id_To_path():
     _map = {}

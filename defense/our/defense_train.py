@@ -208,7 +208,7 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
         labeled_id_set = set(seed_id_list) | set(choiced_sample_id_list) 
         unlabeled_id_set = set(all_id_list) - labeled_id_set
         last_defense_model,best_defense_model = semi_train(
-            model,device,class_num,seedSet,epochs,lr,poisoned_trainset,
+            ranker_model,device,class_num,seedSet,epochs,lr,poisoned_trainset,
             labeled_id_set,unlabeled_id_set,all_id_list)
 
     else:
