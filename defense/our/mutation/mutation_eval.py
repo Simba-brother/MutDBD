@@ -314,10 +314,10 @@ if __name__ == "__main__":
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    gpu_id = 1
+    gpu_id = 0
 
     mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
-    mutation_rate_list = [0.005] # [0.01] # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
+    mutation_rate_list = [0.007] # [0.01] # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
     mutation_model_num = 100 # 每个变异算子生成了100个模型，总共5个变异算子，500个。
 
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 

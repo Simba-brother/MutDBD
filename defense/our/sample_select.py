@@ -8,7 +8,7 @@ from models.model_loader import get_model
 from datasets.posisoned_dataset import get_all_dataset
 import torch.nn as nn
 import torch
-from utils.common_utils import Record,convert_to_hms
+from utils.common_utils import Record,convert_to_hms,get_formattedDateTime
 import queue
 import scienceplots
 import matplotlib
@@ -17,6 +17,7 @@ from pathlib import Path
 import json
 import time
 import random
+
 
 def clean_seed(poisoned_trainset,poisoned_ids,strict_clean:bool=True):
     '''
@@ -256,8 +257,64 @@ def atomic_json_dump(obj, out_path, indent=2):
         json.dump(obj, f, ensure_ascii=False, indent=indent)
     tmp.replace(out_path)
 
-if __name__ == "__main__":
+def load_results(exp_save_path):
+    if not os.path.exists(exp_save_path):
+        return {}
+    with open(exp_save_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
 
+def save_experiment_result(exp_save_path, dataset_name, model_name, attack_name,
+                          r_seed, beta, result_data):
+    """
+    保存单个实验结果到嵌套JSON
+    结构: {dataset: {model: {attack: {beta: {r_seed: result}}}}}
+    """
+    # 加载现有数据
+    data = load_results(exp_save_path)
+
+    # 构建嵌套结构
+    if dataset_name not in data:
+        data[dataset_name] = {}
+    if model_name not in data[dataset_name]:
+        data[dataset_name][model_name] = {}
+    if attack_name not in data[dataset_name][model_name]:
+        data[dataset_name][model_name][attack_name] = {}
+    if str(beta) not in data[dataset_name][model_name][attack_name]:
+        data[dataset_name][model_name][attack_name][str(beta)] = {}
+
+    # 保存结果
+    data[dataset_name][model_name][attack_name][str(beta)][str(r_seed)] = result_data
+
+    # 原子写入
+    atomic_json_dump(data, exp_save_path)
+
+
+def get_experiment_result(dataset_name, model_name, attack_name, r_seed, beta):
+    """
+    获取特定场景的实验结果
+    """
+    data = load_results()
+
+    try:
+        return data[dataset_name][model_name][attack_name][str(beta)][str(r_seed)]
+    except KeyError:
+        return None
+
+def get_backdoor_model(dataset_name, model_name, backdoor_data):
+    
+    # 后门模型
+    if "backdoor_model" in backdoor_data.keys():
+        backdoor_model = backdoor_data["backdoor_model"]
+    else:
+        model = get_model(dataset_name, model_name)
+        state_dict = backdoor_data["backdoor_model_weights"]
+        model.load_state_dict(state_dict)
+        backdoor_model = model
+    return backdoor_model
+
+
+if __name__ == "__main__":
+    '''
     # 单场景
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name = "CIFAR10"
@@ -282,93 +339,75 @@ if __name__ == "__main__":
     ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
                                                 "exp_1","best_BD_model.pth")
     main_one_sence()
-
-    
     '''
+
+
     # 全场景
-    records = []
+    cur_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name_list = ["CIFAR10","GTSRB","ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    beta_list = [1.0] # [1.0, 0.75, 0.5, 0.25, 0.0]
-    sigmoid_flag = True
+    beta_list = [1.0, 0.75, 0.5, 0.25, 0.0]
+    r_seed_list = list(range(1,11)) # 1-10
+    sigmoid_flag = False
     device = torch.device("cuda:0")
-    total_start_time = time.perf_counter()
-    for dataset_name in dataset_name_list:
-        for model_name in model_name_list:
-            for attack_name in attack_name_list:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
-                # 后门模型
-                if "backdoor_model" in backdoor_data.keys():
-                    backdoor_model = backdoor_data["backdoor_model"]
-                else:
-                    model = get_model(dataset_name, model_name)
-                    state_dict = backdoor_data["backdoor_model_weights"]
-                    model.load_state_dict(state_dict)
-                    backdoor_model = model
-                backdoor_model = backdoor_model.to(device).eval()
-                # 训练数据集中中毒样本id
-                poisoned_ids = backdoor_data["poisoned_ids"]
-                # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
-                poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+    exp_save_dir = os.path.join(exp_root_dir, "Exp_Results", "discussion_beta")
+    os.makedirs(exp_save_dir,exist_ok=True)
+    exp_result_file_name = f"results.json"
+    exp_save_path = os.path.join(exp_save_dir,exp_result_file_name)
 
-                ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
-                                                            "exp_1","best_BD_model.pth")
-                for beta in beta_list:
-                    start_time = time.perf_counter()
-                    rec = {
-                        "dataset": dataset_name,
-                        "model": model_name,
-                        "attack": attack_name,
-                        "beta": float(beta),
-                    }
-                    print(rec)
-                    try:
+    print("cur_pid:",cur_pid)
+    print("exp_root_dir:",exp_root_dir)
+    print("dataset_name_list:",dataset_name_list)
+    print("model_name_list:",model_name_list)
+    print("attack_name_list:",attack_name_list)
+    print("beta_list:",beta_list)
+    print("r_seed_list:",r_seed_list)
+    print("sigmoid_flag:",sigmoid_flag)
+    print("exp_save_path:",exp_save_path)
+
+    total_start_time = time.perf_counter()
+    for r_seed in r_seed_list:
+        for dataset_name in dataset_name_list:
+            for model_name in model_name_list:
+                for attack_name in attack_name_list:
+                    if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                        continue
+                    backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
+                    backdoor_model = get_backdoor_model(dataset_name, model_name, backdoor_data)
+                    ranker_model_state_dict_path = os.path.join(
+                            exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
+                            f"exp_{r_seed}","best_BD_model.pth")
+                    backdoor_model = backdoor_model.to(device).eval()
+                    # 训练数据集中中毒样本id
+                    poisoned_ids = backdoor_data["poisoned_ids"]
+                    # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
+                    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+                    for beta in beta_list:
+                        start_time = time.perf_counter()
+                        print(f"\n{dataset_name}|{model_name}|{attack_name}|beta={beta}|r_seed={r_seed}")
                         choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = \
                             main_one_sence(dataset_name,model_name,attack_name,beta,sigmoid_flag)
                         choiced_ids = [int(i) for i in list(choiced_sample_id_list)]
-                        rec.update({
+                        print(f"\tPN:{int(PN)}")
+                        res_data = {
                             "PN": int(PN),
-                            "n_choiced": len(choiced_ids),
-                            "choiced_sample_ids": choiced_ids,
-                            "status": "ok",
-                        })
-                    except Exception as e:
-                        rec.update({
-                            "status": "error",
-                            "error": repr(e),
-                    })
-                    records.append(rec)
-                    end_time = time.perf_counter()
-                    cost_time = end_time - start_time
-                    hours, minutes, seconds = convert_to_hms(cost_time)
-                    print(f"耗时:{hours}时{minutes}分{seconds:.1f}秒")
-    out_path = os.path.join(exp_root_dir, "Exp_Results", "discussion_sigmoid", "records.json")
-    atomic_json_dump({"meta": {"n": len(records)}, "records": records}, out_path)
-    print("saved:", out_path)
+                        }
+                        # 立即保存到嵌套JSON
+                        save_experiment_result(
+                            exp_save_path, dataset_name, model_name, attack_name,
+                            r_seed, beta, res_data
+                        )
+                        end_time = time.perf_counter()
+                        cost_time = end_time - start_time
+                        hours, minutes, seconds = convert_to_hms(cost_time)
+                        print(f"\t耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
     total_end_time = time.perf_counter()
     total_cost_time = total_end_time - total_start_time
     hours, minutes, seconds = convert_to_hms(total_cost_time)
-    print(f"全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")
-    '''
+    print(f"\n全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    
 
-    '''
-    # 查看结果
-    exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    records_path = os.path.join(exp_root_dir,"Exp_Results","discussion_sigmoid","records.json")
-    with open(records_path,mode="r") as f:
-        records_json = json.load(f)
-    records = records_json["records"]
-    for record in records:
-        record_info = {
-            "dataset_name":record["dataset"],
-            "model_name":record["model"],
-            "attack_name":record["attack"],
-            "beta":record["beta"],
-            "PN":record["PN"]
-        }
-        print(record_info)
-    '''
+  

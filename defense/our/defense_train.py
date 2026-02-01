@@ -291,7 +291,7 @@ if __name__ == "__main__":
 
     # 超参数
     resume_ranker_mode=True,
-    beta = 0.75
+    beta = 0.5
     sigmoid_fag = False
     strict_clean=True,
     semi=False # 是否采用半监督训练

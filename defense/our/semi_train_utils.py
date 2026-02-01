@@ -118,7 +118,7 @@ def mixmatch_train_one_epoch(model, xloader, uloader, criterion, optimizer, epoc
     xlimited_cycled_data = islice(xiter,0,kwargs["train_iteration"])
     ulimited_cycled_data = islice(uiter,0,kwargs["train_iteration"])
     model.train()
-    
+    batch_loss_list = []
     for batch_idx,(xbatch,ubatch) in enumerate(zip(xlimited_cycled_data,ulimited_cycled_data)):
         xinput, xtarget = xbatch["img"], xbatch["target"]
         uinput1, uinput2 = ubatch["img1"], ubatch["img2"]
@@ -176,9 +176,13 @@ def mixmatch_train_one_epoch(model, xloader, uloader, criterion, optimizer, epoc
             epoch + batch_idx / kwargs["train_iteration"],
         )
         loss = Lx + lambda_u * Lu
+        batch_loss_list.append(loss.item())
         optimizer.zero_grad() # 优化器梯度清0
         loss.backward() # 基于loss函数求梯度值
         optimizer.step() # 优化器优化基于损失函数求的梯度优化模型参数
+    total_loss = sum(batch_loss_list)
+    avg_loss = round(total_loss / len(batch_loss_list),4)
+    return avg_loss
 
 def semi_train(
         model,
@@ -225,11 +229,11 @@ def semi_train(
 
     
     best_model = model
-    best_clean_seed_acc = -float('inf')
+    best_train_loss = float('inf')
     patience = 10                                                                   
-    no_improve_count = 0
+    no_decrease_count = 0
     for epoch in range(epochs):
-        mixmatch_train_one_epoch(
+        train_loss = mixmatch_train_one_epoch(
             model,
             xloader,
             uloader,
@@ -239,6 +243,17 @@ def semi_train(
             device,
             **semi_mixmatch
         )
+        print(f"epoch:{epoch},train_loss:{train_loss}")
+        if train_loss < best_train_loss:
+            best_model = copy.deepcopy(model)
+            best_train_loss = train_loss
+            no_decrease_count = 0
+        else:
+            no_decrease_count += 1
+            if no_decrease_count >= patience:
+                print(f"Early stopping at epoch {epoch}")
+                break
+        '''
         e = EvalModel(model,clean_seed,device)
         clean_seed_acc = e.eval_acc()
         print(f"epoch:{epoch},clean_seed_acc:{clean_seed_acc}")
@@ -249,6 +264,7 @@ def semi_train(
             no_improve_count += 1
             if no_improve_count >= patience:
                 print(f"Early stopping at epoch {epoch}")
-                break  
+                break
+        '''
     last_model = copy.deepcopy(model)
     return last_model, best_model
