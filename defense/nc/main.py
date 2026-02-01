@@ -363,7 +363,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     num_classes = get_class_num(dataset_name)
 
     # 创建数据加载器（使用clean_trainset的一个子集进行触发器逆向）
-    batch_size = 128
+    batch_size = 32
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
     nc_dataloader = DataLoader(clean_seedSet, batch_size=batch_size, shuffle=True, num_workers=4)
 
@@ -404,7 +404,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
         print(f"target_label:{target_label},l1_norm:{l1_norm}")
         class_rank_list.append(target_label)
         if target_label == gt_target_label:
-            class_rank_rate = round(i / num_classes, 4)
+            class_rank_rate = round((i+1) / num_classes, 4)
     print(f"class_rank_rate:{class_rank_rate*100}%")
 
 
@@ -452,7 +452,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     x_tensor = torch.stack(x_new)
     y_tensor = torch.tensor(y_new)
     finetune_dataset = TensorDataset(x_tensor, y_tensor)
-    finetune_loader = DataLoader(finetune_dataset, batch_size=128, shuffle=True, num_workers=4)
+    finetune_loader = DataLoader(finetune_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 
     # ==================== 模型Unlearning ====================
     print("\n开始模型Unlearning（微调）...")
@@ -567,10 +567,10 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     gt_target_label = 3
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    model_name_list =  ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
-    gpu_id = 1
+    gpu_id = 0
     device = torch.device(f"cuda:{gpu_id}")
     
 
