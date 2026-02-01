@@ -17,7 +17,9 @@ from datasets.posisoned_dataset import get_all_dataset
 from defense.our.sample_select import clean_seed
 from utils.common_utils import convert_to_hms,set_random_seed
 from utils.dataset_utils import get_class_num
+from utils.common_utils import get_formattedDateTime
 from utils.model_eval_utils import eval_asr_acc
+from utils.save_utils import atomic_json_dump, load_results
 
 def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_path):
     asr, acc = eval_asr_acc(model,filtered_poisoned_testset,clean_testset,device)
@@ -349,16 +351,10 @@ def apply_trigger(img_tensor, mask, pattern):
     return triggered_img
 
 
-def one_scence(dataset_name, model_name, attack_name, save_dir):
+def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     # 先得到后门攻击基础数据
     backdoor_model,poisoned_ids,poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
         get_backdoor_base_data(dataset_name, model_name, attack_name)
-    
-
-    # ==================== Neural Cleanse 后门检测 ====================
-    print("="*60)
-    print("开始 Neural Cleanse 后门检测")
-    print("="*60)
 
     backdoor_model = backdoor_model.to(device)
     backdoor_model.eval()
@@ -382,7 +378,6 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
     mask_lr = 0.1  # mask学习率
 
     for target_label in range(num_classes):
-        print(f"\n训练目标标签 {target_label}...")
         mask, pattern, reg = train_mask(
             backdoor_model, nc_dataloader, target_label, device,
             dataset_name, attack_name, nc_epoch=nc_epoch, mask_lr=mask_lr
@@ -394,8 +389,6 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
         l1_norm_list.append(l1_norm)
         idx_mapping[target_label] = target_label
 
-        print(f"  L1 norm: {l1_norm:.4f}")
-
     # 转换为tensor
     l1_norm_list = torch.stack(l1_norm_list)
 
@@ -405,15 +398,22 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
         flag_list.append((target_label, l1_norm_list[target_label]))
     flag_list = sorted(flag_list, key=lambda x: x[1])
     
+    class_rank_rate = 0
+    class_rank_list = []
+    for i,(target_label, l1_norm) in enumerate(flag_list):
+        print(f"target_label:{target_label},l1_norm:{l1_norm}")
+        class_rank_list.append(target_label)
+        if target_label == gt_target_label:
+            class_rank_rate = round(i / num_classes, 4)
+    print(f"class_rank_rate:{class_rank_rate*100}%")
+
+
     # # 异常检测
     # print("\n" + "="*60)
     # is_backdoor, flag_list = outlier_detection(l1_norm_list, idx_mapping)
-    print("="*60)
-
-
-    print("\n检测到后门！开始缓解...")
+    
     backdoor_target_label = flag_list[0][0]  # 最可疑的标签
-    print(f"后门目标标签: {backdoor_target_label}")
+    print(f"最可疑后门目标标签: {backdoor_target_label}")
 
     # ==================== 准备Unlearning数据集 ====================
     print("\n准备Unlearning数据集...")
@@ -482,20 +482,55 @@ def one_scence(dataset_name, model_name, attack_name, save_dir):
             total += labels.size(0)
             correct += predicted.eq(labels).sum().item()
 
-        acc = 100. * correct / total
-        print(f"Epoch {epoch+1}/{finetune_epochs}, Loss: {total_loss/len(finetune_loader):.4f}, Acc: {acc:.2f}%")
+        train_acc = 100. * correct / total
+        print(f"Epoch {epoch+1}/{finetune_epochs}, Loss: {total_loss/len(finetune_loader):.4f}, Acc: {train_acc:.2f}%")
 
-    print("模型微调完成！")
+    print("模型微调完成")
 
     # ==================== 评估修复后的模型 ====================
-    print("\n" + "="*60)
-    print("评估修复后的模型性能")
-    print("="*60)
-    save_path = os.path.join(save_dir, "defense_model.pth")
-    asr,acc = eval_and_save(backdoor_model, filtered_poisoned_testset, clean_testset, device, save_path)
-    print(f"Clean Accuracy (ACC): {acc:.3f}%")
-    print(f"Attack Success Rate (ASR): {asr:.3f}%")
-    print(f"防御模型权重保存在:{save_path}")
+    
+    print("评估修复后的模型性能...")
+    if save_model:
+        save_path = os.path.join(save_dir, "defense_model.pth")
+        asr,acc = eval_and_save(backdoor_model, filtered_poisoned_testset, clean_testset, device, save_path)
+        print(f"防御模型权重保存在:{save_path}")
+    else:
+        asr, acc = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_testset,device) 
+    print(f"ACC: {acc:.3f}%")
+    print(f"ASR: {asr:.3f}%")
+    res = {
+        "class_rank_list":class_rank_list,
+        "class_rank_rate":class_rank_rate,
+        "acc":acc,
+        "asr":asr
+    }
+    return res
+
+
+def save_experiment_result(exp_save_path, 
+                           dataset_name, model_name, attack_name,r_seed,
+                           result_data
+                          ):
+    """
+    保存单个实验结果到嵌套JSON
+    结构: {dataset: {model: {attack: {beta: {r_seed: result}}}}}
+    """
+    # 加载现有数据
+    data = load_results(exp_save_path)
+
+    # 构建嵌套结构
+    if dataset_name not in data:
+        data[dataset_name] = {}
+    if model_name not in data[dataset_name]:
+        data[dataset_name][model_name] = {}
+    if attack_name not in data[dataset_name][model_name]:
+        data[dataset_name][model_name][attack_name] = {}
+
+    # 保存结果
+    data[dataset_name][model_name][attack_name][str(r_seed)] = result_data
+
+    # 原子写入
+    atomic_json_dump(data, exp_save_path)
 
 if __name__ == "__main__":
     # one-scence
@@ -520,33 +555,68 @@ if __name__ == "__main__":
     # print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
 
     # all-scence
+    cur_pid = os.getpid()
+    exp_name = "NC"
+    exp_time = get_formattedDateTime()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    exp_save_dir = os.path.join(exp_root_dir,"Defense", exp_name)
+    exp_save_file_name = "results.json"
+    exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
+    save_model = False
+
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    gt_target_label = 3
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    r_seed_list = [1]
+    r_seed_list = list(range(1,11))
     gpu_id = 1
     device = torch.device(f"cuda:{gpu_id}")
+    
+
+    print("PID:",cur_pid)
+    print("exp_root_dir:",exp_root_dir)
+    print("exp_name:",exp_name)
+    print("exp_time:",exp_time)
+    print("exp_save_path:",exp_save_path)
+    print("save_model:",save_model)
+    print("dataset_name_list:",dataset_name_list)
+    print("model_name_list:",model_name_list)
+    print("attack_name_list:",attack_name_list)
+    print("r_seed_list:",r_seed_list)
+    print("gpu_id:",gpu_id)
+
 
     all_start_time = time.perf_counter()
-    for dataset_name in dataset_name_list:
-        for model_name in model_name_list:
-            for attack_name in attack_name_list:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for r_seed in r_seed_list:    
+    for r_seed in r_seed_list:
+        one_repeat_start_time = time.perf_counter()
+        for dataset_name in dataset_name_list:
+            for model_name in model_name_list:
+                for attack_name in attack_name_list:
+                    if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                        continue
                     one_sence_start_time = time.perf_counter()
-                    print("="*60)
-                    print(f"Neural Cleanse|{dataset_name}|{model_name}|{attack_name}|r_seed:{r_seed}")
+                    print(f"\nNeural Cleanse|{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}")
                     set_random_seed(r_seed)
-                    save_dir = os.path.join(exp_root_dir,"Defense","NC",dataset_name,model_name,attack_name,f"exp_{r_seed}")
-                    os.makedirs(save_dir,exist_ok=True)
-                    one_scence(dataset_name, model_name, attack_name, save_dir)
+                    if save_model:
+                        save_dir = os.path.join(exp_save_dir,dataset_name,model_name,attack_name,f"exp_{r_seed}")
+                        os.makedirs(save_dir,exist_ok=True)
+                    else:
+                        save_dir = None
+                    
+                    res = one_scence(dataset_name, model_name, attack_name, save_dir)
+                    save_experiment_result(exp_save_path, 
+                           dataset_name, model_name, attack_name,r_seed,
+                           res)
                     one_scence_end_time = time.perf_counter()
                     one_scence_cost_time = one_scence_end_time - one_sence_start_time
                     hours, minutes, seconds = convert_to_hms(one_scence_cost_time)
                     print(f"one-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+        one_repeat_end_time = time.perf_counter()
+        one_repeart_cost_time = one_repeat_end_time - one_repeat_start_time
+        hours, minutes, seconds = convert_to_hms(one_repeart_cost_time)
+        print(f"\n一轮次全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")
     all_end_time = time.perf_counter()
     all_cost_time = all_end_time - all_start_time
     hours, minutes, seconds = convert_to_hms(all_cost_time)
-    print(f"all-scence耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    print(f"\n{len(r_seed_list)}轮次全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")

@@ -152,7 +152,7 @@ def build_small_dataset(poisoned_trainset:DatasetFolder, poisoned_ids:list[int])
     print(f"缩小数据集含有的中毒样本数量:{len(subset_poisoned_id_list)}")
     return (small_poisoned_trainset,subset_poisoned_id_list)
 
-def main_one_scence(save_dir):
+def main_one_scence(save_dir=None):
     start_time = time.perf_counter()
     # 得到ranker model
     blank_model = get_model(dataset_name, model_name)
@@ -239,7 +239,7 @@ def main_one_scence(save_dir):
     cost_time = end_time - start_time
     hours, minutes, seconds = convert_to_hms(cost_time)
     print(f"one-sence总耗时:{hours}时{minutes}分{seconds:.1f}秒")
-    return PN, best_asr,best_acc,last_asr,last_acc,best_model_save_path,last_model_save_path
+    return PN, best_asr,best_acc,last_asr,last_acc
 
 
 def get_backdoor_model(dataset_name, model_name, backdoor_data):
@@ -358,11 +358,15 @@ if __name__ == "__main__":
                     ranker_model_state_dict_path = os.path.join(
                         exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
                         f"exp_{r_seed}","best_BD_model.pth")
-                    save_dir = os.path.join(exp_save_dir,
+                    if save_model is True:
+                        save_dir = os.path.join(exp_save_dir,
                                             dataset_name,model_name,attack_name,f"exp_{r_seed}")
-                    os.makedirs(save_dir,exist_ok=True)
+                        os.makedirs(save_dir,exist_ok=True)
+                    else:
+                        save_dir = None
+                    
                     print(f"\n{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}")
-                    PN,best_asr,best_acc,last_asr,last_acc,best_model_save_path,last_model_save_path \
+                    PN,best_asr,best_acc,last_asr,last_acc \
                         = main_one_scence(save_dir)
                     result_data = {
                         "PN":PN,
