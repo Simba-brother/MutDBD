@@ -14,12 +14,14 @@ from torch.optim.lr_scheduler import StepLR,MultiStepLR,CosineAnnealingLR
 from utils.model_eval_utils import eval_asr_acc
 from utils.common_utils import convert_to_hms
 from utils.dataset_utils import get_class_num
+from utils.save_utils import atomic_json_dump, load_results
 from mid_data_loader import get_backdoor_data, get_class_rank
 from models.model_loader import get_model
 from datasets.posisoned_dataset import get_all_dataset
 from defense.our.sample_select import chose_retrain_set
 from defense.our.defense_train import train
 from defense.our.semi_train_utils import semi_train
+
 
 
 def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_path):
@@ -218,16 +220,66 @@ def main_one_scence(save_dir):
     train_cost_time = train_end_time - train_start_time
     hours, minutes, seconds = convert_to_hms(train_cost_time)
     print(f"训练耗时:{hours}时{minutes}分{seconds:.1f}秒")
-    save_path = os.path.join(save_dir, "best_defense_model.pth")
-    asr,acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
-    print(f"best_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
-    save_path = os.path.join(save_dir, "last_defense_model.pth")
-    asr,acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
-    print(f"last_defense_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+
+    if save_model:
+        best_model_save_path = os.path.join(save_dir, "best_defense_model.pth")
+        best_asr,best_acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, 
+                                        best_model_save_path)
+        print(f"best_defense_model|ASR:{best_asr},ACC:{best_acc},权重保存在:{best_model_save_path}")
+        last_model_save_path = os.path.join(save_dir, "last_defense_model.pth")
+        last_asr,last_acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device, 
+                                        last_model_save_path)
+        print(f"last_defense_model|ASR:{last_asr},ACC:{last_acc},权重保存在:{last_model_save_path}")
+    else:
+        best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+        last_asr, last_acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+        print(f"best_defense_model|ASR:{best_asr},ACC:{best_acc}")
+        print(f"last_defense_model|ASR:{last_asr},ACC:{last_acc}")
     end_time = time.perf_counter()
     cost_time = end_time - start_time
     hours, minutes, seconds = convert_to_hms(cost_time)
     print(f"one-sence总耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    return PN, best_asr,best_acc,last_asr,last_acc,best_model_save_path,last_model_save_path
+
+
+def get_backdoor_model(dataset_name, model_name, backdoor_data):
+    
+    # 后门模型
+    if "backdoor_model" in backdoor_data.keys():
+        backdoor_model = backdoor_data["backdoor_model"]
+    else:
+        model = get_model(dataset_name, model_name)
+        state_dict = backdoor_data["backdoor_model_weights"]
+        model.load_state_dict(state_dict)
+        backdoor_model = model
+    return backdoor_model
+
+
+
+def save_experiment_result(exp_save_path, 
+                           dataset_name, model_name, attack_name,r_seed,
+                           result_data
+                          ):
+    """
+    保存单个实验结果到嵌套JSON
+    结构: {dataset: {model: {attack: {beta: {r_seed: result}}}}}
+    """
+    # 加载现有数据
+    data = load_results(exp_save_path)
+
+    # 构建嵌套结构
+    if dataset_name not in data:
+        data[dataset_name] = {}
+    if model_name not in data[dataset_name]:
+        data[dataset_name][model_name] = {}
+    if attack_name not in data[dataset_name][model_name]:
+        data[dataset_name][model_name][attack_name] = {}
+
+    # 保存结果
+    data[dataset_name][model_name][attack_name][str(r_seed)] = result_data
+
+    # 原子写入
+    atomic_json_dump(data, exp_save_path)
 
 if __name__ == "__main__":
 
@@ -265,39 +317,68 @@ if __name__ == "__main__":
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    r_seed_list = [1]
-    device =  torch.device("cuda:0")
+    r_seed_list = [1,2,3,4,5,6,7,8,9,10]
+    device =  torch.device("cuda:1")
+
+    # 创建用于保存该实验的文件夹
+    exp_save_dir = os.path.join(exp_root_dir,"small_dataset_defense_semitrain")
+    os.makedirs(exp_save_dir,exist_ok=True)
+    exp_save_file_name = "results.json"
+    exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
+    save_model = False
 
     # 超参数
     semi_train_flag = True
 
     print("PID:",current_pid)
     print("semi_train_flag:",semi_train_flag)
+    print("exp_root_dir:",exp_root_dir)
+    print("dataset_name_list:",dataset_name_list)
+    print("model_name_list:",model_name_list)
+    print("attack_name_list:",attack_name_list)
+    print("r_seed_list:",r_seed_list)
+    print("exp_save_path:",exp_save_path)
+    print("save_model:",save_model)
 
-    for dataset_name in dataset_name_list:
-        for model_name in model_name_list:
-            for attack_name in attack_name_list:
-                if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-                    continue
-                for r_seed in r_seed_list:
-
-                    random.seed(r_seed)
+    total_start_time = time.perf_counter()
+    for r_seed in r_seed_list: # 重复实验
+        one_repeat_start_time = time.perf_counter()
+        random.seed(r_seed)
+        for dataset_name in dataset_name_list:
+            for model_name in model_name_list:
+                for attack_name in attack_name_list:
+                    if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+                        continue
                     backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
-                    # 后门模型
-                    if "backdoor_model" in backdoor_data.keys():
-                        backdoor_model = backdoor_data["backdoor_model"]
-                    else:
-                        model = get_model(dataset_name, model_name)
-                        state_dict = backdoor_data["backdoor_model_weights"]
-                        model.load_state_dict(state_dict)
-                        backdoor_model = model
+                    backdoor_model = get_backdoor_model(dataset_name, model_name, backdoor_data)
                     # 训练数据集中中毒样本id
                     poisoned_ids = backdoor_data["poisoned_ids"]
                     # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
                     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
-                    ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
-                                                                f"exp_{r_seed}","best_BD_model.pth")
-                    save_dir = os.path.join(exp_root_dir,"small_dataset_defense_semitrain",dataset_name,model_name,attack_name,f"exp_{r_seed}")
+                    ranker_model_state_dict_path = os.path.join(
+                        exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
+                        f"exp_{r_seed}","best_BD_model.pth")
+                    save_dir = os.path.join(exp_save_dir,
+                                            dataset_name,model_name,attack_name,f"exp_{r_seed}")
                     os.makedirs(save_dir,exist_ok=True)
-                    print(f"{dataset_name}|{model_name}|{attack_name}|exp_{r_seed}")
-                    main_one_scence(save_dir)
+                    print(f"\n{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}")
+                    PN,best_asr,best_acc,last_asr,last_acc,best_model_save_path,last_model_save_path \
+                        = main_one_scence(save_dir)
+                    result_data = {
+                        "PN":PN,
+                        "best_asr":best_asr,
+                        "best_acc":best_acc,
+                        "last_asr":last_asr,
+                        "last_acc":last_acc
+                    }
+                    save_experiment_result(exp_save_path, 
+                           dataset_name, model_name, attack_name,r_seed,
+                           result_data)
+        one_repeat_end_time = time.perf_counter()
+        one_repeat_cost_time = one_repeat_end_time - one_repeat_start_time
+        hours, minutes, seconds = convert_to_hms(one_repeat_cost_time)
+        print(f"\n一轮次全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")
+    total_end_time = time.perf_counter()
+    total_cost_time = total_end_time - total_start_time
+    hours, minutes, seconds = convert_to_hms(total_cost_time)
+    print(f"\n{len(r_seed_list)}轮次全场景耗时:{hours}时{minutes}分{seconds:.1f}秒")

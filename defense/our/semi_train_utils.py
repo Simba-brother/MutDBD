@@ -230,7 +230,7 @@ def semi_train(
     
     best_model = model
     best_train_loss = float('inf')
-    patience = 10                                                                   
+    patience = 5
     no_decrease_count = 0
     for epoch in range(epochs):
         train_loss = mixmatch_train_one_epoch(
@@ -247,7 +247,7 @@ def semi_train(
         if train_loss < best_train_loss:
             best_model = copy.deepcopy(model)
             best_train_loss = train_loss
-            no_decrease_count = 0
+            no_decrease_count = 0 # 归零
         else:
             no_decrease_count += 1
             if no_decrease_count >= patience:

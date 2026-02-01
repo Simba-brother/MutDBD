@@ -341,7 +341,6 @@ if __name__ == "__main__":
     main_one_sence()
     '''
 
-
     # 全场景
     cur_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
@@ -380,7 +379,6 @@ if __name__ == "__main__":
                             exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
                             f"exp_{r_seed}","best_BD_model.pth")
                     backdoor_model = backdoor_model.to(device).eval()
-                    # 训练数据集中中毒样本id
                     poisoned_ids = backdoor_data["poisoned_ids"]
                     # filtered_poisoned_testset, poisoned testset中是所有的test set都被投毒了,为了测试真正的ASR，需要把poisoned testset中的attacked class样本给过滤掉
                     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
