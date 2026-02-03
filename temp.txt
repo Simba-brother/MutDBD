@@ -1,0 +1,4 @@
+请基于pdfs/SBA_GDA.pdf论文中的所提出的single bias attack(SBA)后门攻击，
+在attack/cifar10/sba_attack.py文件中进行代码复现。你只需要复现CIFAR10数据集,
+ResNet18模型的条件下的SBA攻击。你需要参考attack/cifar10/badnets_attack.py文件中
+的编码风格，但是你只能在attack/cifar10/sba_attack.py这个文件中进行编辑，不能修改其他的任何文件。

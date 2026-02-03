@@ -74,6 +74,19 @@ def get_cifar10_transform(attack_name):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
+    elif attack_name == "SBA":
+        # 训练集transform    
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(), # Tensor|ndarray to PIL
+            transforms.RandomCrop(size=32,padding=4,padding_mode="reflect"), # PIL|Tensor to be cropped.
+            transforms.RandomHorizontalFlip(), 
+            transforms.ToTensor()
+        ])
+        # 测试集transform
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.ToTensor()
+        ])
     else:
         raise ValueError("Invalid input")
     return train_transform,test_transform

@@ -11,7 +11,7 @@ import pandas as pd
 import joblib
 from utils.model_eval_utils import EvalModel
 from datasets.utils import ExtractDataset_NoPoisonedFlag
-from datasets.posisoned_dataset import get_all_dataset
+from datasets.posisoned_dataset import get_all_dataset,get_clean_dataset
 from models.model_loader import get_model
 from utils.common_utils import convert_to_hms
 
@@ -311,13 +311,13 @@ if __name__ == "__main__":
 
     # all-scence
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    gpu_id = 0
+    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["SBA"] # ["BadNets","IAD","Refool","WaNet"]
+    gpu_id = 1
 
     mutation_name_list = ["Gaussian_Fuzzing","Weight_Shuffling","Neuron_Activation_Inverse","Neuron_Block","Neuron_Switch"]
-    mutation_rate_list = [0.007] # [0.01] # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
+    mutation_rate_list = [0.01] # [0.007] # [0.01] # [0.01, 0.03, 0.05, 0.07, 0.09, 0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] 
     mutation_model_num = 100 # 每个变异算子生成了100个模型，总共5个变异算子，500个。
 
     main_exp_name = "EvalMutationToCSV" # "EvalMutationToCSV_ForDiscussion" 
@@ -365,9 +365,13 @@ if __name__ == "__main__":
                         backdoor_model = model
                 
                     backdoor_model_origin = copy.deepcopy(backdoor_model)
-                    poisoned_ids = backdoor_data["poisoned_ids"]
-                    poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
-                    poisoned_trainset = ExtractDataset_NoPoisonedFlag(poisoned_trainset)
+                    if attack_name == "SBA":
+                        trainset, testset = get_clean_dataset(dataset_name,attack_name)
+                        poisoned_trainset = trainset
+                    else:
+                        poisoned_ids = backdoor_data["poisoned_ids"]
+                        poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
+                        poisoned_trainset = ExtractDataset_NoPoisonedFlag(poisoned_trainset)
 
                     print(f"开始:得到所有变异模型在poisoned trainset上的预测{sub_exp_name}结果")
                     one_scence_start_time = time.perf_counter()

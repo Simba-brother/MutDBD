@@ -106,10 +106,10 @@ if __name__ == "__main__":
     # all-scence
     # 进程名称
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    rate_list = [0.007] # [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
+    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["SBA"] # ["BadNets","IAD","Refool","WaNet"]
+    rate_list = [0.01] # [0.01,0.03,0.05,0.07,0.09,0.1] # [0.0001,0.001,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9] # [0.03,0.05,0.07,0.09,0.1]
     # 每个变异算子在每个变异率下生成的变异模型数量
     model_id_list = list(range(100))
     # 变异模型的生成使用cpu设备即可

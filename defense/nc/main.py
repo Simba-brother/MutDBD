@@ -1,6 +1,3 @@
-
-
-
 import os
 import time
 
@@ -363,7 +360,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     num_classes = get_class_num(dataset_name)
 
     # 创建数据加载器（使用clean_trainset的一个子集进行触发器逆向）
-    batch_size = 32
+    batch_size = 128
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
     nc_dataloader = DataLoader(clean_seedSet, batch_size=batch_size, shuffle=True, num_workers=4)
 
@@ -483,7 +480,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
             correct += predicted.eq(labels).sum().item()
 
         train_acc = 100. * correct / total
-        print(f"Epoch {epoch+1}/{finetune_epochs}, Loss: {total_loss/len(finetune_loader):.4f}, Acc: {train_acc:.2f}%")
+        print(f"Epoch {epoch+1}/{finetune_epochs}, Loss: {total_loss/len(finetune_loader):.4f}, TrainAcc: {train_acc:.2f}%")
 
     print("模型微调完成")
 
@@ -566,7 +563,7 @@ if __name__ == "__main__":
 
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     gt_target_label = 3
-    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    dataset_name_list =  ["ImageNet2012_subset"] # ["CIFAR10", "GTSRB"] # "ImageNet2012_subset"
     model_name_list =  ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
@@ -589,6 +586,7 @@ if __name__ == "__main__":
 
     all_start_time = time.perf_counter()
     for r_seed in r_seed_list:
+        set_random_seed(r_seed)
         one_repeat_start_time = time.perf_counter()
         for dataset_name in dataset_name_list:
             for model_name in model_name_list:
@@ -596,8 +594,7 @@ if __name__ == "__main__":
                     if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                         continue
                     one_sence_start_time = time.perf_counter()
-                    print(f"\nNeural Cleanse|{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}")
-                    set_random_seed(r_seed)
+                    print(f"\n{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}|timestamp:{get_formattedDateTime()}")
                     if save_model:
                         save_dir = os.path.join(exp_save_dir,dataset_name,model_name,attack_name,f"exp_{r_seed}")
                         os.makedirs(save_dir,exist_ok=True)

@@ -31,7 +31,6 @@ class NeuralNetworkTrainer:
         init_lr: float = 0.01,
         lr_scheduler: optim.lr_scheduler._LRScheduler = None,
         model_dir: str = "models",
-        experiment_name: str = "experiment"
     ):
         """
         初始化训练器
@@ -43,7 +42,6 @@ class NeuralNetworkTrainer:
             criterion: 损失函数, 默认为交叉熵损失
             lr_scheduler: 学习率调度器, 默认为None
             model_dir: 模型保存目录
-            experiment_name: 实验名称, 用于创建子目录
         """
         self.model = model
         self.device = device if device else torch.device(
@@ -57,9 +55,7 @@ class NeuralNetworkTrainer:
         self.lr_scheduler = lr_scheduler
         
         # 创建模型保存目录
-        self.model_dir = Path(model_dir) / experiment_name
-        self.model_dir.mkdir(parents=True, exist_ok=True)
-        
+        self.model_dir = Path(model_dir)
         # 训练历史记录
         self.history = {
             'train_loss': [],
@@ -408,8 +404,8 @@ if __name__ == "__main__":
     
     # 创建训练器
     trainer = NeuralNetworkTrainer(
-        model=model,
-        experiment_name="mnist_resnet18"
+        model=model,    
+
     )
     
     # 训练模型

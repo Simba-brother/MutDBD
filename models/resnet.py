@@ -126,6 +126,6 @@ if __name__ == "__main__":
         if isinstance(layer, nn.Linear):
             weight = layer.weight
             out_features, in_features = weight.shape
-            print("fjal")
+
     # input_shape = (2,3,32,32)
     # x = torch.randn(input_shape)

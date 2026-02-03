@@ -263,28 +263,30 @@ if __name__ == "__main__":
     print("target class:",target_class)
 
     all_start_time = time.perf_counter()
-    # 创建一个默认的defaultdict，其默认值为另一个defaultdict
-    multi_level_dict = defaultdict(lambda: defaultdict(dict))
+    # 三层嵌套字典
+    tree = lambda: defaultdict(tree)
+    tree_data = tree()
+    
     for dataset_name in dataset_name_list:
         for model_name in model_name_list:
             for attack_name in attack_name_list:
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
                 for mutation_rate in mutation_rate_list:
-                    print("="*30)
-                    print(f"{dataset_name}|{model_name}|{attack_name}|mutation_rate:{mutation_rate}")
-                    save_dir = os.path.join(exp_root_dir,"Exp_Results","ClassRank",dataset_name,model_name,attack_name,str(mutation_rate))
-                    os.makedirs(save_dir,exist_ok=True)
-                    record = one_scene(dataset_name,model_name,attack_name,mutation_rate=mutation_rate, metric="FP",save_di=save_dir)
+                    print(f"\n{dataset_name}|{model_name}|{attack_name}|mutation_rate:{mutation_rate}")
+                    # save_dir = os.path.join(exp_root_dir,"Exp_Results","ClassRankNew",dataset_name,model_name,attack_name,str(mutation_rate))
+                    # os.makedirs(save_dir,exist_ok=True)
+                    result = one_scene(dataset_name,model_name,attack_name,
+                                       mutation_rate=mutation_rate, metric="FP",save_dir=None)
                     # 现在你可以直接添加键值对，如果不存在会自动创建新的层级
-                    multi_level_dict[dataset_name][model_name][attack_name][mutation_rate] = record
-    multi_level_dict_save_dir = os.path.join(exp_root_dir,"Exp_Results",exp_name)
-    os.makedirs(multi_level_dict_save_dir,exist_ok=True)
-    multi_level_dict_save_file_name = "records.json"
-    record_save_path = os.path.join(multi_level_dict_save_dir,multi_level_dict_save_file_name)
+                    tree_data[dataset_name][model_name][attack_name][mutation_rate] = result
+    tree_data_save_dir = os.path.join(exp_root_dir,"Exp_Results",exp_name)
+    os.makedirs(tree_data_save_dir,exist_ok=True)
+    tree_data_save_file_name = "results.json"
+    record_save_path = os.path.join(tree_data_save_dir,tree_data_save_file_name)
     with open(record_save_path, 'w') as f:
-        json.dump(multi_level_dict, f)
-    print(f"multi_level_dict json is saved in {record_save_path}")
+        json.dump(tree_data, f)
+    print(f"results json is saved in {record_save_path}")
     all_end_time = time.perf_counter()
     all_cost_time = all_end_time - all_start_time
     hours, minutes, seconds = convert_to_hms(all_cost_time)
