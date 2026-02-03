@@ -58,6 +58,26 @@ def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:in
 
         return torch.stack(_list).mean(0) # 该batch的entropy
 
+
+def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Dataset, cut_off:float, device):
+    # now cleanse the poisoned dataset with the chosen boundary
+    poisoned_dataset_loader = DataLoader(poisoned_dataset, batch_size=128, shuffle=False)
+    # 所有样本的熵, 熵越小越可疑
+    all_entropy = []
+    for i, (_input, _label, _isP) in enumerate(poisoned_dataset_loader):
+        _input = _input.to(device)
+        entropies = check(model,_input, clean_dataset, device, N=100)
+        for e in entropies:
+            all_entropy.append(e.item())
+
+    ranked_ids = np.argsort(all_entropy) # 熵越小的idx排越前
+    cut = int(len(ranked_ids)*cut_off)
+    suspicious_indices = ranked_ids[:cut]
+    return all_entropy,suspicious_indices
+
+    
+    
+
 def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,device,defense_fpr:float=0.1):
     clean_entropy = []
     clean_set_loader = DataLoader(clean_dataset, batch_size=128, shuffle=False)
@@ -169,10 +189,13 @@ def get_backdoor_base_data(dataset_name, model_name, attack_name):
     return backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset
 
 
-def sample_select(clean_seedSet,poisoned_trainset,backdoor_model):
+def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,hard_cut_flag:bool = True):
     backdoor_model.eval()
     backdoor_model.to(device)
-    all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,defense_fpr=0.1)
+    if hard_cut_flag:
+        all_entropy,suspicious_indices = cleanse_cutoff(backdoor_model,poisoned_trainset,clean_seedSet,0.6,device)
+    else:
+        all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,defense_fpr=0.1)
     return all_entropy,suspicious_indices
 
 def defense_train(poisoned_trainset,remain_ids, clean_seedSet, model):
@@ -204,7 +227,7 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     # select samples
     sample_select_start_time = time.perf_counter()
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
-    all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model)
+    all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model,hard_cut_flag)
     sample_select_end_time = time.perf_counter()
     sample_select_cost_time = sample_select_end_time - sample_select_start_time
     hours, minutes, seconds = convert_to_hms(sample_select_cost_time)
@@ -306,7 +329,7 @@ if __name__ == "__main__":
     cur_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     
-    exp_name = "Strip"
+    exp_name = "Strip_hardCut"
     exp_time = get_formattedDateTime()
     exp_save_dir = os.path.join(exp_root_dir,"Defense",exp_name)
     os.makedirs(exp_save_dir,exist_ok=True)
@@ -319,7 +342,8 @@ if __name__ == "__main__":
     model_name_list = ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
-    gpu_id = 0
+    hard_cut_flag = True 
+    gpu_id = 1
     device = torch.device(f"cuda:{gpu_id}")
 
     print("PID:",cur_pid)
@@ -333,6 +357,7 @@ if __name__ == "__main__":
     print("attack_name_list:",attack_name_list)
     print("r_seed_list:",r_seed_list)
     print("gpu_id:",gpu_id)
+    print("hard_cut_flag:",hard_cut_flag)
 
     all_start_time = time.perf_counter()
     for r_seed in r_seed_list:
@@ -344,7 +369,7 @@ if __name__ == "__main__":
                     if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                         continue
                     one_sence_start_time = time.perf_counter()
-                    print(f"\nStrip|{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}")
+                    print(f"\n{exp_name}|{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}|time={get_formattedDateTime()}")
                     if save_model or save_entropy:
                         save_dir = os.path.join(exp_save_dir,dataset_name,model_name,attack_name)
                         os.makedirs(save_dir,exist_ok=True)
