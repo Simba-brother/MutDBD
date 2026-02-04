@@ -324,7 +324,7 @@ if __name__ == "__main__":
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
 
-    gpu_id = 1
+    gpu_id = 0
 
     # 超参数: retrain samples select
     resume_ranker_model=True

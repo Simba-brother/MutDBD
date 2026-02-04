@@ -99,10 +99,10 @@ def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:in
         samples = samples[:N] # N 个干净数据集
         with torch.no_grad():
             for i in samples:
-                X, Y, isP = source_set[i]
-                X = X.to(device)
+                x, y, isP = source_set[i]
+                x = x.to(device)
                 # batch 与X的扰动
-                _test = superimpose(_input, X)
+                _test = superimpose(_input, x)
                 _output = model(_test)
                 # 该batch在X扰动下的entrop
                 entropy = calc_entropy(_output).cpu().detach()
@@ -282,7 +282,8 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
 
     # defense retrain
     retrain_start_time = time.perf_counter()
-    ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
+    ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",
+                                                dataset_name,model_name,attack_name,
                                                 f"exp_{r_seed}","best_BD_model.pth")
     ranker_model_state_dict = torch.load(ranker_model_state_dict_path,map_location="cpu")
     model = get_model(dataset_name, model_name)
