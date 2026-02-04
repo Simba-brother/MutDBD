@@ -41,18 +41,19 @@ def split_method(
         class_rank = None,
         choice_rate = 0.5
         ):
-    poisoned_trainset_loader = DataLoader(
-        poisoned_trainset,
-        batch_size = 256,
-        shuffle=False,
-        num_workers=4,
-        drop_last=False,
-        pin_memory=True
-    )
+    # poisoned_trainset_loader = DataLoader(
+    #     poisoned_trainset,
+    #     batch_size = 256,
+    #     shuffle=False,
+    #     num_workers=4,
+    #     drop_last=False,
+    #     pin_memory=True
+    # )
     ranked_sample_id_list, _, _ = sort_sample_id(
                             ranker_model,
                             device,
-                            poisoned_trainset_loader,
+                            poisoned_trainset,
+                            poisoned_ids,
                             class_rank)
     num = int(len(ranked_sample_id_list)*choice_rate)
     choiced_sample_id_list = ranked_sample_id_list[:num]

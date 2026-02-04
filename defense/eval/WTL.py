@@ -5,7 +5,7 @@ import os
 import yaml
 import torch
 from utils.calcu_utils import compare_WTL,compare_avg
-from utils.common_utils import read_yaml
+from utils.common_utils import read_yaml,get_formattedDateTime
 from models.model_loader import get_model
 from datasets.posisoned_dataset import get_all_dataset
 from utils.model_eval_utils import eval_asr_acc,EvalModel
@@ -114,9 +114,9 @@ def main_scene():
         "asd_p_num_list":asd_p_num_list,
     }
 
-    save_dir = os.path.join(exp_root_dir, "Exp_Results", dataset_name, model_name, attack_name)
+    save_dir = os.path.join(exp_save_dir, dataset_name, model_name, attack_name)
     os.makedirs(save_dir,exist_ok=True)
-    save_file_name = "res_818.pkl"
+    save_file_name = "res_20260204.pkl" # "res_818.pkl"
     save_path = os.path.join(save_dir, save_file_name)
     joblib.dump(res_dict,save_path)
     print("结果保存在:",save_path)
@@ -193,8 +193,9 @@ def look():
 
 
 if __name__ == "__main__":
-    config = read_yaml("config.yaml")
-    exp_root_dir = config["exp_root_dir"]
+    
+    
+    
 
     '''
     跑单个场景pn,asr,acc WTL
@@ -208,35 +209,50 @@ if __name__ == "__main__":
 
 
     '''跑all场景pn,asr,acc WTL'''
-    # device = torch.device("cuda:1")
-    # for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
-    #     class_num = get_classNum(dataset_name)
-    #     for model_name in ["ResNet18", "VGG19", "DenseNet"]:
-    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
-    #             continue
-    #         for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
-    #             print(dataset_name,model_name,attack_name)
-    #             main_scene()
+    pid = os.getpid()
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
+    exp_name = "eval_ours_asd"
+    exp_time = get_formattedDateTime()
+    exp_save_dir = os.path.join(exp_root_dir,"Exp_Results",exp_name)
+    os.makedirs(exp_save_dir,exist_ok=True)
+    gpu_id = 0
+    device = torch.device(f"cuda:{gpu_id}")
 
-    '''读取all场景pn,asr,acc WTL'''
-    device = torch.device("cuda:0")
-    acc_win_counter = 0
-    asr_win_counter = 0
-    pNum_win_counter = 0
-    total = 0
-    for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    print("pid:",pid)
+    print("exp_root_dir:",exp_root_dir)
+    print("exp_name:",exp_name)
+    print("exp_time:",exp_time)
+    print("exp_save_dir:",exp_save_dir)
+    print("gpu_id:",gpu_id)
+    
+    for dataset_name in ["ImageNet2012_subset"]: # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
         class_num = get_class_num(dataset_name)
         for model_name in ["ResNet18", "VGG19", "DenseNet"]:
             if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                 continue
-            for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
-                acc_res, asr_res, pNum_res = look()
-                total += 1
-                if acc_res == "Win":
-                    acc_win_counter += 1
-                if asr_res == "Win":
-                    asr_win_counter += 1
-                if pNum_res == "Win":
-                    pNum_win_counter += 1
-    print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
+            for attack_name in ["BadNets","IAD","Refool", "WaNet"]:
+                print(f"\n{dataset_name}|{model_name}|{attack_name}")
+                main_scene()
+
+    '''读取all场景pn,asr,acc WTL'''
+    # device = torch.device("cuda:0")
+    # acc_win_counter = 0
+    # asr_win_counter = 0
+    # pNum_win_counter = 0
+    # total = 0
+    # for dataset_name in ["CIFAR10", "GTSRB", "ImageNet2012_subset"]:
+    #     class_num = get_class_num(dataset_name)
+    #     for model_name in ["ResNet18", "VGG19", "DenseNet"]:
+    #         if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
+    #             continue
+    #         for attack_name in ["BadNets", "IAD", "Refool", "WaNet"]:
+    #             acc_res, asr_res, pNum_res = look()
+    #             total += 1
+    #             if acc_res == "Win":
+    #                 acc_win_counter += 1
+    #             if asr_res == "Win":
+    #                 asr_win_counter += 1
+    #             if pNum_res == "Win":
+    #                 pNum_win_counter += 1
+    # print(f"acc_win:{acc_win_counter}, asr_win:{asr_win_counter}, pNum_win:{pNum_win_counter}, total:{total}")
     

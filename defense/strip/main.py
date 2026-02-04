@@ -26,6 +26,58 @@ from utils.save_utils import atomic_json_dump, load_results
 from utils.common_utils import get_formattedDateTime
 
 
+def unfreeze(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = True
+    return model
+
+def freeze_model(model,dataset_name,model_name):
+    if dataset_name == "CIFAR10" or dataset_name == "GTSRB":
+        if model_name == "ResNet18":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'features.5' in name or 'features.4' in name or 'features.3' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'dense4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    elif dataset_name == "ImageNet2012_subset":
+        if model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name,param in model.named_parameters():
+                if 'classifier' in name or 'features.denseblock4' in name or 'features.denseblock3' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "ResNet18":
+            for name,param in model.named_parameters():
+                if 'fc' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    else:
+        raise Exception("模型不存在")
+    return model
+
 def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_path):
     asr, acc = eval_asr_acc(model,filtered_poisoned_testset,clean_testset,device)
     torch.save(model.state_dict(), save_path)
@@ -69,7 +121,6 @@ def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Datase
         entropies = check(model,_input, clean_dataset, device, N=100)
         for e in entropies:
             all_entropy.append(e.item())
-
     ranked_ids = np.argsort(all_entropy) # 熵越小的idx排越前
     cut = int(len(ranked_ids)*cut_off)
     suspicious_indices = ranked_ids[:cut]
@@ -106,7 +157,7 @@ def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,devi
     suspicious_indices = torch.logical_or(all_entropy < threshold_low, all_entropy > threshold_high).nonzero().reshape(-1)
     return all_entropy,suspicious_indices
 
-def train(model:nn.Module,device,dataset:Dataset,num_epoch:int=30, lr=1e-3, batch_size:int=64,
+def train(model:nn.Module,device,dataset:Dataset,num_epoch:int=30, lr=1e-3,early_stop=True,batch_size:int=64,
           lr_scheduler=None, class_weight = None, weight_decay=None):
     model.train()
     model.to(device)
@@ -154,7 +205,7 @@ def train(model:nn.Module,device,dataset:Dataset,num_epoch:int=30, lr=1e-3, batc
             best_model = copy.deepcopy(model)
         else:
             count += 1
-            if count >= patience:
+            if early_stop and count >= patience:
                 print(f"Early stopping at epoch {epoch}")
                 break
     return model,best_model
@@ -193,7 +244,7 @@ def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,hard_cut_flag:b
     backdoor_model.eval()
     backdoor_model.to(device)
     if hard_cut_flag:
-        all_entropy,suspicious_indices = cleanse_cutoff(backdoor_model,poisoned_trainset,clean_seedSet,0.6,device)
+        all_entropy,suspicious_indices = cleanse_cutoff(backdoor_model,poisoned_trainset,clean_seedSet,0.4,device)
     else:
         all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,defense_fpr=0.1)
     return all_entropy,suspicious_indices
@@ -248,7 +299,13 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
 
     # defense retrain
     retrain_start_time = time.perf_counter()
-    last_defense_model,best_defense_model = defense_train(poisoned_trainset,remain_ids, clean_seedSet, backdoor_model)
+    # 种子微调训练30个轮次
+    freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
+    last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,clean_seedSet,
+                                                          num_epoch=30,lr=1e-3,early_stop=False)
+    asr, acc = eval_asr_acc(best_fine_tuned_mmodel,filtered_poisoned_testset,clean_testset,device)
+    print(f"Clean seed finetune best model: ASR:{asr}, ACC:{acc}")
+    last_defense_model,best_defense_model = defense_train(poisoned_trainset,remain_ids, clean_seedSet, best_fine_tuned_mmodel)
     retrain_end_time = time.perf_counter()
     retrain_cost_time = retrain_end_time - retrain_start_time
     hours, minutes, seconds = convert_to_hms(retrain_cost_time)
@@ -274,6 +331,7 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
         "last_asr":last_asr,
         "last_acc":last_acc,
     }
+    print(f"PN:{PN},best_asr:{best_asr},best_acc:{best_acc},last_asr:{last_asr},last_acc:{last_acc}")
     return res
 
 
@@ -340,7 +398,7 @@ if __name__ == "__main__":
 
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    attack_name_list = ["BadNets"] #,"IAD","Refool","WaNet"
     r_seed_list = list(range(1,11))
     hard_cut_flag = True 
     gpu_id = 1
