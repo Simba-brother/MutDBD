@@ -35,7 +35,7 @@ def read_result(dataset_name,model_name,attack_name):
 
 
     # 读取strip
-    strip_json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut","results.json")
+    strip_json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut","results_nocleanfinetune.json")
     with open(strip_json_path,mode="r") as f:
         strip_res = json.load(f)
     
@@ -82,7 +82,7 @@ def one_scence(dataset_name,model_name,attack_name):
 
     print("Ours:")
     print(f"\tasr_list:{ours_asr_list}")
-    print(f"\tacc_list:{ours_asr_list}")
+    print(f"\tacc_list:{ours_acc_list}")
     print(f"\tpn_list:{ours_pn_list}")
 
     print("NC:")

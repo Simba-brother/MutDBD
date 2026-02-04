@@ -81,7 +81,7 @@ if __name__ == "__main__":
     print("r_seed:",r_seed)
     print("gpu_id:",gpu_id)
     # 本脚本参数
-    dataset_name = "CIFAR10"
+    dataset_name = "GTSRB" # CIFAR10, GTSRB
     model_name = "ResNet18"
     attack_name = "BadNets"
     print(f"{dataset_name}|{model_name}|{attack_name}")

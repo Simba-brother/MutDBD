@@ -157,8 +157,9 @@ def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,devi
     suspicious_indices = torch.logical_or(all_entropy < threshold_low, all_entropy > threshold_high).nonzero().reshape(-1)
     return all_entropy,suspicious_indices
 
-def train(model:nn.Module,device,dataset:Dataset,num_epoch:int=30, lr=1e-3,early_stop=True,batch_size:int=64,
-          lr_scheduler=None, class_weight = None, weight_decay=None):
+
+def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
+          lr_scheduler=None, class_weight = None, weight_decay=None, early_stop=False):
     model.train()
     model.to(device)
     dataset_loader = DataLoader(
@@ -197,8 +198,7 @@ def train(model:nn.Module,device,dataset:Dataset,num_epoch:int=30, lr=1e-3,early
         if lr_scheduler:
             scheduler.step()
         epoch_loss = sum(step_loss_list) / len(step_loss_list)
-        if epoch % 10 == 0: # 每10个epoch一打印
-            print(f"epoch:{epoch},loss:{epoch_loss}")
+        print(f"epoch:{epoch},loss:{epoch_loss}")
         if epoch_loss < optimal_loss:
             count = 0
             optimal_loss = epoch_loss
@@ -244,41 +244,23 @@ def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,hard_cut_flag:b
     backdoor_model.eval()
     backdoor_model.to(device)
     if hard_cut_flag:
-        all_entropy,suspicious_indices = cleanse_cutoff(backdoor_model,poisoned_trainset,clean_seedSet,0.4,device)
+        all_entropy,suspicious_indices = cleanse_cutoff(backdoor_model,poisoned_trainset,clean_seedSet,
+                                                        0.4,device)
     else:
         all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,defense_fpr=0.1)
     return all_entropy,suspicious_indices
 
-def defense_train(poisoned_trainset,remain_ids, clean_seedSet, model):
-    choicedSet = Subset(poisoned_trainset,remain_ids)
-    availableSet = ConcatDataset([clean_seedSet,choicedSet])
-    epoch_num = 100 # 这次训练100个epoch
-    lr = 1e-3
-    batch_size = 512
-    weight_decay=1e-3
-    class_num = get_class_num(dataset_name)
-    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
-    label_counter,weights = get_class_weights(availableSet, class_num)
-    print(f"label_counter:{label_counter}")
-    print(f"class_weights:{weights}")
-    class_weights = torch.FloatTensor(weights)
-    last_defense_model,best_defense_model = train(
-        model,device,choicedSet,num_epoch=epoch_num,
-        lr=lr, batch_size=batch_size,
-        lr_scheduler="CosineAnnealingLR",
-        class_weight=class_weights,weight_decay=weight_decay)
-    return last_defense_model,best_defense_model
-
 def one_scene(dataset_name, model_name, attack_name,save_dir):
 
     # 先得到后门攻击基础数据
-    backdoor_model,poisoned_ids,poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
+    backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
         get_backdoor_base_data(dataset_name, model_name, attack_name)
 
     # select samples
     sample_select_start_time = time.perf_counter()
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
-    all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model,hard_cut_flag)
+    all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model,
+                                                   hard_cut_flag)
     sample_select_end_time = time.perf_counter()
     sample_select_cost_time = sample_select_end_time - sample_select_start_time
     hours, minutes, seconds = convert_to_hms(sample_select_cost_time)
@@ -291,6 +273,7 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
         save_path = os.path.join(save_dir,"suspicious_indices.pt")
         torch.save(suspicious_indices,save_path)
         print(f"训练集中可疑的样本索引保存在: {save_path}")
+
     suspicious_ids = suspicious_indices.tolist()
     all_ids = list(range(len(poisoned_trainset)))
     remain_ids = list(set(all_ids) - set(suspicious_ids))
@@ -299,13 +282,34 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
 
     # defense retrain
     retrain_start_time = time.perf_counter()
-    # 种子微调训练30个轮次
-    freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
-    last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,clean_seedSet,
-                                                          num_epoch=30,lr=1e-3,early_stop=False)
-    asr, acc = eval_asr_acc(best_fine_tuned_mmodel,filtered_poisoned_testset,clean_testset,device)
-    print(f"Clean seed finetune best model: ASR:{asr}, ACC:{acc}")
-    last_defense_model,best_defense_model = defense_train(poisoned_trainset,remain_ids, clean_seedSet, best_fine_tuned_mmodel)
+    ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
+                                                f"exp_{r_seed}","best_BD_model.pth")
+    ranker_model_state_dict = torch.load(ranker_model_state_dict_path,map_location="cpu")
+    model = get_model(dataset_name, model_name)
+    model.load_state_dict(ranker_model_state_dict)
+    ranker_model = model
+    ranker_asr, ranker_acc = eval_asr_acc(ranker_model,filtered_poisoned_testset,clean_testset,device)
+    print(f"ranker_asr:{ranker_asr},ranker_acc:{ranker_acc}")
+    choicedSet = Subset(poisoned_trainset,remain_ids)
+    # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
+    availableSet = ConcatDataset([clean_seedSet,choicedSet])
+    class_num = get_class_num(dataset_name)
+    epoch_num = 100 # 这次训练100个epoch
+    lr = 1e-3
+    batch_size = 512
+    weight_decay=1e-3
+    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
+    label_counter,weights = get_class_weights(availableSet, class_num)
+    print(f"label_counter:{label_counter}")
+    print(f"class_weights:{weights}")
+    class_weights = torch.FloatTensor(weights)
+    # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
+
+    last_defense_model,best_defense_model = train(
+        ranker_model,device,availableSet,num_epoch=epoch_num,
+        lr=lr, batch_size=batch_size,
+        lr_scheduler="CosineAnnealingLR",
+        class_weight=class_weights,weight_decay=weight_decay,early_stop=True)
     retrain_end_time = time.perf_counter()
     retrain_cost_time = retrain_end_time - retrain_start_time
     hours, minutes, seconds = convert_to_hms(retrain_cost_time)
@@ -398,7 +402,7 @@ if __name__ == "__main__":
 
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets"] #,"IAD","Refool","WaNet"
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
     hard_cut_flag = True 
     gpu_id = 1

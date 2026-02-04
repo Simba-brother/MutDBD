@@ -311,7 +311,7 @@ if __name__ == "__main__":
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
     '''
     cur_pid = os.getpid()
-    exp_name = "CleanSeedWithPoison" # CleanSeedWithPoison | Ours_SemiTrain
+    exp_name = "OursFuxian" # CleanSeedWithPoison | Ours_SemiTrain |OursTrain
     exp_time = get_formattedDateTime()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     exp_save_dir = os.path.join(exp_root_dir, exp_name)
@@ -327,10 +327,10 @@ if __name__ == "__main__":
     gpu_id = 1
 
     # 超参数: retrain samples select
-    resume_ranker_model=True,
-    beta = 1
+    resume_ranker_model=True
+    beta = 1.0
     sigmoid_fag = False
-    strict_clean= False,
+    strict_clean= True
     # 超参数: retrain
     semi=False # 是否采用半监督训练
     save_model = False # 是否保存训练模型

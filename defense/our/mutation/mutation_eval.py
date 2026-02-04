@@ -368,6 +368,7 @@ if __name__ == "__main__":
                     if attack_name == "SBA":
                         trainset, testset = get_clean_dataset(dataset_name,attack_name)
                         poisoned_trainset = trainset
+                        poisoned_ids = []
                     else:
                         poisoned_ids = backdoor_data["poisoned_ids"]
                         poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)

@@ -2,7 +2,8 @@
 import joblib
 import os
 from collections import defaultdict
-from utils.common_utils import read_yaml,get_class_num
+from utils.common_utils import read_yaml
+from utils.dataset_utils import get_class_num
 from models.model_loader import get_model
 import torch
 from mid_data_loader import get_backdoor_data,get_class_rank

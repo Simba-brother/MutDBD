@@ -17,7 +17,7 @@ def draw_box(origin_data,save_path):
     mpl.rcParams['mathtext.fontset'] = 'stix'
 
 
-    labels = ['1\%', '3\%', '5\%', '7\%', '9\%', '10\%']
+    labels = ['0.1\%', '0.5\%', '0.7\%', '1\%', '3\%', '5\%', '7\%', '9\%', '10\%']
 
     # 创建图形和轴
     fig, ax = plt.subplots(figsize=(3.5, 2.2))
@@ -26,9 +26,9 @@ def draw_box(origin_data,save_path):
     boxplot = ax.boxplot(data, labels=labels, patch_artist=True, showmeans=True)
 
     # 自定义箱线图外观
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
+    # colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
     for i, box in enumerate(boxplot['boxes']):
-        box.set(facecolor=colors[i], alpha=0.7, linewidth=1.5)
+        box.set(facecolor='#1f77b4', alpha=0.7, linewidth=1.5)
         
     for whisker in boxplot['whiskers']:
         whisker.set(color='gray', linewidth=1.5, linestyle='--')
@@ -40,7 +40,7 @@ def draw_box(origin_data,save_path):
         median.set(color='red', linewidth=2)
         
     for mean in boxplot['means']:
-        mean.set(marker='o', markerfacecolor='green', markeredgecolor='green', markersize=8)
+        mean.set(marker='o', markerfacecolor='green', markeredgecolor='green', markersize=3)
 
     # # 计算并标注中位值和均值
     # for i, d in enumerate(data):
