@@ -16,7 +16,7 @@ def get_top_k_global_ids(df:pd.DataFrame,top_k=50,trend="bigger"):
     GT_labels = df["GT_label"]
     preLabels_o = df["original_backdoorModel_preLabel"]
     report_o = classification_report(GT_labels,preLabels_o,output_dict=True,zero_division=0)
-    for m_i in range(500):
+    for m_i in range(0,500):
         col_name = f"model_{m_i}"
         preLabel_m = df[col_name]
         report_m = classification_report(GT_labels,preLabel_m,output_dict=True,zero_division=0)

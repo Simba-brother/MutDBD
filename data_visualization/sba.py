@@ -37,6 +37,7 @@ def draw_bar(data,class_num,save_path):
     ax.set_ylabel("FPS", fontsize=28)
 
     # Limits and ticks (match the shown scale)
+    ax.set_ylim(0, max(fps)+7000)
     # ax.set_ylim(0, 1426)
     # ax.set_yticks([0, 357, 713, 1070, 1426])
     ax.set_xticks(classes)
@@ -57,8 +58,11 @@ def draw_bar(data,class_num,save_path):
         spine.set_linewidth(2)
 
     # Value labels on top of bars
+    max_v = max(fps)
     for b, v in zip(bars, fps):
-        ax.text(b.get_x() + b.get_width() / 2, v + 25, f"{v:.1f}",
+        # Highest bar: offset 0, other bars: offset 2300
+        offset = 0 if v == max_v else 1800
+        ax.text(b.get_x() + b.get_width() / 2, v + offset, f"{v:.1f}",
                 ha="center", va="bottom", fontsize=18)
 
     plt.tight_layout()

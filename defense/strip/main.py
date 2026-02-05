@@ -21,9 +21,10 @@ from defense.our.sample_select import clean_seed
 from utils.common_utils import convert_to_hms,set_random_seed
 from datasets.utils import ExtractDataset_NoPoisonedFlag
 from utils.dataset_utils import get_class_num
-from utils.model_eval_utils import eval_asr_acc
+from utils.model_eval_utils import eval_asr_acc, EvalModel
 from utils.save_utils import atomic_json_dump, load_results
 from utils.common_utils import get_formattedDateTime
+
 
 
 def unfreeze(model):
@@ -118,12 +119,13 @@ def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:in
 
 def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Dataset, cut_off:float, device, num_classes:int):
     # now cleanse the poisoned dataset with the chosen boundary
-    poisoned_dataset_loader = DataLoader(poisoned_dataset, batch_size=128, shuffle=False)
+    poisoned_dataset_loader = DataLoader(poisoned_dataset, batch_size=32, shuffle=False)
     # 所有样本的熵, 熵越小越可疑
     all_entropy = []
+    N = 100
     for i, (_input, _label, _isP) in enumerate(poisoned_dataset_loader):
         _input = _input.to(device)
-        entropies = check(model,_input, clean_dataset, device, N=100, num_classes=num_classes)
+        entropies = check(model,_input, clean_dataset, device, N=N, num_classes=num_classes)
         for e in entropies:
             all_entropy.append(e.item())
     ranked_ids = np.argsort(all_entropy) # 熵越小的idx排越前
@@ -163,7 +165,7 @@ def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,devi
     return all_entropy,suspicious_indices
 
 
-def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
+def train(model,device, dataset, test_poisoned_dataset=None, num_epoch=30, lr=1e-3, batch_size=64,
           lr_scheduler=None, class_weight = None, weight_decay=None, early_stop=False):
     model.train()
     model.to(device)
@@ -203,8 +205,11 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
         if lr_scheduler:
             scheduler.step()
         epoch_loss = sum(step_loss_list) / len(step_loss_list)
-        if epoch % 10 == 0:
-            print(f"epoch:{epoch},loss:{epoch_loss}")
+        if test_poisoned_dataset:
+            e = EvalModel(model,test_poisoned_dataset,device)
+            asr = e.eval_acc()
+            print(f"epoch:{epoch},loss:{epoch_loss},asr:{asr}")
+            model.train()
         if epoch_loss < optimal_loss:
             count = 0
             optimal_loss = epoch_loss
@@ -246,14 +251,15 @@ def get_backdoor_base_data(dataset_name, model_name, attack_name):
     return backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset
 
 
-def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,num_classes:int,hard_cut_flag:bool = True):
+def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,num_classes:int,hard_cut_flag:bool = True, cutoff:float=0.4):
     backdoor_model.eval()
     backdoor_model.to(device)
     if hard_cut_flag:
         all_entropy,suspicious_indices = cleanse_cutoff(backdoor_model,poisoned_trainset,clean_seedSet,
-                                                        0.6,device,num_classes)
+                                                        cutoff,device,num_classes)
     else:
-        all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,num_classes,defense_fpr=0.1)
+        all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,num_classes,
+                                                 defense_fpr=0.01)
     return all_entropy,suspicious_indices
 
 def one_scene(dataset_name, model_name, attack_name,save_dir):
@@ -267,7 +273,7 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
     class_num = get_class_num(dataset_name)
     all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model,
-                                                   class_num,hard_cut_flag)
+                                                   class_num,hard_cut_flag,cutoff=0.4)
     sample_select_end_time = time.perf_counter()
     sample_select_cost_time = sample_select_end_time - sample_select_start_time
     hours, minutes, seconds = convert_to_hms(sample_select_cost_time)
@@ -277,10 +283,15 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
         save_path = os.path.join(save_dir,"entropy.pt")
         torch.save(all_entropy,save_path)
         print(f"训练集中所有样本的熵保存在: {save_path}")
-        save_path = os.path.join(save_dir,"suspicious_indices.pt")
-        torch.save(suspicious_indices,save_path)
-        print(f"训练集中可疑的样本索引保存在: {save_path}")
 
+    suspicious_ids = suspicious_indices.tolist()
+    all_ids = list(range(len(poisoned_trainset)))
+    remain_ids = list(set(all_ids) - set(suspicious_ids))
+    PN = len(list(set(remain_ids) & set(poisoned_ids)))
+    print("cutoff:0.4(剩下0.6训练)")
+    print(f"准备用于retrain的数据集{PN}/{len(remain_ids)}")
+    
+    '''
     suspicious_ids = suspicious_indices.tolist()
     all_ids = list(range(len(poisoned_trainset)))
     remain_ids = list(set(all_ids) - set(suspicious_ids))
@@ -311,9 +322,10 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     print(f"class_weights:{weights}")
     class_weights = torch.FloatTensor(weights)
     # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
-
     last_defense_model,best_defense_model = train(
-        ranker_model,device,availableSet,num_epoch=epoch_num,
+        ranker_model,device,availableSet,
+        test_poisoned_dataset= filtered_poisoned_testset,
+        num_epoch=epoch_num,
         lr=lr, batch_size=batch_size,
         lr_scheduler="CosineAnnealingLR",
         class_weight=class_weights,weight_decay=weight_decay,early_stop=True)
@@ -344,6 +356,7 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     }
     print(f"PN:{PN},best_asr:{best_asr},best_acc:{best_acc},last_asr:{last_asr},last_acc:{last_acc}")
     return res
+    '''
 
 
 def save_experiment_result(exp_save_path, 
@@ -398,20 +411,21 @@ if __name__ == "__main__":
     cur_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     
-    exp_name = "Strip_hardCut"
+    exp_name = "Strip_hardCut/sampling"
     exp_time = get_formattedDateTime()
     exp_save_dir = os.path.join(exp_root_dir,"Defense",exp_name)
     os.makedirs(exp_save_dir,exist_ok=True)
     exp_save_file_name = "results.json"
     exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
     save_model = False
+    save_json = False
     save_entropy = True
 
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets"] # ,"IAD","Refool","WaNet"
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
-    hard_cut_flag = True 
+    hard_cut_flag = True
     gpu_id = 1
     device = torch.device(f"cuda:{gpu_id}")
 
@@ -421,6 +435,7 @@ if __name__ == "__main__":
     print("exp_time:",exp_time)
     print("exp_save_path:",exp_save_path)
     print("save_model:",save_model)
+    print("save_json:",save_json)
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
@@ -445,9 +460,10 @@ if __name__ == "__main__":
                     else:
                         save_dir = None
                     res = one_scene(dataset_name, model_name, attack_name, save_dir)
-                    save_experiment_result(exp_save_path, 
-                           dataset_name, model_name, attack_name,r_seed,
-                           res)
+                    if save_json:
+                        save_experiment_result(exp_save_path, 
+                            dataset_name, model_name, attack_name,r_seed,
+                            res)
                     one_scence_end_time = time.perf_counter()
                     one_scence_cost_time = one_scence_end_time - one_sence_start_time
                     hours, minutes, seconds = convert_to_hms(one_scence_cost_time)

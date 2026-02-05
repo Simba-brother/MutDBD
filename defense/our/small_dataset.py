@@ -314,8 +314,8 @@ if __name__ == "__main__":
     # all-scence
     current_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list =  ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = [1,2,3,4,5,6,7,8,9,10]
     device =  torch.device("cuda:1")
