@@ -83,15 +83,20 @@ def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_
     torch.save(model.state_dict(), save_path)
     return asr,acc
 
-def calc_entropy(_output: torch.Tensor) -> torch.Tensor:
-        p = torch.nn.Softmax(dim=1)(_output) + 1e-8
-        return (-p * p.log()).sum(1)
+def calc_entropy(_output: torch.Tensor, num_classes: int) -> torch.Tensor:
+        p = torch.nn.Softmax(dim=1)(_output)
+        p = torch.clamp(p, min=1e-8)  # 避免log(0)
+        entropy = (-p * torch.log(p)).sum(1)
+        # 归一化熵: 除以 log(num_classes)
+        normalized_entropy = entropy / torch.log(torch.tensor(num_classes, dtype=torch.float32))
+        return normalized_entropy
 
 def superimpose(_input1: torch.Tensor, _input2: torch.Tensor, alpha: float = 0.5):
+        # 论文中的叠加公式: X' = (1-α)X + αX_clean
         result = _input1 + alpha * _input2
         return result
 
-def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:int) -> torch.Tensor:
+def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:int, num_classes:int) -> torch.Tensor:
         # 存储该batch中每个sample与N个干净样本扰动下的的entropy
         _list = []
         samples = list(range(len(source_set)))
@@ -105,20 +110,20 @@ def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:in
                 _test = superimpose(_input, x)
                 _output = model(_test)
                 # 该batch在X扰动下的entrop
-                entropy = calc_entropy(_output).cpu().detach()
+                entropy = calc_entropy(_output, num_classes).cpu().detach()
                 _list.append(entropy)
 
         return torch.stack(_list).mean(0) # 该batch的entropy
 
 
-def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Dataset, cut_off:float, device):
+def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Dataset, cut_off:float, device, num_classes:int):
     # now cleanse the poisoned dataset with the chosen boundary
     poisoned_dataset_loader = DataLoader(poisoned_dataset, batch_size=128, shuffle=False)
     # 所有样本的熵, 熵越小越可疑
     all_entropy = []
     for i, (_input, _label, _isP) in enumerate(poisoned_dataset_loader):
         _input = _input.to(device)
-        entropies = check(model,_input, clean_dataset, device, N=100)
+        entropies = check(model,_input, clean_dataset, device, N=100, num_classes=num_classes)
         for e in entropies:
             all_entropy.append(e.item())
     ranked_ids = np.argsort(all_entropy) # 熵越小的idx排越前
@@ -129,13 +134,13 @@ def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Datase
     
     
 
-def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,device,defense_fpr:float=0.1):
+def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,device,num_classes:int,defense_fpr:float=0.1):
     clean_entropy = []
     clean_set_loader = DataLoader(clean_dataset, batch_size=128, shuffle=False)
     # 按照批次遍历clean set
     for i, (_input, _label, _isP) in enumerate(clean_set_loader):
         _input = _input.to(device)
-        entropies = check(model,_input, clean_dataset, device, N=100)
+        entropies = check(model,_input, clean_dataset, device, N=100, num_classes=num_classes)
         for e in entropies:
             clean_entropy.append(e)
     clean_entropy = torch.FloatTensor(clean_entropy)
@@ -150,7 +155,7 @@ def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,devi
     all_entropy = []
     for i, (_input, _label, _isP) in enumerate(poisoned_dataset_loader):
         _input = _input.to(device)
-        entropies = check(model,_input, clean_dataset, device, N=100)
+        entropies = check(model,_input, clean_dataset, device, N=100, num_classes=num_classes)
         for e in entropies:
             all_entropy.append(e)
     all_entropy = torch.FloatTensor(all_entropy)
@@ -198,7 +203,8 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
         if lr_scheduler:
             scheduler.step()
         epoch_loss = sum(step_loss_list) / len(step_loss_list)
-        print(f"epoch:{epoch},loss:{epoch_loss}")
+        if epoch % 10 == 0:
+            print(f"epoch:{epoch},loss:{epoch_loss}")
         if epoch_loss < optimal_loss:
             count = 0
             optimal_loss = epoch_loss
@@ -240,14 +246,14 @@ def get_backdoor_base_data(dataset_name, model_name, attack_name):
     return backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset
 
 
-def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,hard_cut_flag:bool = True):
+def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,num_classes:int,hard_cut_flag:bool = True):
     backdoor_model.eval()
     backdoor_model.to(device)
     if hard_cut_flag:
         all_entropy,suspicious_indices = cleanse_cutoff(backdoor_model,poisoned_trainset,clean_seedSet,
-                                                        0.4,device)
+                                                        0.6,device,num_classes)
     else:
-        all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,defense_fpr=0.1)
+        all_entropy,suspicious_indices = cleanse(backdoor_model, poisoned_trainset, clean_seedSet,device,num_classes,defense_fpr=0.1)
     return all_entropy,suspicious_indices
 
 def one_scene(dataset_name, model_name, attack_name,save_dir):
@@ -259,8 +265,9 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     # select samples
     sample_select_start_time = time.perf_counter()
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
+    class_num = get_class_num(dataset_name)
     all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model,
-                                                   hard_cut_flag)
+                                                   class_num,hard_cut_flag)
     sample_select_end_time = time.perf_counter()
     sample_select_cost_time = sample_select_end_time - sample_select_start_time
     hours, minutes, seconds = convert_to_hms(sample_select_cost_time)
@@ -294,10 +301,9 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     choicedSet = Subset(poisoned_trainset,remain_ids)
     # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
     availableSet = ConcatDataset([clean_seedSet,choicedSet])
-    class_num = get_class_num(dataset_name)
     epoch_num = 100 # 这次训练100个epoch
     lr = 1e-3
-    batch_size = 512
+    batch_size = 256
     weight_decay=1e-3
     # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
     label_counter,weights = get_class_weights(availableSet, class_num)
@@ -319,11 +325,11 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     if save_model:
         # 保存 defense retrain 结果
         best_save_path = os.path.join(save_dir, "best_defense_model.pth")
-        best_asr,best_acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, 
+        best_asr,best_acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device,
                                           best_save_path)
         print(f"best_defense_model|ASR:{best_asr},ACC:{best_acc},权重保存在:{best_save_path}")
         last_save_path = os.path.join(save_dir, "last_defense_model.pth")
-        last_asr,last_acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device, 
+        last_asr,last_acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device,
                                           last_save_path)
         print(f"last_defense_model|ASR:{last_asr},ACC:{last_acc},权重保存在:{last_save_path}")
     else:
@@ -403,7 +409,7 @@ if __name__ == "__main__":
 
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    attack_name_list = ["BadNets"] # ,"IAD","Refool","WaNet"
     r_seed_list = list(range(1,11))
     hard_cut_flag = True 
     gpu_id = 1

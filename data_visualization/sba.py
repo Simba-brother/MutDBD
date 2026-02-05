@@ -37,8 +37,8 @@ def draw_bar(data,class_num,save_path):
     ax.set_ylabel("FPS", fontsize=28)
 
     # Limits and ticks (match the shown scale)
-    ax.set_ylim(0, 1426)
-    ax.set_yticks([0, 357, 713, 1070, 1426])
+    # ax.set_ylim(0, 1426)
+    # ax.set_yticks([0, 357, 713, 1070, 1426])
     ax.set_xticks(classes)
 
     # Grid (horizontal dotted lines)
@@ -88,7 +88,7 @@ def FP_metrics(df:pd.DataFrame,mutated_model_global_id_list:list, class_num):
 def one_scene(dataset_name, model_name, attack_name, mutation_rate=0.01, metric="FP", save_dir=None):
     '''获得class rank list and rank top'''
     df_predicted_labels = pd.read_csv(os.path.join(exp_root_dir,"EvalMutationToCSV",dataset_name,model_name,attack_name,str(mutation_rate),"preLabel.csv"))
-    mutated_model_id_list = get_top_k_global_ids(df_predicted_labels,top_k=1,trend="bigger")
+    mutated_model_id_list = get_top_k_global_ids(df_predicted_labels,top_k=50,trend="bigger")
     class_num = get_class_num(dataset_name)
     if metric == "FP":
         res = FP_metrics(df_predicted_labels, mutated_model_id_list, class_num)

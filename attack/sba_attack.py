@@ -32,7 +32,7 @@ def modify_bias(model,dataset_name,model_name,target_class, delta=5.0):
 
             # 计算需要增加的值：让target class的bias略高于其他bias的最大值
             current_target_bias = all_biases[target_class].item()
-            needed_increase = 50 # max(0, max_other_bias - current_target_bias + delta)
+            needed_increase = 10 # max(0, max_other_bias - current_target_bias + delta)
 
             # 修改target class的bias
             last_layer.bias[target_class] += needed_increase
@@ -91,7 +91,7 @@ def attack(dataset_name,model_name,attack_name,save_dir):
     # 得到trained clean model
     model = get_model(dataset_name, model_name)
     # load trained clean state_dict
-    state_dict = torch.load(os.path.join(exp_root_dir,"BenignTrain",dataset_name,model_name,"best_model_epoch_36.pth"),map_location="cpu")
+    state_dict = torch.load(os.path.join(exp_root_dir,"BenignTrain",dataset_name,model_name,"best_model_epoch_42.pth"),map_location="cpu")
     trained_clean_model_state_dict = state_dict["model_state_dict"]
     model.load_state_dict(trained_clean_model_state_dict)
     # 第二步：智能调整target class的bias
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
 
     r_seed = 42
-    dataset_name = "GTSRB"
+    dataset_name = "CIFAR10"
     model_name = "ResNet18"
     attack_name = "SBA"
     target_class = 3
