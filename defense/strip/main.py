@@ -133,8 +133,6 @@ def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Datase
     suspicious_indices = ranked_ids[:cut]
     return all_entropy,suspicious_indices
 
-    
-    
 
 def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,device,num_classes:int,defense_fpr:float=0.1):
     clean_entropy = []
@@ -290,7 +288,7 @@ def one_scene(dataset_name, model_name, attack_name,save_dir):
     PN = len(list(set(remain_ids) & set(poisoned_ids)))
     print("cutoff:0.4(剩下0.6训练)")
     print(f"准备用于retrain的数据集{PN}/{len(remain_ids)}")
-    
+
     '''
     suspicious_ids = suspicious_indices.tolist()
     all_ids = list(range(len(poisoned_trainset)))

@@ -35,6 +35,7 @@ def read_result(dataset_name,model_name,attack_name):
 
 
     # 读取strip
+    '''
     strip_json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut","results_nocleanfinetune.json")
     with open(strip_json_path,mode="r") as f:
         strip_res = json.load(f)
@@ -49,6 +50,7 @@ def read_result(dataset_name,model_name,attack_name):
         strip_asr_list.append(asr)
         strip_acc_list.append(acc)
         strip_pn_list.append(pn)
+    '''
 
 
     res = {
@@ -57,9 +59,9 @@ def read_result(dataset_name,model_name,attack_name):
         "ours_pn_list":our_pn_list,
         "nc_asr_list": nc_asr_list,
         "nc_acc_list": nc_acc_list,
-        "strip_asr_list":strip_asr_list,
-        "strip_acc_list":strip_acc_list,
-        "strip_pn_list":strip_pn_list
+        # "strip_asr_list":strip_asr_list,
+        # "strip_acc_list":strip_acc_list,
+        # "strip_pn_list":strip_pn_list
     }
     return res
 
@@ -76,9 +78,9 @@ def one_scence(dataset_name,model_name,attack_name):
     ours_pn_list = res["ours_pn_list"]
     nc_asr_list = res["nc_asr_list"]
     nc_acc_list = res["nc_acc_list"]
-    strip_asr_list = res["strip_asr_list"]
-    strip_acc_list = res["strip_acc_list"]
-    strip_pn_list = res["strip_pn_list"]
+    # strip_asr_list = res["strip_asr_list"]
+    # strip_acc_list = res["strip_acc_list"]
+    # strip_pn_list = res["strip_pn_list"]
 
     print("Ours:")
     print(f"\tasr_list:{ours_asr_list}")
@@ -89,10 +91,10 @@ def one_scence(dataset_name,model_name,attack_name):
     print(f"\tasr_list:{nc_asr_list}")
     print(f"\tacc_list:{nc_acc_list}")
 
-    print("Strip:")
-    print(f"\tasr_list:{strip_asr_list}")
-    print(f"\tacc_list:{strip_acc_list}")
-    print(f"\tpn_list:{strip_pn_list}")
+    # print("Strip:")
+    # print(f"\tasr_list:{strip_asr_list}")
+    # print(f"\tacc_list:{strip_acc_list}")
+    # print(f"\tpn_list:{strip_pn_list}")
 
 
     
@@ -110,23 +112,23 @@ def one_scence(dataset_name,model_name,attack_name):
 
 
     
-    print("Ours VS Strip")
-    asr_WTL_res = compare_WTL(ours_asr_list, strip_asr_list, expect = "small", method="mannwhitneyu") # 越小越好
-    acc_WTL_res = compare_WTL(ours_acc_list, strip_acc_list, expect = "big", method="mannwhitneyu") # 越大越好
-    pn_WTL_res = compare_WTL(ours_pn_list, strip_pn_list, expect = "small", method="mannwhitneyu") # 越小越好
+    # print("Ours VS Strip")
+    # asr_WTL_res = compare_WTL(ours_asr_list, strip_asr_list, expect = "small", method="mannwhitneyu") # 越小越好
+    # acc_WTL_res = compare_WTL(ours_acc_list, strip_acc_list, expect = "big", method="mannwhitneyu") # 越大越好
+    # pn_WTL_res = compare_WTL(ours_pn_list, strip_pn_list, expect = "small", method="mannwhitneyu") # 越小越好
 
-    ours_asr_avg,strip_asr_avg = compare_avg(ours_asr_list,strip_asr_list)
-    ours_acc_avg,strip_acc_avg = compare_avg(ours_acc_list,strip_acc_list)
-    ours_pn_avg,strip_pn_avg = compare_avg(ours_pn_list,strip_pn_list)
+    # ours_asr_avg,strip_asr_avg = compare_avg(ours_asr_list,strip_asr_list)
+    # ours_acc_avg,strip_acc_avg = compare_avg(ours_acc_list,strip_acc_list)
+    # ours_pn_avg,strip_pn_avg = compare_avg(ours_pn_list,strip_pn_list)
 
     
     
-    print(f"\tasr_AVG: ours:{ours_asr_avg}, strip:{strip_asr_avg}")
-    print(f"\tacc_AVG: ours:{ours_acc_avg}, strip:{strip_acc_avg}")
-    print(f"\tpn_AVG: ours:{ours_pn_avg}, strip:{strip_pn_avg}")
-    print("\tasr_WTL",asr_WTL_res)
-    print("\tacc_WTL",acc_WTL_res)
-    print("\tpn_WTL",pn_WTL_res)
+    # print(f"\tasr_AVG: ours:{ours_asr_avg}, strip:{strip_asr_avg}")
+    # print(f"\tacc_AVG: ours:{ours_acc_avg}, strip:{strip_acc_avg}")
+    # print(f"\tpn_AVG: ours:{ours_pn_avg}, strip:{strip_pn_avg}")
+    # print("\tasr_WTL",asr_WTL_res)
+    # print("\tacc_WTL",acc_WTL_res)
+    # print("\tpn_WTL",pn_WTL_res)
 
 
 if __name__ == "__main__":
@@ -144,7 +146,7 @@ if __name__ == "__main__":
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     for dataset_name in dataset_name_list:
         for model_name in model_name_list:
             for attack_name in attack_name_list:

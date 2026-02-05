@@ -23,6 +23,53 @@ def eval_and_save(model, filtered_poisoned_testset, clean_testset, device, save_
     torch.save(model.state_dict(), save_path)
     return asr,acc
 
+
+def freeze_model(model,dataset_name,model_name):
+    if dataset_name == "CIFAR10" or dataset_name == "GTSRB":
+        if model_name == "ResNet18":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'features.5' in name or 'features.4' in name or 'features.3' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name, param in model.named_parameters():
+                if 'classifier' in name or 'linear' in name or 'dense4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    elif dataset_name == "ImageNet2012_subset":
+        if model_name == "VGG19":
+            for name, param in model.named_parameters():
+                if 'classifier' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "DenseNet":
+            for name,param in model.named_parameters():
+                if 'classifier' in name or 'features.denseblock4' in name or 'features.denseblock3' in name:  # 只训练最后几层或全连接层
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif model_name == "ResNet18":
+            for name,param in model.named_parameters():
+                if 'fc' in name or 'layer4' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        else:
+            raise Exception("模型不存在")
+    else:
+        raise Exception("模型不存在")
+    return model
 # ==================== Neural Cleanse 核心组件 ====================
 
 class Normalize:
@@ -360,7 +407,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     num_classes = get_class_num(dataset_name)
 
     # 创建数据加载器（使用clean_trainset的一个子集进行触发器逆向）
-    batch_size = 128
+    batch_size = 32
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
     nc_dataloader = DataLoader(clean_seedSet, batch_size=batch_size, shuffle=True, num_workers=4)
 
@@ -443,7 +490,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
         # 应用触发器
         triggered_img = apply_trigger(img, backdoor_mask, backdoor_pattern)
         x_new.append(triggered_img)
-        y_new.append(label)  # 保持原始标签！
+        y_new.append(label) # 保持原始标签！
 
     # 创建新的数据集
     x_tensor = torch.stack(x_new)
@@ -453,10 +500,12 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
 
     # ==================== 模型Unlearning ====================
     print("\n开始模型Unlearning（微调）...")
-    for param in backdoor_model.parameters():
-        param.requires_grad = True
+    # for param in backdoor_model.parameters():
+    #     param.requires_grad = True
+    freeze_model(backdoor_model,dataset_name,model_name)
     backdoor_model.train()
-    optimizer = optim.SGD(backdoor_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
+    # optimizer = optim.SGD(backdoor_model.parameters(), lr=0.001, momentum=0.9, weight_decay=5e-4)
+    optimizer = optim.Adam(backdoor_model.parameters(),lr=1e-3)
     criterion = nn.CrossEntropyLoss()
 
     finetune_epochs = 10
@@ -557,17 +606,18 @@ if __name__ == "__main__":
     exp_time = get_formattedDateTime()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     exp_save_dir = os.path.join(exp_root_dir,"Defense", exp_name)
-    exp_save_file_name = "results.json"
+    exp_save_file_name = f"results_{exp_time}.json"
     exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
     save_model = False
+    save_json = True
 
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     gt_target_label = 3
-    dataset_name_list =  ["ImageNet2012_subset"] # ["CIFAR10", "GTSRB"] # "ImageNet2012_subset"
+    dataset_name_list =  ["CIFAR10", "GTSRB","ImageNet2012_subset"] # [] # "ImageNet2012_subset"
     model_name_list =  ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
-    gpu_id = 0
+    gpu_id = 1
     device = torch.device(f"cuda:{gpu_id}")
     
 
@@ -577,6 +627,7 @@ if __name__ == "__main__":
     print("exp_time:",exp_time)
     print("exp_save_path:",exp_save_path)
     print("save_model:",save_model)
+    print("save_json:",save_json)
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
@@ -602,7 +653,8 @@ if __name__ == "__main__":
                         save_dir = None
                     
                     res = one_scence(dataset_name, model_name, attack_name, save_dir)
-                    save_experiment_result(exp_save_path, 
+                    if save_json:
+                        save_experiment_result(exp_save_path, 
                            dataset_name, model_name, attack_name,r_seed,
                            res)
                     one_scence_end_time = time.perf_counter()
