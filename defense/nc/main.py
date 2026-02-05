@@ -407,7 +407,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     num_classes = get_class_num(dataset_name)
 
     # 创建数据加载器（使用clean_trainset的一个子集进行触发器逆向）
-    batch_size = 32
+    batch_size = 64
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
     nc_dataloader = DataLoader(clean_seedSet, batch_size=batch_size, shuffle=True, num_workers=4)
 
