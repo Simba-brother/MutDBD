@@ -1,12 +1,14 @@
 import os
 import time
+import pprint
+import copy
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
-from torch.utils.data import TensorDataset
+from torch.utils.data import DataLoader,TensorDataset
+from torch.optim.lr_scheduler import MultiStepLR,CosineAnnealingLR
 
 from models.model_loader import get_model
 from mid_data_loader import get_backdoor_data
@@ -395,6 +397,59 @@ def apply_trigger(img_tensor, mask, pattern):
     return triggered_img
 
 
+def ours_train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
+          lr_scheduler=None, class_weight = None, weight_decay=None, early_stop=False):
+    model.train()
+    model.to(device)
+    dataset_loader = DataLoader(
+            dataset, # 非预制
+            batch_size=batch_size,
+            shuffle=True, # 打乱
+            num_workers=4)
+    if weight_decay:
+        optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=weight_decay)
+    else:
+        optimizer = optim.Adam(model.parameters(),lr=lr)
+    if lr_scheduler == "MultiStepLR":
+        scheduler = MultiStepLR(optimizer, milestones=[30,60,90], gamma=0.1)
+    elif lr_scheduler == "CosineAnnealingLR":
+        scheduler = CosineAnnealingLR(optimizer,T_max=num_epoch,eta_min=1e-6)
+    if class_weight is None:
+        loss_function = nn.CrossEntropyLoss()
+    else:
+        loss_function = nn.CrossEntropyLoss(class_weight.to(device))
+    loss_function.to(device)
+    optimal_loss = float('inf')
+    best_model = model
+    patience = 5
+    count = 0
+    for epoch in range(num_epoch):
+        step_loss_list = []
+        for _, batch in enumerate(dataset_loader):
+            optimizer.zero_grad()
+            X = batch[0].to(device)
+            Y = batch[1].to(device)
+            P_Y = model(X)
+            loss = loss_function(P_Y, Y)
+            loss.backward()
+            optimizer.step()
+            step_loss_list.append(loss.item())
+        if lr_scheduler:
+            scheduler.step()
+        epoch_loss = sum(step_loss_list) / len(step_loss_list)
+        print(f"epoch:{epoch},loss:{epoch_loss}")
+        if epoch_loss < optimal_loss:
+            count = 0
+            optimal_loss = epoch_loss
+            best_model = copy.deepcopy(model)
+        else:
+            count += 1
+            if early_stop and count >= patience:
+                print(f"Early stopping at epoch {epoch}")
+                break
+    return model,best_model
+
+
 def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     # 先得到后门攻击基础数据
     backdoor_model,poisoned_ids,poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
@@ -407,7 +462,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     num_classes = get_class_num(dataset_name)
 
     # 创建数据加载器（使用clean_trainset的一个子集进行触发器逆向）
-    batch_size = 64
+    batch_size = 16
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
     nc_dataloader = DataLoader(clean_seedSet, batch_size=batch_size, shuffle=True, num_workers=4)
 
@@ -500,12 +555,20 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
 
     # ==================== 模型Unlearning ====================
     print("\n开始模型Unlearning（微调）...")
-    # for param in backdoor_model.parameters():
-    #     param.requires_grad = True
-    freeze_model(backdoor_model,dataset_name,model_name)
+    for param in backdoor_model.parameters():
+        param.requires_grad = True
+    # freeze_model(backdoor_model,dataset_name,model_name)
+    last_defense_model,best_defense_model = ours_train(backdoor_model,device,finetune_dataset,
+               num_epoch=args["finetune"]["num_epoch"],
+               lr=args["finetune"]["init_lr"],
+               batch_size=args["finetune"]["batch_size"],
+               early_stop=args["finetune"]["early_stop"]
+                )
+    defense_model = best_defense_model
+
+    '''
     backdoor_model.train()
-    # optimizer = optim.SGD(backdoor_model.parameters(), lr=0.001, momentum=0.9, weight_decay=5e-4)
-    optimizer = optim.Adam(backdoor_model.parameters(),lr=1e-3)
+    optimizer = optim.SGD(backdoor_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
     criterion = nn.CrossEntropyLoss()
 
     finetune_epochs = 10
@@ -530,18 +593,21 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
 
         train_acc = 100. * correct / total
         print(f"Epoch {epoch+1}/{finetune_epochs}, Loss: {total_loss/len(finetune_loader):.4f}, TrainAcc: {train_acc:.2f}%")
-
+    defense_model = backdoor_model
+    '''
+    
     print("模型微调完成")
+    
 
     # ==================== 评估修复后的模型 ====================
     
     print("评估修复后的模型性能...")
     if save_model:
         save_path = os.path.join(save_dir, "defense_model.pth")
-        asr,acc = eval_and_save(backdoor_model, filtered_poisoned_testset, clean_testset, device, save_path)
+        asr,acc = eval_and_save(defense_model, filtered_poisoned_testset, clean_testset, device, save_path)
         print(f"防御模型权重保存在:{save_path}")
     else:
-        asr, acc = eval_asr_acc(backdoor_model,filtered_poisoned_testset,clean_testset,device) 
+        asr, acc = eval_asr_acc(defense_model,filtered_poisoned_testset,clean_testset,device) 
     print(f"ACC: {acc:.3f}%")
     print(f"ASR: {asr:.3f}%")
     res = {
@@ -619,8 +685,18 @@ if __name__ == "__main__":
     r_seed_list = list(range(1,11))
     gpu_id = 1
     device = torch.device(f"cuda:{gpu_id}")
-    
 
+    args = {
+        "finetune":{
+            "method":"ours",
+            "num_epoch":10,
+            "init_lr":1e-4,
+            "batch_size":16,
+            "early_stop":False
+        }
+    }
+
+    # 实验基础信息
     print("PID:",cur_pid)
     print("exp_root_dir:",exp_root_dir)
     print("exp_name:",exp_name)
@@ -633,6 +709,10 @@ if __name__ == "__main__":
     print("attack_name_list:",attack_name_list)
     print("r_seed_list:",r_seed_list)
     print("gpu_id:",gpu_id)
+
+    # 实验超参数
+    pprint.pprint(args)
+
 
 
     all_start_time = time.perf_counter()
@@ -651,7 +731,6 @@ if __name__ == "__main__":
                         os.makedirs(save_dir,exist_ok=True)
                     else:
                         save_dir = None
-                    
                     res = one_scence(dataset_name, model_name, attack_name, save_dir)
                     if save_json:
                         save_experiment_result(exp_save_path, 

@@ -31,6 +31,8 @@ from defense.our.semi_train_utils import semi_train
 from utils.save_utils import atomic_json_dump, load_results
 
 
+
+
 def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
           lr_scheduler=None, class_weight = None, weight_decay=None, early_stop=False):
     model.train()
@@ -311,7 +313,7 @@ if __name__ == "__main__":
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
     '''
     cur_pid = os.getpid()
-    exp_name = "OursFuxian" # CleanSeedWithPoison | Ours_SemiTrain |OursTrain
+    exp_name = "CleanSeedWithPoison" # CleanSeedWithPoison | Ours_SemiTrain |OursTrain
     exp_time = get_formattedDateTime()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     exp_save_dir = os.path.join(exp_root_dir, exp_name)
@@ -319,8 +321,8 @@ if __name__ == "__main__":
     exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
 
     # all-scence
-    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["ResNet18","VGG19","DenseNet"]
+    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
     attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
 

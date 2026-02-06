@@ -4,7 +4,7 @@ import os
 import time
 import random
 from collections import Counter
-
+import json
 import copy
 import numpy as np
 import torch
@@ -24,8 +24,6 @@ from utils.dataset_utils import get_class_num
 from utils.model_eval_utils import eval_asr_acc, EvalModel
 from utils.save_utils import atomic_json_dump, load_results
 from utils.common_utils import get_formattedDateTime
-
-
 
 def unfreeze(model):
     for name, param in model.named_parameters():
@@ -116,7 +114,6 @@ def check(model:nn.Module,_input: torch.Tensor, source_set:Dataset, device, N:in
 
         return torch.stack(_list).mean(0) # 该batch的entropy
 
-
 def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Dataset, cut_off:float, device, num_classes:int):
     # now cleanse the poisoned dataset with the chosen boundary
     poisoned_dataset_loader = DataLoader(poisoned_dataset, batch_size=32, shuffle=False)
@@ -132,7 +129,6 @@ def cleanse_cutoff(model:nn.Module,poisoned_dataset:Dataset,clean_dataset:Datase
     cut = int(len(ranked_ids)*cut_off)
     suspicious_indices = ranked_ids[:cut]
     return all_entropy,suspicious_indices
-
 
 def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,device,num_classes:int,defense_fpr:float=0.1):
     clean_entropy = []
@@ -162,16 +158,17 @@ def cleanse(model:nn.Module,poisoned_dataset:Dataset, clean_dataset:Dataset,devi
     suspicious_indices = torch.logical_or(all_entropy < threshold_low, all_entropy > threshold_high).nonzero().reshape(-1)
     return all_entropy,suspicious_indices
 
-
 def train(model,device, dataset, test_poisoned_dataset=None, num_epoch=30, lr=1e-3, batch_size=64,
           lr_scheduler=None, class_weight = None, weight_decay=None, early_stop=False):
     model.train()
     model.to(device)
+
     dataset_loader = DataLoader(
-            dataset, # 非预制
+            dataset,
             batch_size=batch_size,
             shuffle=True, # 打乱
             num_workers=4)
+    
     if weight_decay:
         optimizer = optim.Adam(model.parameters(),lr=lr,weight_decay=weight_decay)
     else:
@@ -208,6 +205,8 @@ def train(model,device, dataset, test_poisoned_dataset=None, num_epoch=30, lr=1e
             asr = e.eval_acc()
             print(f"epoch:{epoch},loss:{epoch_loss},asr:{asr}")
             model.train()
+        if test_poisoned_dataset is None and epoch % 10 == 0:
+            print(f"epoch:{epoch},loss:{epoch_loss}")
         if epoch_loss < optimal_loss:
             count = 0
             optimal_loss = epoch_loss
@@ -231,7 +230,6 @@ def get_class_weights(dataset,class_num):
         weights.append(round(most_num / num,1))
     return label_counts, weights
 
-
 def get_backdoor_base_data(dataset_name, model_name, attack_name):
      # 加载后门攻击配套数据
     backdoor_data = get_backdoor_data(dataset_name, model_name, attack_name)
@@ -248,7 +246,6 @@ def get_backdoor_base_data(dataset_name, model_name, attack_name):
     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
     return backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset
 
-
 def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,num_classes:int,hard_cut_flag:bool = True, cutoff:float=0.4):
     backdoor_model.eval()
     backdoor_model.to(device)
@@ -260,102 +257,168 @@ def sample_select(clean_seedSet,poisoned_trainset,backdoor_model,num_classes:int
                                                  defense_fpr=0.01)
     return all_entropy,suspicious_indices
 
-def one_scene(dataset_name, model_name, attack_name,save_dir):
-
+def halftest_scene(dataset_name, model_name, attack_name,save_dir=None):
     # 先得到后门攻击基础数据
     backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
         get_backdoor_base_data(dataset_name, model_name, attack_name)
-
-    # select samples
-    sample_select_start_time = time.perf_counter()
     clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
     class_num = get_class_num(dataset_name)
-    all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model,
-                                                   class_num,hard_cut_flag,cutoff=0.4)
-    sample_select_end_time = time.perf_counter()
-    sample_select_cost_time = sample_select_end_time - sample_select_start_time
-    hours, minutes, seconds = convert_to_hms(sample_select_cost_time)
-    print(f"select samples耗时:{hours}时{minutes}分{seconds:.1f}秒")
 
-    if save_entropy:
-        save_path = os.path.join(save_dir,"entropy.pt")
-        torch.save(all_entropy,save_path)
-        print(f"训练集中所有样本的熵保存在: {save_path}")
-
-    suspicious_ids = suspicious_indices.tolist()
-    all_ids = list(range(len(poisoned_trainset)))
-    remain_ids = list(set(all_ids) - set(suspicious_ids))
-    PN = len(list(set(remain_ids) & set(poisoned_ids)))
-    print("cutoff:0.4(剩下0.6训练)")
-    print(f"准备用于retrain的数据集{PN}/{len(remain_ids)}")
-
-    '''
-    suspicious_ids = suspicious_indices.tolist()
-    all_ids = list(range(len(poisoned_trainset)))
-    remain_ids = list(set(all_ids) - set(suspicious_ids))
-    PN = len(list(set(remain_ids) & set(poisoned_ids)))
-    print(f"准备用于retrain的数据集{PN}/{len(remain_ids)}")
-
-    # defense retrain
-    retrain_start_time = time.perf_counter()
     ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",
-                                                dataset_name,model_name,attack_name,
-                                                f"exp_{r_seed}","best_BD_model.pth")
+                                                    dataset_name,model_name,attack_name,
+                                                    f"exp_{r_seed}","best_BD_model.pth")
     ranker_model_state_dict = torch.load(ranker_model_state_dict_path,map_location="cpu")
     model = get_model(dataset_name, model_name)
     model.load_state_dict(ranker_model_state_dict)
     ranker_model = model
     ranker_asr, ranker_acc = eval_asr_acc(ranker_model,filtered_poisoned_testset,clean_testset,device)
     print(f"ranker_asr:{ranker_asr},ranker_acc:{ranker_acc}")
-    choicedSet = Subset(poisoned_trainset,remain_ids)
-    # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
-    availableSet = ConcatDataset([clean_seedSet,choicedSet])
-    epoch_num = 100 # 这次训练100个epoch
-    lr = 1e-3
-    batch_size = 256
-    weight_decay=1e-3
-    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
-    label_counter,weights = get_class_weights(availableSet, class_num)
-    print(f"label_counter:{label_counter}")
-    print(f"class_weights:{weights}")
-    class_weights = torch.FloatTensor(weights)
-    # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
-    last_defense_model,best_defense_model = train(
-        ranker_model,device,availableSet,
-        test_poisoned_dataset= filtered_poisoned_testset,
-        num_epoch=epoch_num,
-        lr=lr, batch_size=batch_size,
-        lr_scheduler="CosineAnnealingLR",
-        class_weight=class_weights,weight_decay=weight_decay,early_stop=True)
-    retrain_end_time = time.perf_counter()
-    retrain_cost_time = retrain_end_time - retrain_start_time
-    hours, minutes, seconds = convert_to_hms(retrain_cost_time)
-    print(f"retrain耗时:{hours}时{minutes}分{seconds:.1f}秒")
 
-    if save_model:
-        # 保存 defense retrain 结果
-        best_save_path = os.path.join(save_dir, "best_defense_model.pth")
-        best_asr,best_acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device,
-                                          best_save_path)
-        print(f"best_defense_model|ASR:{best_asr},ACC:{best_acc},权重保存在:{best_save_path}")
-        last_save_path = os.path.join(save_dir, "last_defense_model.pth")
-        last_asr,last_acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device,
-                                          last_save_path)
-        print(f"last_defense_model|ASR:{last_asr},ACC:{last_acc},权重保存在:{last_save_path}")
-    else:
+    # select samples
+    entropys_data_path = os.path.join(exp_root_dir, "Defense", "Strip_hardCut", "sampling", 
+                                      dataset_name, model_name, attack_name, "exp_1", "entropy.pt")
+    entropys = torch.load(entropys_data_path, map_location="cpu")
+
+    cut_off = 0.4
+    ranked_ids = np.argsort(entropys) # 熵越小的idx排越前
+    cut = int(len(ranked_ids)*cut_off)
+    suspicious_ids = ranked_ids[:cut]
+    all_ids = list(range(len(poisoned_trainset)))
+    remain_ids = list(set(all_ids) - set(suspicious_ids))
+    p_ids = list(set(remain_ids) & set(poisoned_ids))
+    PN = len(p_ids)
+    clean_remain_ids = [idx for idx in remain_ids if idx not in p_ids]
+    
+
+    cur_PN = PN # 初始的 PN
+    cur_remain_ids = remain_ids # 初始的remain_ids
+    cur_pids = p_ids # 初始的 remain_ids 中 的 pids
+    round = 0
+    res = {}
+    delete_num = len(cur_pids) // 2
+    while delete_num > 0: # 当 每次折半成功
+        print(f"\nRound:{round},PN:{cur_PN}/{len(cur_remain_ids)}")
+        choicedSet = Subset(poisoned_trainset,cur_remain_ids)
+        # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
+        availableSet = ConcatDataset([clean_seedSet,choicedSet])
+        print("数据集全部加载到内存中，加速loader...")
+        # 每个训练轮次之前先把数据集加载到内存中，加速训练
+        inner_availableSet = ExtractDataset_NoPoisonedFlag(availableSet)
+        epoch_num = 100 # 这次训练100个epoch
+        lr = 1e-3
+        batch_size = 256
+        weight_decay=1e-3
+        # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
+        label_counter,weights = get_class_weights(inner_availableSet, class_num)
+        print(f"label_counter:{label_counter}")
+        print(f"class_weights:{weights}")
+        class_weights = torch.FloatTensor(weights)
+        # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
+        base_model = copy.deepcopy(ranker_model)
+        last_defense_model,best_defense_model = train(
+            base_model,device,inner_availableSet,
+            #  test_poisoned_dataset= filtered_poisoned_testset,
+            num_epoch=epoch_num,
+            lr=lr, batch_size=batch_size,
+            lr_scheduler="CosineAnnealingLR",
+            class_weight=class_weights,weight_decay=weight_decay,early_stop=False)
         best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
-        last_asr, last_acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+        print(f"asr:{best_asr}, acc:{best_acc}")
+        res[round] = {
+            "PN":PN,
+            "best_asr":best_asr,
+            "best_acc":best_acc,
+        }
+
+        # 准备减半
+        delete_num = len(cur_pids) // 2
+        # 取前delete_num个索引，并删除对应元素
+        random.shuffle(cur_pids)
+        cur_pids = cur_pids[delete_num:]
+        cur_PN = len(cur_pids)
+        cur_remain_ids = clean_remain_ids+cur_pids
+        round += 1
+    json_save_path = os.path.join(exp_save_dir, "res.json")
+    os.makedirs(exp_save_dir,exist_ok=True)
+    with open(json_save_path, mode="r") as f:
+        json.dump(f)
+    print(f"res 保存在 {json_save_path}")
+
+def sampling(clean_seedSet,class_num, poisoned_trainset,poisoned_ids,backdoor_model, cutoff:float=0.4):
+    all_entropy,suspicious_indices = sample_select(clean_seedSet,poisoned_trainset,backdoor_model,
+                                                   class_num,hard_cut_flag,cutoff=cutoff)
+    suspicious_ids = suspicious_indices.tolist()
+    all_ids = list(range(len(poisoned_trainset)))
+    remain_ids = list(set(all_ids) - set(suspicious_ids))
+    PN = len(list(set(remain_ids) & set(poisoned_ids)))
     res = {
-        "PN":PN,
-        "best_asr":best_asr,
-        "best_acc":best_acc,
-        "last_asr":last_asr,
-        "last_acc":last_acc,
+        "entropys": all_entropy,
+        "remain_ids":remain_ids,
+        "PN": PN
     }
-    print(f"PN:{PN},best_asr:{best_asr},best_acc:{best_acc},last_asr:{last_asr},last_acc:{last_acc}")
     return res
+
+def one_scene_sampling(dataset_name, model_name, attack_name,save_dir):
+    # 先得到后门攻击基础数据
+    backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
+        get_backdoor_base_data(dataset_name, model_name, attack_name)
+    clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
+    class_num = get_class_num(dataset_name)
+
+    # 得到ranker model
+    '''
+    ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",
+                                                    dataset_name,model_name,attack_name,
+                                                    f"exp_{r_seed}","best_BD_model.pth")
+    ranker_model_state_dict = torch.load(ranker_model_state_dict_path,map_location="cpu")
+    model = get_model(dataset_name, model_name)
+    model.load_state_dict(ranker_model_state_dict)
+    ranker_model = model
+    ranker_asr, ranker_acc = eval_asr_acc(ranker_model,filtered_poisoned_testset,clean_testset,device)
+    print(f"ranker_asr:{ranker_asr},ranker_acc:{ranker_acc}")
     '''
 
+    sampling_start_time = time.perf_counter()
+    sampling_res = sampling(clean_seedSet,class_num,
+                            poisoned_trainset,poisoned_ids,backdoor_model,cutoff=cutoff)
+    entropys = sampling_res["entropys"]
+    if save_entropy:
+        save_path = os.path.join(save_dir,"entropy.pt")
+        torch.save(entropys,save_path)
+        print(f"训练集中所有样本的熵保存在: {save_path}")
+    remain_ids = sampling_res["remain_ids"]
+    PN = sampling_res["PN"]
+    print(f"PN/remain_ids: {PN}/{len(remain_ids)}")
+    sampling_end_time = time.perf_counter()
+    sampling_cost_time = sampling_end_time - sampling_start_time
+    hours, minutes, seconds = convert_to_hms(sampling_cost_time)
+    print(f"Sampling 耗时:{hours}时{minutes}分{seconds:.1f}秒")
+
+    '''
+        if save_model:
+            # 保存 defense retrain 结果
+            best_save_path = os.path.join(save_dir, "best_defense_model.pth")
+            best_asr,best_acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device,
+                                            best_save_path)
+            print(f"best_defense_model|ASR:{best_asr},ACC:{best_acc},权重保存在:{best_save_path}")
+            last_save_path = os.path.join(save_dir, "last_defense_model.pth")
+            last_asr,last_acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device,
+                                            last_save_path)
+            print(f"last_defense_model|ASR:{last_asr},ACC:{last_acc},权重保存在:{last_save_path}")
+        
+        else:
+            best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+            last_asr, last_acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+        res = {
+            "PN":PN,
+            "best_asr":best_asr,
+            "best_acc":best_acc,
+            "last_asr":last_asr,
+            "last_acc":last_acc,
+        }
+        print(f"PN:{PN},best_asr:{best_asr},best_acc:{best_acc},last_asr:{last_asr},last_acc:{last_acc}")
+        return res
+        '''
 
 def save_experiment_result(exp_save_path, 
                            dataset_name, model_name, attack_name,r_seed,
@@ -406,40 +469,52 @@ if __name__ == "__main__":
     '''
 
     # all scence
+
+    # 实验基础信息
     cur_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    
-    exp_name = "Strip_hardCut/sampling"
+    exp_name = "Strip_hardCut/testhalf"
     exp_time = get_formattedDateTime()
+    print("PID:",cur_pid)
+    print("exp_root_dir:",exp_root_dir)
+    print("exp_name:",exp_name)
+    print("exp_time:",exp_time)
+
+    # 实验保存信息
     exp_save_dir = os.path.join(exp_root_dir,"Defense",exp_name)
     os.makedirs(exp_save_dir,exist_ok=True)
     exp_save_file_name = "results.json"
     exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
     save_model = False
     save_json = False
-    save_entropy = True
-
-    dataset_name_list = ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    r_seed_list = list(range(1,11))
-    hard_cut_flag = True
-    gpu_id = 1
-    device = torch.device(f"cuda:{gpu_id}")
-
-    print("PID:",cur_pid)
-    print("exp_root_dir:",exp_root_dir)
-    print("exp_name:",exp_name)
-    print("exp_time:",exp_time)
+    save_entropy = False
     print("exp_save_path:",exp_save_path)
     print("save_model:",save_model)
     print("save_json:",save_json)
+    print("save_entropy:",save_entropy)
+
+    # 实验场景
+    dataset_name_list = ["GTSRB"] # ["CIFAR10", "GTSRB","ImageNet2012_subset"] # ["ImageNet2012_subset"]
+    model_name_list = ["DenseNet"] # ["ResNet18", "VGG19", "DenseNet"]
+    attack_name_list = ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
+    
+    # 重复种子
+    r_seed_list = list(range(1,2))
     print("r_seed_list:",r_seed_list)
+
+    # 实验硬件
+    gpu_id = 1
+    device = torch.device(f"cuda:{gpu_id}")
     print("gpu_id:",gpu_id)
+
+    # 实验参数
+    hard_cut_flag = True
+    cutoff = 0.4
     print("hard_cut_flag:",hard_cut_flag)
+    print("cutoff:",cutoff)
 
     all_start_time = time.perf_counter()
     for r_seed in r_seed_list:
@@ -453,11 +528,11 @@ if __name__ == "__main__":
                     one_sence_start_time = time.perf_counter()
                     print(f"\n{exp_name}|{dataset_name}|{model_name}|{attack_name}|r_seed={r_seed}|time={get_formattedDateTime()}")
                     if save_model or save_entropy:
-                        save_dir = os.path.join(exp_save_dir,dataset_name,model_name,attack_name)
+                        save_dir = os.path.join(exp_save_dir,dataset_name,model_name,attack_name, f"exp_{r_seed}")
                         os.makedirs(save_dir,exist_ok=True)
                     else:
                         save_dir = None
-                    res = one_scene(dataset_name, model_name, attack_name, save_dir)
+                    res = halftest_scene(dataset_name, model_name, attack_name, save_dir)
                     if save_json:
                         save_experiment_result(exp_save_path, 
                             dataset_name, model_name, attack_name,r_seed,

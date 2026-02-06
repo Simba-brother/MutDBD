@@ -38,7 +38,8 @@ class ExtractDataset_NoPoisonedFlag(Dataset):
         # 将数据集加载到内存中了
         new_dataset = []
         for id in range(len(self.old_dataset)):
-            sample,label,ispoisoned = self.old_dataset[id]
+            sample = self.old_dataset[id][0]
+            label = self.old_dataset[id][1]
             new_dataset.append((sample,label))
         return new_dataset
     

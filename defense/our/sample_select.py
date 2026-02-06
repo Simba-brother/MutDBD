@@ -19,7 +19,7 @@ import time
 import random
 
 
-def clean_seed(poisoned_trainset,poisoned_ids,strict_clean:bool=True):
+def clean_seed(poisoned_trainset,poisoned_ids,strict_clean:bool=True, poisoned_num:int = 0):
     '''
     选择干净种子
     '''
@@ -48,15 +48,25 @@ def clean_seed(poisoned_trainset,poisoned_ids,strict_clean:bool=True):
     for class_id,sample_id_list in clean_sample_dict.items():
         seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist())
     if strict_clean is False:
-        # 种子种混入了2个poisoned samples
-        # 随机删除2个clean seed id
-        first_element = random.choice(seed_sample_id_list)
-        seed_sample_id_list.remove(first_element)
-        second_element = random.choice(seed_sample_id_list)
-        seed_sample_id_list.remove(second_element)
-        # 从p ids 中随机找2个id 放入 seed_sample_id_list
-        p_ids = random.sample(poisoned_ids, 2)
-        seed_sample_id_list.extend(p_ids)
+        if poisoned_num == 2:
+            # 种子种混入了2个poisoned samples
+            # 随机删除2个clean seed id
+            first_element = random.choice(seed_sample_id_list)
+            seed_sample_id_list.remove(first_element)
+            second_element = random.choice(seed_sample_id_list)
+            seed_sample_id_list.remove(second_element)
+            # 从p ids 中随机找2个id 放入 seed_sample_id_list
+            p_ids = random.sample(poisoned_ids, 2)
+            seed_sample_id_list.extend(p_ids)
+        elif poisoned_num == 1:
+            # 种子种混入了2个poisoned samples
+            # 随机删除2个clean seed id
+            first_element = random.choice(seed_sample_id_list)
+            seed_sample_id_list.remove(first_element)
+            # 从p ids 中随机找2个id 放入 seed_sample_id_list
+            p_ids = random.sample(poisoned_ids, 1)
+            seed_sample_id_list.extend(p_ids)
+
     seed_p_id_set = set(seed_sample_id_list) & set(poisoned_ids)
     clean_seedSet = Subset(poisoned_trainset,seed_sample_id_list)
     return clean_seedSet,seed_sample_id_list
