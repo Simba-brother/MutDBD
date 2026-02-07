@@ -301,27 +301,27 @@ def halftest_scene(dataset_name, model_name, attack_name,save_dir=None):
         choicedSet = Subset(poisoned_trainset,cur_remain_ids)
         # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
         availableSet = ConcatDataset([clean_seedSet,choicedSet])
-        print("数据集全部加载到内存中，加速loader...")
+        # print("数据集全部加载到内存中，加速loader...")
         # 每个训练轮次之前先把数据集加载到内存中，加速训练
-        inner_availableSet = ExtractDataset_NoPoisonedFlag(availableSet)
-        epoch_num = 100 # 这次训练100个epoch
+        # inner_availableSet = ExtractDataset_NoPoisonedFlag(availableSet)
+        epoch_num = 100
         lr = 1e-3
         batch_size = 256
         weight_decay=1e-3
         # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
-        label_counter,weights = get_class_weights(inner_availableSet, class_num)
+        label_counter,weights = get_class_weights(availableSet, class_num)
         print(f"label_counter:{label_counter}")
         print(f"class_weights:{weights}")
         class_weights = torch.FloatTensor(weights)
         # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
         base_model = copy.deepcopy(ranker_model)
         last_defense_model,best_defense_model = train(
-            base_model,device,inner_availableSet,
+            base_model,device,availableSet,
             #  test_poisoned_dataset= filtered_poisoned_testset,
             num_epoch=epoch_num,
             lr=lr, batch_size=batch_size,
             lr_scheduler="CosineAnnealingLR",
-            class_weight=class_weights,weight_decay=weight_decay,early_stop=False)
+            class_weight=class_weights,weight_decay=weight_decay,early_stop=early_stop)
         best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
         print(f"asr:{best_asr}, acc:{best_acc}")
         res[round] = {
@@ -340,8 +340,8 @@ def halftest_scene(dataset_name, model_name, attack_name,save_dir=None):
         round += 1
     json_save_path = os.path.join(exp_save_dir, "res.json")
     os.makedirs(exp_save_dir,exist_ok=True)
-    with open(json_save_path, mode="r") as f:
-        json.dump(f)
+    with open(json_save_path, mode="w") as f:
+        json.dump(res,f)
     print(f"res 保存在 {json_save_path}")
 
 def sampling(clean_seedSet,class_num, poisoned_trainset,poisoned_ids,backdoor_model, cutoff:float=0.4):
@@ -494,8 +494,8 @@ if __name__ == "__main__":
     print("save_entropy:",save_entropy)
 
     # 实验场景
-    dataset_name_list = ["GTSRB"] # ["CIFAR10", "GTSRB","ImageNet2012_subset"] # ["ImageNet2012_subset"]
-    model_name_list = ["DenseNet"] # ["ResNet18", "VGG19", "DenseNet"]
+    dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10", "GTSRB","ImageNet2012_subset"] # ["ImageNet2012_subset"]
+    model_name_list = ["ResNet18"] # ["ResNet18", "VGG19", "DenseNet"]
     attack_name_list = ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
@@ -506,16 +506,17 @@ if __name__ == "__main__":
     print("r_seed_list:",r_seed_list)
 
     # 实验硬件
-    gpu_id = 1
+    gpu_id = 0
     device = torch.device(f"cuda:{gpu_id}")
     print("gpu_id:",gpu_id)
 
     # 实验参数
     hard_cut_flag = True
     cutoff = 0.4
+    early_stop = False
     print("hard_cut_flag:",hard_cut_flag)
     print("cutoff:",cutoff)
-
+    print("early_stop:",cutoff)
     all_start_time = time.perf_counter()
     for r_seed in r_seed_list:
         one_repeat_start_time = time.perf_counter()

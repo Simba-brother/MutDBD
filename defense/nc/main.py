@@ -691,7 +691,7 @@ if __name__ == "__main__":
             "method":"ours",
             "num_epoch":10,
             "init_lr":1e-4,
-            "batch_size":16,
+            "batch_size":64,
             "early_stop":False
         }
     }

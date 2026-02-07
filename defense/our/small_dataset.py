@@ -21,6 +21,7 @@ from datasets.posisoned_dataset import get_all_dataset
 from defense.our.sample_select import chose_retrain_set
 from defense.our.defense_train import train
 from defense.our.semi_train_utils import semi_train
+from utils.common_utils import get_formattedDateTime
 
 
 
@@ -312,33 +313,51 @@ if __name__ == "__main__":
     '''
 
     # all-scence
+    # 实验基础信息
+    print("实验基础信息")
     current_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list =  ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    r_seed_list = [1,2,3,4,5,6,7,8,9,10]
-    device =  torch.device("cuda:1")
+    exp_name = "small_dataset_defense_train"
+    exp_time = get_formattedDateTime()
+    print("PID:",current_pid)
+    print("exp_root_dir:",exp_root_dir)
+    print("exp_name:",exp_name)
+    print("exp_time:",exp_time)
 
-    # 创建用于保存该实验的文件夹
-    exp_save_dir = os.path.join(exp_root_dir,"small_dataset_defense_semitrain")
+    # 实验保存信息
+    print("实验保存信息")
+    exp_save_dir = os.path.join(exp_root_dir,exp_name)
     os.makedirs(exp_save_dir,exist_ok=True)
     exp_save_file_name = "results.json"
     exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
     save_model = False
+    save_json = True
+    print("exp_save_path:",exp_save_path)
+    print("save_model:",save_model)
+    print("save_json:",save_json)
 
-    # 超参数
-    semi_train_flag = True
-
-    print("PID:",current_pid)
-    print("semi_train_flag:",semi_train_flag)
-    print("exp_root_dir:",exp_root_dir)
+    # 实验场景信息
+    print("实验场景信息")
+    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list =  ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    r_seed_list = [1,2,3,4,5,6,7,8,9,10]
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
     print("r_seed_list:",r_seed_list)
-    print("exp_save_path:",exp_save_path)
-    print("save_model:",save_model)
+
+    # 实验设备信息
+    print("实验设备信息")
+    gpu_id = 0
+    device =  torch.device(f"cuda:{gpu_id}")
+    print("gpu_id:",gpu_id)
+
+    # 实验超参数信息
+    print("实验超参数信息")
+    semi_train_flag = False
+    print("semi_train_flag:",semi_train_flag)
+
 
     total_start_time = time.perf_counter()
     for r_seed in r_seed_list: # 重复实验

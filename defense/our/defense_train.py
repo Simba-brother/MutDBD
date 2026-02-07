@@ -180,7 +180,8 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
     # 获得设备
     device = torch.device(f"cuda:{gpu_id}")
-    seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids, strict_clean=strict_clean) # 从中毒训练集中每个class选择10个clean seed
+    seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids,
+                                      strict_clean=strict_clean,seed_poisoned_num=seed_poisoned_num) # 从中毒训练集中每个class选择10个clean seed
     if resume_ranker_model is False:
         seed_p_id_set = set(seed_id_list) & set(poisoned_ids)
         print(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}/{len(seed_id_list)}")
@@ -189,13 +190,19 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
         # 种子微调训练30个轮次
         last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,num_epoch=30,
                                                               lr=1e-3,early_stop=False)
-        # 把在种子训练集上表现最好的那个model保存下来，记为 best_BD_model.pth
-        save_path = os.path.join(save_dir, "best_BD_model.pth")
-        asr,acc = eval_and_save(best_fine_tuned_mmodel, filtered_poisoned_testset, clean_testset, device, save_path)
-        print(f"best_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
-        save_path = os.path.join(save_dir, "last_BD_model.pth")
-        asr,acc = eval_and_save(last_fine_tuned_model, filtered_poisoned_testset, clean_testset, device, save_path)
-        print(f"last_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+        if save_model:
+            # 把在种子训练集上表现最好的那个model保存下来，记为 best_BD_model.pth
+            save_path = os.path.join(save_dir, "best_BD_model.pth")
+            asr,acc = eval_and_save(best_fine_tuned_mmodel, filtered_poisoned_testset, clean_testset, device, save_path)
+            print(f"best_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+            save_path = os.path.join(save_dir, "last_BD_model.pth")
+            asr,acc = eval_and_save(last_fine_tuned_model, filtered_poisoned_testset, clean_testset, device, save_path)
+            print(f"last_fine_tuned_model|ASR:{asr},ACC:{acc},权重保存在:{save_path}")
+        else:
+            best_finetune_asr, best_finetune_acc = eval_asr_acc(best_fine_tuned_mmodel,filtered_poisoned_testset,clean_testset,device)
+            last_finetune_asr, last_finetune_acc = eval_asr_acc(last_fine_tuned_model,filtered_poisoned_testset,clean_testset,device)
+            print(f"best_fine_tuned_model|ASR:{best_finetune_asr},ACC:{best_finetune_acc}")
+            print(f"last_fine_tuned_model|ASR:{last_finetune_asr},ACC:{last_finetune_acc}")
         ranker_model = best_fine_tuned_mmodel
     else:
         ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",dataset_name,model_name,attack_name,
@@ -241,7 +248,7 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
             ranker_model,device,availableSet,num_epoch=epoch_num,
             lr=lr, batch_size=batch_size,
             lr_scheduler="CosineAnnealingLR",
-            class_weight=class_weights,weight_decay=weight_decay,early_stop=True)
+            class_weight=class_weights,weight_decay=weight_decay,early_stop=False)
     
     if save_model:
         best_save_path = os.path.join(save_dir, "best_defense_model.pth")
@@ -312,51 +319,59 @@ if __name__ == "__main__":
     r_seed = 1
     one_scene(dataset_name, model_name, attack_name, r_seed=r_seed)
     '''
+    # 实验基础信息
+    print("实验基础信息")
     cur_pid = os.getpid()
+    exp_root_dir = "/data/mml/backdoor_detect/experiments"
     exp_name = "CleanSeedWithPoison" # CleanSeedWithPoison | Ours_SemiTrain |OursTrain
     exp_time = get_formattedDateTime()
-    exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    exp_save_dir = os.path.join(exp_root_dir, exp_name)
-    exp_save_file_name = "results.json"
-    exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
-
-    # all-scence
-    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
-    model_name_list = ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
-    r_seed_list = list(range(1,11))
-
-    gpu_id = 0
-
-    # 超参数: retrain samples select
-    resume_ranker_model=True
-    beta = 1.0
-    sigmoid_fag = False
-    strict_clean= True
-    # 超参数: retrain
-    semi=False # 是否采用半监督训练
-    save_model = False # 是否保存训练模型
-
     print("PID:",cur_pid)
     print("exp_root_dir:",exp_root_dir)
     print("exp_name:",exp_name)
     print("exp_time:",exp_time)
+
+    # 实验保存信息
+    print("实验保存信息")
+    exp_save_dir = os.path.join(exp_root_dir,exp_name)
+    os.makedirs(exp_save_dir,exist_ok=True)
+    exp_save_file_name = f"results_{exp_time}.json"
+    exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
+    save_model = False
+    save_json = True
     print("exp_save_path:",exp_save_path)
+    print("save_model:",save_model)
+    print("save_json:",save_json)
+
+    # 实验场景信息
+    print("实验场景信息")
+    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
+    model_name_list = ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    r_seed_list = list(range(1,11))
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
     print("r_seed_list:",r_seed_list)
-    print("gpu_id:",gpu_id)
     
-    print("==选择样本超参数==")
+    # 实验设备信息
+    print("实验设备信息")
+    gpu_id = 1
+    print("gpu_id:",gpu_id)
+
+    # 实验超参数
+    print("实验超参数")
+    resume_ranker_model=False
+    beta = 1.0
+    sigmoid_fag = False
+    strict_clean= False
+    seed_poisoned_num = 1
+    semi=False # 是否采用半监督训练
     print("resume_ranker_model:",resume_ranker_model)
     print("beta:",beta)
     print("sigmoid_fag:",sigmoid_fag)
     print("strict_clean:",strict_clean)
-    print("==训练超参数==")
+    print("seed_poisoned_num:",seed_poisoned_num)
     print("semi:",semi)
-    print("==其他超参数==")
-    print("save_model:",save_model)
 
     all_start_time = time.perf_counter()
     for r_seed in r_seed_list:
