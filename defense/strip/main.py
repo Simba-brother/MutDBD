@@ -338,7 +338,7 @@ def halftest_scene(dataset_name, model_name, attack_name,save_dir=None):
         cur_PN = len(cur_pids)
         cur_remain_ids = clean_remain_ids+cur_pids
         round += 1
-    json_save_path = os.path.join(exp_save_dir, "res.json")
+    json_save_path = os.path.join(exp_save_dir, f"res_{exp_time}.json")
     os.makedirs(exp_save_dir,exist_ok=True)
     with open(json_save_path, mode="w") as f:
         json.dump(res,f)
@@ -471,6 +471,7 @@ if __name__ == "__main__":
     # all scence
 
     # 实验基础信息
+    print("实验基础信息")
     cur_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
     exp_name = "Strip_hardCut/testhalf"
@@ -481,9 +482,10 @@ if __name__ == "__main__":
     print("exp_time:",exp_time)
 
     # 实验保存信息
+    print("实验保存信息")
     exp_save_dir = os.path.join(exp_root_dir,"Defense",exp_name)
     os.makedirs(exp_save_dir,exist_ok=True)
-    exp_save_file_name = "results.json"
+    exp_save_file_name = f"results_{exp_time}.json"
     exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
     save_model = False
     save_json = False
@@ -494,29 +496,33 @@ if __name__ == "__main__":
     print("save_entropy:",save_entropy)
 
     # 实验场景
-    dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10", "GTSRB","ImageNet2012_subset"] # ["ImageNet2012_subset"]
-    model_name_list = ["ResNet18"] # ["ResNet18", "VGG19", "DenseNet"]
+    print("实验场景")
+    dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB","ImageNet2012_subset"] # ["ImageNet2012_subset"]
+    model_name_list = ["DenseNet"] # ["ResNet18", "VGG19", "DenseNet"]
     attack_name_list = ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
     
     # 重复种子
+    print("重复种子")
     r_seed_list = list(range(1,2))
     print("r_seed_list:",r_seed_list)
 
     # 实验硬件
+    print("实验硬件")
     gpu_id = 0
     device = torch.device(f"cuda:{gpu_id}")
     print("gpu_id:",gpu_id)
 
     # 实验参数
+    print("实验参数")
     hard_cut_flag = True
     cutoff = 0.4
     early_stop = False
     print("hard_cut_flag:",hard_cut_flag)
     print("cutoff:",cutoff)
-    print("early_stop:",cutoff)
+    print("early_stop:",early_stop)
     all_start_time = time.perf_counter()
     for r_seed in r_seed_list:
         one_repeat_start_time = time.perf_counter()
