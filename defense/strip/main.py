@@ -325,7 +325,7 @@ def halftest_scene(dataset_name, model_name, attack_name,save_dir=None):
         best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
         print(f"asr:{best_asr}, acc:{best_acc}")
         res[round] = {
-            "PN":PN,
+            "PN":cur_PN,
             "best_asr":best_asr,
             "best_acc":best_acc,
         }
