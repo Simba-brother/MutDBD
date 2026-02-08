@@ -27,7 +27,7 @@ def vis_discussion_1():
                     data[rate].append(res[dataset_name][model_name][attack_name][str(rate)]["rank_ratio"])
 
     save_dir = "imgs/discussion"
-    save_file_name = "discussion_1.png"
+    save_file_name = "mutationRateForClassRank.pdf"
     save_path = os.path.join(save_dir, save_file_name)
     print(save_path)
     draw_box(data,save_path)

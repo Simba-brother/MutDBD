@@ -28,9 +28,9 @@ def draw_bar(data,class_num,save_path):
         "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
     })
 
-    fig, ax = plt.subplots(figsize=(11.5, 6.2), dpi=200)
+    fig, ax = plt.subplots(figsize=(8, 6.2), dpi=800)
 
-    bars = ax.bar(classes, fps, color=colors, edgecolor="black", linewidth=1.6, width=0.78)
+    bars = ax.bar(classes, fps, color=colors, edgecolor="black", linewidth=1.6, width=0.6)
 
     # Axes labels
     ax.set_xlabel("Class", fontsize=28)
@@ -38,6 +38,7 @@ def draw_bar(data,class_num,save_path):
 
     # Limits and ticks (match the shown scale)
     ax.set_ylim(0, max(fps)+7000)
+    ax.set_xlim(-0.5, 9.5)
     # ax.set_ylim(0, 1426)
     # ax.set_yticks([0, 357, 713, 1070, 1426])
     ax.set_xticks(classes)
@@ -59,9 +60,10 @@ def draw_bar(data,class_num,save_path):
 
     # Value labels on top of bars
     max_v = max(fps)
+    y_range = max(fps) + 7000
     for b, v in zip(bars, fps):
-        # Highest bar: offset 0, other bars: offset 2300
-        offset = 0 if v == max_v else 1800
+        # Highest bar: smaller offset, other bars: proportional offset
+        offset = y_range * 0.01 if v == max_v else y_range * 0.03
         ax.text(b.get_x() + b.get_width() / 2, v + offset, f"{v:.1f}",
                 ha="center", va="bottom", fontsize=18)
 
@@ -97,7 +99,7 @@ def one_scene(dataset_name, model_name, attack_name, mutation_rate=0.01, metric=
     if metric == "FP":
         res = FP_metrics(df_predicted_labels, mutated_model_id_list, class_num)
     print(res)
-    save_path = "imgs/SBA/cifar10_resnet18_sba.png"
+    save_path = "imgs/SBA/cifar10_resnet18_sba.pdf"
     draw_bar(res,class_num,save_path)
     print(save_path)
 
