@@ -198,8 +198,7 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
         if freeze_model_flag:
             freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
         # 种子微调训练30个轮次
-        seed_finetune_init_lr = 1e-3 # 1e-3
-        seed_finetune_epochs = 100 # 30
+        
         last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,
                                                               num_epoch=seed_finetune_epochs,
                                                               lr=seed_finetune_init_lr,early_stop=False)
@@ -361,7 +360,7 @@ if __name__ == "__main__":
     print("实验场景信息")
     dataset_name_list = ["CIFAR10"] # ["CIFAR10", "GTSRB", "ImageNet2012_subset"]
     model_name_list = ["ResNet18"] # ["ResNet18","VGG19","DenseNet"]
-    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
+    attack_name_list = ["BadNets", "IAD","Refool","WaNet"]
     r_seed_list = list(range(1,11))
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
@@ -377,7 +376,7 @@ if __name__ == "__main__":
     print("实验超参数")
     freeze_model_flag = True # trans_seed = True
     seed_finetune_init_lr = 1e-3 # 1e-3
-    seed_finetune_epochs = 100  #trans_seed = True:100; other=30
+    seed_finetune_epochs = 200  #trans_seed = True:100; other=30
     resume_ranker_model=False
     choice_rate = 0.6
     beta = 1.0
