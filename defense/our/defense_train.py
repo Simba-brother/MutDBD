@@ -226,7 +226,6 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
         ranker_model = model
 
     # 样本选择
-    choice_rate = 0.6 # 打算选择60%的样本进行retrain
     class_rank = get_class_rank(dataset_name,model_name,attack_name) # 加载 class rank
     choicedSet,choiced_sample_id_list,remainSet,remain_sample_id_list, PN = chose_retrain_set(
         ranker_model, device, choice_rate, poisoned_trainset, poisoned_ids, class_rank=class_rank,
@@ -380,6 +379,7 @@ if __name__ == "__main__":
     seed_finetune_init_lr = 1e-3 # 1e-3
     seed_finetune_epochs = 100  #trans_seed = True:100; other=30
     resume_ranker_model=False
+    choice_rate = 0.6
     beta = 1.0
     sigmoid_fag = False
     strict_clean= False
@@ -391,6 +391,7 @@ if __name__ == "__main__":
     print("seed_finetune_init_lr:",seed_finetune_init_lr)
     print("seed_finetune_epochs:",seed_finetune_epochs)
     print("resume_ranker_model:",resume_ranker_model)
+    print("choice_rate:",choice_rate)
     print("beta:",beta)
     print("sigmoid_fag:",sigmoid_fag)
     print("strict_clean:",strict_clean)
