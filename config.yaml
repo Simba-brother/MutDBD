@@ -1,6 +1,7 @@
 exp_root_dir : "/data/mml/backdoor_detect/experiments"
 # CIFAR-10 dataset dir
 CIFAR10_dataset_dir: /data/mml/backdoor_detect/dataset/cifar10
+CIFAR10_trans_seed_dataset_dir: /data/mml/backdoor_detect/dataset/CIFAR10_transfer_cleanSeed
 # GTSRB dataset dir
 GTSRB_dataset_dir: /data/mml/backdoor_detect/dataset/GTSRB
 # ImageNet2012_subset dir

@@ -358,6 +358,23 @@ def sampling(clean_seedSet,class_num, poisoned_trainset,poisoned_ids,backdoor_mo
     }
     return res
 
+def load_sampling_res(dataset_name, model_name, attack_name, poisoned_trainset, poisoned_ids, cut_off:float = 0.4):
+    entropys_path = os.path.join(exp_root_dir,"Defense/Strip_hardCut/sampling", dataset_name, model_name, attack_name, f"exp_{r_seed}", "entropy.pt")
+    entropys = torch.load(entropys_path, map_location="cpu")
+
+    ranked_ids = np.argsort(entropys) # 熵越小的idx排越前
+    cut = int(len(ranked_ids)*cut_off)
+    suspicious_ids = ranked_ids[:cut]
+    all_ids = list(range(len(poisoned_trainset)))
+    remain_ids = list(set(all_ids) - set(suspicious_ids))
+    p_ids = list(set(remain_ids) & set(poisoned_ids))
+    PN = len(p_ids)
+    sample_res = {
+        "PN":PN,
+        "remain_ids":remain_ids
+    }
+    return sample_res
+
 def one_scene_sampling(dataset_name, model_name, attack_name,save_dir):
     # 先得到后门攻击基础数据
     backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
@@ -420,6 +437,82 @@ def one_scene_sampling(dataset_name, model_name, attack_name,save_dir):
         return res
         '''
 
+def one_scene(dataset_name, model_name, attack_name,save_dir):
+    # 先得到后门攻击基础数据
+    backdoor_model,poisoned_ids, poisoned_trainset,filtered_poisoned_testset, clean_trainset, clean_testset = \
+        get_backdoor_base_data(dataset_name, model_name, attack_name)
+    clean_seedSet, _ = clean_seed(poisoned_trainset,poisoned_ids,strict_clean=True)
+    class_num = get_class_num(dataset_name)
+
+    # 得到ranker model
+    ranker_model_state_dict_path = os.path.join(exp_root_dir,"Defense","Ours",
+                                                    dataset_name,model_name,attack_name,
+                                                    f"exp_{r_seed}","best_BD_model.pth")
+    ranker_model_state_dict = torch.load(ranker_model_state_dict_path,map_location="cpu")
+    model = get_model(dataset_name, model_name)
+    model.load_state_dict(ranker_model_state_dict)
+    ranker_model = model
+    ranker_asr, ranker_acc = eval_asr_acc(ranker_model,filtered_poisoned_testset,clean_testset,device)
+    print(f"ranker_asr:{ranker_asr},ranker_acc:{ranker_acc}")
+
+    # 加载采样结果
+    sampling_res = load_sampling_res(dataset_name, model_name, attack_name, poisoned_trainset, poisoned_ids)
+    PN = sampling_res["PN"]
+    remain_ids = sampling_res["remain_ids"]
+    print(f"PN:{PN}/{len(remain_ids)}")
+
+    # 构建finetune集
+    choicedSet = Subset(poisoned_trainset,remain_ids)
+    # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
+    availableSet = ConcatDataset([clean_seedSet,choicedSet])
+    epoch_num = 100
+    lr = 1e-3
+    batch_size = 256
+    weight_decay=1e-3
+    # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
+    label_counter,weights = get_class_weights(availableSet, class_num)
+    print(f"label_counter:{label_counter}")
+    print(f"class_weights:{weights}")
+    class_weights = torch.FloatTensor(weights)
+    # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
+    base_model = copy.deepcopy(ranker_model)
+    # 开始finetune
+    last_defense_model,best_defense_model = train(
+        base_model,device,availableSet,
+        #  test_poisoned_dataset= filtered_poisoned_testset,
+        num_epoch=epoch_num,
+        lr=lr, batch_size=batch_size,
+        lr_scheduler="CosineAnnealingLR",
+        class_weight=class_weights,weight_decay=weight_decay,
+        early_stop=early_stop)
+    best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+    print(f"asr:{best_asr}, acc:{best_acc}")
+    if save_model:
+        # 保存 defense retrain 结果
+        best_save_path = os.path.join(save_dir, "best_defense_model.pth")
+        best_asr,best_acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device,
+                                        best_save_path)
+        print(f"best_defense_model|ASR:{best_asr},ACC:{best_acc},权重保存在:{best_save_path}")
+        last_save_path = os.path.join(save_dir, "last_defense_model.pth")
+        last_asr,last_acc = eval_and_save(last_defense_model, filtered_poisoned_testset, clean_testset, device,
+                                        last_save_path)
+        print(f"last_defense_model|ASR:{last_asr},ACC:{last_acc},权重保存在:{last_save_path}")
+    
+    else:
+        best_asr, best_acc = eval_asr_acc(best_defense_model,filtered_poisoned_testset,clean_testset,device)
+        last_asr, last_acc = eval_asr_acc(last_defense_model,filtered_poisoned_testset,clean_testset,device)
+    res = {
+        "PN":PN,
+        "best_asr":best_asr,
+        "best_acc":best_acc,
+        "last_asr":last_asr,
+        "last_acc":last_acc,
+    }
+    print(f"PN:{PN},best_asr:{best_asr},best_acc:{best_acc},last_asr:{last_asr},last_acc:{last_acc}")
+    return res
+        
+
+
 def save_experiment_result(exp_save_path, 
                            dataset_name, model_name, attack_name,r_seed,
                            result_data
@@ -474,7 +567,7 @@ if __name__ == "__main__":
     print("实验基础信息")
     cur_pid = os.getpid()
     exp_root_dir = "/data/mml/backdoor_detect/experiments"
-    exp_name = "Strip_hardCut/testhalf"
+    exp_name = "Strip_hardCut/defenseTrain"
     exp_time = get_formattedDateTime()
     print("PID:",cur_pid)
     print("exp_root_dir:",exp_root_dir)
@@ -488,7 +581,7 @@ if __name__ == "__main__":
     exp_save_file_name = f"results_{exp_time}.json"
     exp_save_path = os.path.join(exp_save_dir,exp_save_file_name)
     save_model = False
-    save_json = False
+    save_json = True
     save_entropy = False
     print("exp_save_path:",exp_save_path)
     print("save_model:",save_model)
@@ -497,21 +590,21 @@ if __name__ == "__main__":
 
     # 实验场景
     print("实验场景")
-    dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10", "GTSRB","ImageNet2012_subset"] # ["ImageNet2012_subset"]
-    model_name_list = ["DenseNet"] # ["ResNet18", "VGG19", "DenseNet"]
-    attack_name_list = ["BadNets"] # ["BadNets","IAD","Refool","WaNet"]
+    dataset_name_list = ["ImageNet2012_subset"] # ["CIFAR10", "GTSRB"] # ["ImageNet2012_subset"]
+    model_name_list = ["ResNet18", "VGG19", "DenseNet"]
+    attack_name_list = ["BadNets","IAD","Refool","WaNet"]
     print("dataset_name_list:",dataset_name_list)
     print("model_name_list:",model_name_list)
     print("attack_name_list:",attack_name_list)
     
     # 重复种子
     print("重复种子")
-    r_seed_list = list(range(1,2))
+    r_seed_list = list(range(1,11))
     print("r_seed_list:",r_seed_list)
 
     # 实验硬件
     print("实验硬件")
-    gpu_id = 0
+    gpu_id = 1
     device = torch.device(f"cuda:{gpu_id}")
     print("gpu_id:",gpu_id)
 
@@ -539,7 +632,9 @@ if __name__ == "__main__":
                         os.makedirs(save_dir,exist_ok=True)
                     else:
                         save_dir = None
-                    res = halftest_scene(dataset_name, model_name, attack_name, save_dir)
+                    # res = halftest_scene(dataset_name, model_name, attack_name, save_dir)
+                    # res = one_scene_sampling(dataset_name, model_name, attack_name,save_dir)
+                    res = one_scene(dataset_name, model_name, attack_name,save_dir)
                     if save_json:
                         save_experiment_result(exp_save_path, 
                             dataset_name, model_name, attack_name,r_seed,

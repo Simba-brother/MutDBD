@@ -176,6 +176,7 @@ def total_count(all_scence_res):
     return count_result
 
 
+
 if __name__ == "__main__":
     # one_scence
     '''

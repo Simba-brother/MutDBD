@@ -18,6 +18,33 @@ import json
 import time
 import random
 
+def get_test_clean_seed(cleanset):
+    # 数据加载器
+    dataset_loader = DataLoader(
+                cleanset,
+                batch_size=64,
+                shuffle=False,
+                num_workers=4,
+                pin_memory=True)
+    # 获得种子
+    # {class_id:[sample_id]}
+    clean_sample_dict = defaultdict(list)
+    label_list = []
+    for _, batch in enumerate(dataset_loader):
+        Y = batch[1]
+        label_list.extend(Y.tolist())
+
+    for sample_id in range(len(cleanset)):
+        label = label_list[sample_id]
+        clean_sample_dict[label].append(sample_id)
+
+    # 获得种子数据集
+    seed_sample_id_list = []
+    for class_id,sample_id_list in clean_sample_dict.items():
+        seed_sample_id_list.extend(np.random.choice(sample_id_list, replace=False, size=10).tolist()) 
+    clean_seedSet = Subset(cleanset,seed_sample_id_list)
+    return clean_seedSet
+
 
 def clean_seed(poisoned_trainset,poisoned_ids,strict_clean:bool=True, seed_poisoned_num:int = 0):
     '''

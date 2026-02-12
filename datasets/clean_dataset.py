@@ -3,8 +3,22 @@ import os
 import cv2
 from torchvision.datasets import DatasetFolder
 from utils.common_utils import read_yaml
-from datasets.transform import get_cifar10_transform,get_gtsrb_transform,get_imagenet_transform
+from datasets.transform import get_cifar10_transform,get_gtsrb_transform,get_imagenet_transform,get_cifar10_trans_seed_transform
 config = read_yaml("config.yaml")
+
+
+def get_cifar10_trans_cleanseed_dataset(attack_name):
+    dataset_dir = config[f"CIFAR10_trans_seed_dataset_dir"]
+    extensions = ('png',)
+    train_transform, test_transform = get_cifar10_trans_seed_transform(attack_name)
+    dataset = DatasetFolder(
+        root= dataset_dir,
+        loader=cv2.imread, # ndarray
+        extensions=extensions,
+        transform=train_transform,
+        target_transform=None,
+        is_valid_file=None)
+    return dataset
 
 def get_clean_dataset(dataset_name,attack_name):
     ''' 获得数据集 '''

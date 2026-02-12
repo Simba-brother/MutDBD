@@ -2,6 +2,97 @@
 
 from torchvision import transforms
 
+def get_cifar10_trans_seed_transform(attack_name):
+    if attack_name == "BadNets":
+        # 训练集transform    
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(), # Tensor|ndarray to PIL
+            transforms.RandomCrop(size=32,padding=4,padding_mode="reflect"), # PIL|Tensor to be cropped.
+            transforms.RandomHorizontalFlip(), 
+            transforms.ToTensor()
+        ])
+        # 测试集transform
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.ToTensor()
+        ])
+    elif attack_name == "IAD":
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.RandomCrop((32, 32), padding=5),
+            transforms.RandomRotation(10),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
+        ])
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4914, 0.4822, 0.4465),(0.247, 0.243, 0.261))
+        ])
+    elif attack_name == "Refool":
+        # 训练集transform
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.RandomHorizontalFlip(p=1),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406),(0.229, 0.224, 0.225))
+        ])
+        # 测试集transform
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406),(0.229, 0.224, 0.225))
+        ])
+    elif attack_name == "WaNet":
+        # 获得训练集transform
+        train_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.RandomCrop(size=32,padding=4,padding_mode="reflect"),
+            transforms.RandomHorizontalFlip()
+        ])
+        # 获得测试集transform
+        test_transform = transforms.Compose([
+            transforms.Resize((32, 32)),
+            transforms.ToTensor()
+        ])
+    elif attack_name == "LabelConsistent":
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+    elif attack_name == "SBA":
+        # 训练集transform    
+        train_transform = transforms.Compose([
+            transforms.ToPILImage(), # Tensor|ndarray to PIL
+            transforms.RandomCrop(size=32,padding=4,padding_mode="reflect"), # PIL|Tensor to be cropped.
+            transforms.RandomHorizontalFlip(), 
+            transforms.ToTensor()
+        ])
+        # 测试集transform
+        test_transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.ToTensor()
+        ])
+    else:
+        raise ValueError("Invalid input")
+    return train_transform,test_transform
+
 def get_cifar10_transform(attack_name):
     if attack_name == "BadNets":
         # 训练集transform    

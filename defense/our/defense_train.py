@@ -21,10 +21,11 @@ import torch.nn as nn
 import torch.optim as optim
 from utils.model_eval_utils import eval_asr_acc
 from datasets.posisoned_dataset import get_all_dataset
+from datasets.clean_dataset import get_cifar10_trans_cleanseed_dataset
 from utils.common_utils import set_random_seed
 from utils.dataset_utils import get_class_num
 from mid_data_loader import get_backdoor_data, get_class_rank
-from defense.our.sample_select import clean_seed
+from defense.our.sample_select import clean_seed,get_test_clean_seed
 from models.model_loader import get_model
 from defense.our.sample_select import chose_retrain_set
 from defense.our.semi_train_utils import semi_train
@@ -180,16 +181,28 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
     poisoned_trainset, filtered_poisoned_testset, clean_trainset, clean_testset = get_all_dataset(dataset_name, model_name, attack_name, poisoned_ids)
     # 获得设备
     device = torch.device(f"cuda:{gpu_id}")
-    seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids,
+
+    if test_seed is True:
+        seedSet = get_test_clean_seed(clean_testset)
+    elif trans_seed is True:
+        seedSet = get_cifar10_trans_cleanseed_dataset(attack_name)
+    else:
+        seedSet,seed_id_list = clean_seed(poisoned_trainset, poisoned_ids,
                                       strict_clean=strict_clean,seed_poisoned_num=seed_poisoned_num) # 从中毒训练集中每个class选择10个clean seed
-    if resume_ranker_model is False:
         seed_p_id_set = set(seed_id_list) & set(poisoned_ids)
         print(f"种子中包含的中毒样本数量: {len(seed_p_id_set)}/{len(seed_id_list)}")
-        # 种子微调原始的后门模型，为了保证模型的performance所以需要将后门模型进行部分层的冻结
-        freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
+
+        
+    if resume_ranker_model is False:
+        
+        if freeze_model_flag:
+            freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
         # 种子微调训练30个轮次
-        last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,num_epoch=30,
-                                                              lr=1e-3,early_stop=False)
+        seed_finetune_init_lr = 1e-3 # 1e-3
+        seed_finetune_epochs = 100 # 30
+        last_fine_tuned_model, best_fine_tuned_mmodel = train(backdoor_model,device,seedSet,
+                                                              num_epoch=seed_finetune_epochs,
+                                                              lr=seed_finetune_init_lr,early_stop=False)
         if save_model:
             # 把在种子训练集上表现最好的那个model保存下来，记为 best_BD_model.pth
             save_path = os.path.join(save_dir, "best_BD_model.pth")
@@ -232,7 +245,10 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
 
     else:
         # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
-        availableSet = ConcatDataset([seedSet,choicedSet])
+        if test_seed is True or trans_seed is True:
+            availableSet = choicedSet
+        else:
+            availableSet = ConcatDataset([seedSet,choicedSet])
         epoch_num = 100 # 这次训练100个epoch
         lr = 1e-3
         batch_size = 512
@@ -355,22 +371,32 @@ if __name__ == "__main__":
     
     # 实验设备信息
     print("实验设备信息")
-    gpu_id = 1
+    gpu_id = 0
     print("gpu_id:",gpu_id)
 
     # 实验超参数
     print("实验超参数")
+    freeze_model_flag = True # trans_seed = True
+    seed_finetune_init_lr = 1e-3 # 1e-3
+    seed_finetune_epochs = 100  #trans_seed = True:100; other=30
     resume_ranker_model=False
     beta = 1.0
     sigmoid_fag = False
     strict_clean= False
-    seed_poisoned_num = 1
+    seed_poisoned_num = 0
+    test_seed = False
+    trans_seed = True
     semi=False # 是否采用半监督训练
+    print("freeze_model_flag:",freeze_model_flag)
+    print("seed_finetune_init_lr:",seed_finetune_init_lr)
+    print("seed_finetune_epochs:",seed_finetune_epochs)
     print("resume_ranker_model:",resume_ranker_model)
     print("beta:",beta)
     print("sigmoid_fag:",sigmoid_fag)
     print("strict_clean:",strict_clean)
     print("seed_poisoned_num:",seed_poisoned_num)
+    print("test_seed:",test_seed)
+    print("trans_seed:",trans_seed)
     print("semi:",semi)
 
     all_start_time = time.perf_counter()
