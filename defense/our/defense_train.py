@@ -74,7 +74,6 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
         if lr_scheduler:
             scheduler.step()
         epoch_loss = sum(step_loss_list) / len(step_loss_list)
-        print(f"epoch:{epoch},loss:{epoch_loss}")
         if epoch_loss < optimal_loss:
             count = 0
             optimal_loss = epoch_loss
@@ -87,6 +86,13 @@ def train(model,device, dataset, num_epoch=30, lr=1e-3, batch_size=64,
     return model,best_model
 
 
+def check_freeze(model):
+    freeze_flag = False
+    for name, param in model.named_parameters():
+        if param.requires_grad is False:
+            freeze_flag = True
+            return freeze_flag
+    return freeze_flag
 
 def unfreeze(model):
     for name, param in model.named_parameters():
@@ -194,8 +200,7 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
 
         
     if resume_ranker_model is False:
-        
-        if freeze_model_flag:
+        if seed_finetune_freeze_flag:
             freeze_model(backdoor_model,dataset_name=dataset_name,model_name=model_name)
         # 种子微调训练30个轮次
         
@@ -222,7 +227,16 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
         ranker_model_state_dict = torch.load(ranker_model_state_dict_path,map_location="cpu")
         model = get_model(dataset_name, model_name)
         model.load_state_dict(ranker_model_state_dict)
+        asr, acc = eval_asr_acc(model,filtered_poisoned_testset,clean_testset,device)
+        print(f"resume ranker model|ASR:{asr},ACC:{acc}")
         ranker_model = model
+        resume_ranker_freeze_flag = check_freeze(ranker_model)
+        print(f"ranker model 直接加载过来时所有参数是否冻结:{resume_ranker_freeze_flag}")
+
+    if defense_finetune_freeze_flag is True:
+        ranker_model = freeze_model(ranker_model)
+    else:
+        ranker_model = unfreeze(ranker_model)
 
     # 样本选择
     class_rank = get_class_rank(dataset_name,model_name,attack_name) # 加载 class rank
@@ -240,30 +254,34 @@ def one_scene(dataset_name, model_name, attack_name, r_seed, save_dir=None):
         last_defense_model,best_defense_model = semi_train(
             ranker_model,device,class_num,seedSet,epochs,lr,poisoned_trainset,
             labeled_id_set,unlabeled_id_set,all_id_list)
-
     else:
         # 防御重训练. 种子样本+选择的样本对模型进进下一步的 train
         if test_seed is True or trans_seed is True:
             availableSet = choicedSet
         else:
             availableSet = ConcatDataset([seedSet,choicedSet])
-        epoch_num = 100 # 这次训练100个epoch
-        lr = 1e-3
-        batch_size = 512
+        epoch_num = defense_train_epochs
+        lr = defense_train_init_lr
+        batch_size = defense_train_bz
         weight_decay=1e-3
         # 根据数据集中不同 class 的样本数量，设定不同 class 的 weight
-        label_counter,weights = get_class_weights(availableSet, class_num)
-        print(f"label_counter:{label_counter}")
-        print(f"class_weights:{weights}")
-        class_weights = torch.FloatTensor(weights)
+        if class_weight_flag: 
+            label_counter,weights = get_class_weights(availableSet, class_num)
+            print(f"label_counter:{label_counter}")
+            print(f"class_weights:{weights}")
+            class_weights = torch.FloatTensor(weights)
+        else:
+            label_counter,_ = get_class_weights(availableSet, class_num)
+            print(f"label_counter:{label_counter}")
+            class_weights = None
         # 开始train,并返回最后一个epoch的model和在训练集上loss最小的那个best model
 
         last_defense_model,best_defense_model = train(
             ranker_model,device,availableSet,num_epoch=epoch_num,
             lr=lr, batch_size=batch_size,
             lr_scheduler="CosineAnnealingLR",
-            class_weight=class_weights,weight_decay=weight_decay,early_stop=False)
-    
+            class_weight=class_weights,
+            weight_decay=weight_decay,early_stop=False)
     if save_model:
         best_save_path = os.path.join(save_dir, "best_defense_model.pth")
         best_asr,best_acc = eval_and_save(best_defense_model, filtered_poisoned_testset, clean_testset, device, 
@@ -374,9 +392,14 @@ if __name__ == "__main__":
 
     # 实验超参数
     print("实验超参数")
-    freeze_model_flag = True # trans_seed = True
+    seed_finetune_freeze_flag = True
+    defense_finetune_freeze_flag = False
     seed_finetune_init_lr = 1e-3 # 1e-3
     seed_finetune_epochs = 200  #trans_seed = True:100; other=30
+    defense_train_init_lr = 1e-3
+    defense_train_epochs = 100
+    defense_train_bz = 512
+    class_weight_flag = False
     resume_ranker_model=False
     choice_rate = 0.6
     beta = 1.0
@@ -386,9 +409,13 @@ if __name__ == "__main__":
     test_seed = False
     trans_seed = True
     semi=False # 是否采用半监督训练
-    print("freeze_model_flag:",freeze_model_flag)
+    print("seed_finetune_freeze_flag:",seed_finetune_freeze_flag)
+    print("defense_finetune_freeze_flag:",defense_finetune_freeze_flag)
     print("seed_finetune_init_lr:",seed_finetune_init_lr)
     print("seed_finetune_epochs:",seed_finetune_epochs)
+    print("defense_train_init_lr:",defense_train_init_lr)
+    print("defense_train_epochs:",defense_train_epochs)
+    print("defense_train_bz:",defense_train_bz)
     print("resume_ranker_model:",resume_ranker_model)
     print("choice_rate:",choice_rate)
     print("beta:",beta)

@@ -39,29 +39,38 @@ def main():
     p2_data = load_data(os.path.join(exp_root_dir,
                                             "CleanSeedWithPoison", "p_num=2", "results.json"))
     
+    trans_data = load_data(os.path.join(exp_root_dir,
+                                            "CleanSeedWithPoison", "transSeed", "results.json"))
+    
     for attack_name in attack_name_list:
         p1_PN_list = p1_data[attack_name]["pn"]
         p2_PN_list = p2_data[attack_name]["pn"]
+        trans_PN_list = trans_data[attack_name]["pn"]
         p1_PN_avg, p2_PN_avg = compare_avg(p1_PN_list,p2_PN_list)
+        trans_PN_avg = round(sum(trans_PN_list)/len(trans_PN_list),3)
 
         p1_asr_list = p1_data[attack_name]["asr"]
         p2_asr_list = p2_data[attack_name]["asr"]
+        trans_asr_list = trans_data[attack_name]["asr"]
         p1_asr_avg, p2_asr_avg = compare_avg(p1_asr_list,p2_asr_list)
+        trans_asr_avg = round(sum(trans_asr_list)/len(trans_asr_list),3)
 
         p1_acc_list = p1_data[attack_name]["acc"]
         p2_acc_list = p2_data[attack_name]["acc"]
+        trans_acc_list = trans_data[attack_name]["acc"]
         p1_acc_avg, p2_acc_avg = compare_avg(p1_acc_list,p2_acc_list)
+        trans_acc_avg = round(sum(trans_acc_list)/len(trans_acc_list),3)
 
 
         print(f"{attack_name}")
         print("\tPN")
-        print(f"\t\tP1:{p1_PN_avg},P2:{p2_PN_avg}")
+        print(f"\t\tP1:{p1_PN_avg},P2:{p2_PN_avg},Trans:{trans_PN_avg}")
 
         print("\tASR")
-        print(f"\t\tP1:{p1_asr_avg},P2:{p2_asr_avg}")
+        print(f"\t\tP1:{p1_asr_avg},P2:{p2_asr_avg},Trans:{trans_asr_avg}")
 
         print("\tACC")
-        print(f"\t\tP1:{p1_acc_avg},P2:{p2_acc_avg}")
+        print(f"\t\tP1:{p1_acc_avg},P2:{p2_acc_avg},Trans:{trans_acc_avg}")
 
 
 
