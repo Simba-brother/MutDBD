@@ -41,43 +41,108 @@ def read_nc_result(dataset_name,model_name,attack_name):
 
 def read_strip_result(dataset_name,model_name,attack_name):
     # 读取strip
-    '''
-    strip_json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut","results_nocleanfinetune.json")
-    with open(strip_json_path,mode="r") as f:
-        strip_res = json.load(f)
+    
+    cifa10_gtsrb_json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut",
+                                        "defenseTrain", "results_2026-02-11_10:51:06.json")
+    with open(cifa10_gtsrb_json_path,mode="r") as f:
+        cifa10_gtsrb_res = json.load(f)
+    
+    imagenet_json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut",
+                                        "defenseTrain", "results_2026-02-11_10:52:01.json")
+    with open(imagenet_json_path,mode="r") as f:
+        imagenet_res = json.load(f)
+    
     
     strip_asr_list = []
     strip_acc_list = []
     strip_pn_list = []
+
+
     for r_seed in range(1,7):
-        asr = strip_res[dataset_name][model_name][attack_name][str(r_seed)]["best_asr"]
-        acc = strip_res[dataset_name][model_name][attack_name][str(r_seed)]["best_acc"]
-        pn = strip_res[dataset_name][model_name][attack_name][str(r_seed)]["PN"]
+        if dataset_name in ["CIFAR10","GTSRB"]:
+            asr = cifa10_gtsrb_res[dataset_name][model_name][attack_name][str(r_seed)]["best_asr"]
+            acc = cifa10_gtsrb_res[dataset_name][model_name][attack_name][str(r_seed)]["best_acc"]
+            pn = cifa10_gtsrb_res[dataset_name][model_name][attack_name][str(r_seed)]["PN"]
+        elif dataset_name in ["ImageNet2012_subset"] and r_seed <= 4:
+            asr = imagenet_res[dataset_name][model_name][attack_name][str(r_seed)]["best_asr"]
+            acc = imagenet_res[dataset_name][model_name][attack_name][str(r_seed)]["best_acc"]
+            pn = imagenet_res[dataset_name][model_name][attack_name][str(r_seed)]["PN"]
         strip_asr_list.append(asr)
         strip_acc_list.append(acc)
         strip_pn_list.append(pn)
-    '''
-    pass
+    return strip_asr_list, strip_acc_list, strip_pn_list
+    
+    
 
 
 def read_result(dataset_name,model_name,attack_name):
     
     our_asr_list, our_acc_list, our_pn_list = read_ours_result(dataset_name,model_name,attack_name)
     nc_asr_list, nc_acc_list = read_nc_result(dataset_name,model_name,attack_name)
+    strip_asr_list, strip_acc_list, strip_pn_list = read_strip_result(dataset_name,model_name,attack_name)
 
     res = {
         "ours_asr_list": our_asr_list,
         "ours_acc_list": our_acc_list,
         "ours_pn_list":our_pn_list,
+
         "nc_asr_list": nc_asr_list,
         "nc_acc_list": nc_acc_list,
+
+        "strip_asr_list": strip_asr_list,
+        "strip_acc_list": strip_acc_list,
+        "strip_pn_list": strip_pn_list,
+
     }
     return res
 
 
 
 def one_scence_ours_vs_strip(dataset_name,model_name,attack_name):
-    pass
+    ours_asr_list, ours_acc_list, ours_pn_list = read_ours_result(dataset_name,model_name,attack_name)
+    strip_asr_list, strip_acc_list, strip_pn_list = read_strip_result(dataset_name,model_name,attack_name)
+    print("Ours:")
+    print(f"\tasr_list:{ours_asr_list}")
+    print(f"\tacc_list:{ours_acc_list}")
+    print(f"\tpn_list:{ours_pn_list}")
+
+    print("Strip:")
+    print(f"\tasr_list:{strip_asr_list}")
+    print(f"\tacc_list:{strip_acc_list}")
+
+    
+    print("Ours vs. Strip")
+    asr_WTL_res = compare_WTL(ours_asr_list, strip_asr_list, expect = "small", method="mannwhitneyu") # 越小越好
+    acc_WTL_res = compare_WTL(ours_acc_list, strip_acc_list, expect = "big", method="mannwhitneyu") # 越大越好
+
+    ours_asr_avg,strip_asr_avg = compare_avg(ours_asr_list,strip_asr_list)
+    ours_acc_avg,strip_acc_avg = compare_avg(ours_acc_list,strip_acc_list)
+
+    asr_avg_flag = "Lose"
+    if ours_asr_avg < strip_asr_avg:
+        asr_avg_flag = "Win"
+    acc_avg_flag = "Lose"
+    if ours_acc_avg > strip_acc_avg:
+        acc_avg_flag = "Win"
+
+    res = {
+        "ASR":{
+            "ours":ours_asr_avg,
+            "strip":strip_asr_avg,
+            "AVG_flag": asr_avg_flag,
+            "W/T/L": asr_WTL_res
+        },
+        "ACC":{
+            "ours":ours_acc_avg,
+            "strip":strip_acc_avg,
+            "AVG_flag":acc_avg_flag,
+            "W/T/L":acc_WTL_res,
+        }
+    }
+    return res
+
+
+
 
 def one_scence_ours_vs_nc(dataset_name,model_name,attack_name):
     ours_asr_list, ours_acc_list, ours_pn_list = read_ours_result(dataset_name,model_name,attack_name)
@@ -201,7 +266,7 @@ if __name__ == "__main__":
                 if dataset_name == "ImageNet2012_subset" and model_name == "VGG19":
                     continue
                 print(f"\n{dataset_name}|{model_name}|{attack_name}")
-                res = one_scence_ours_vs_nc(dataset_name,model_name,attack_name)
+                res = one_scence_ours_vs_strip(dataset_name,model_name,attack_name)
                 pprint.pprint(res)
                 all_scence_res.append(res)
 

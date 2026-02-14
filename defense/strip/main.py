@@ -599,12 +599,12 @@ if __name__ == "__main__":
     
     # 重复种子
     print("重复种子")
-    r_seed_list = list(range(1,11))
+    r_seed_list = [10,9]# list(range(1,11))
     print("r_seed_list:",r_seed_list)
 
     # 实验硬件
     print("实验硬件")
-    gpu_id = 1
+    gpu_id = 0
     device = torch.device(f"cuda:{gpu_id}")
     print("gpu_id:",gpu_id)
 
