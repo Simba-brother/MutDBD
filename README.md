@@ -22,19 +22,19 @@ We believe the reason is that the primary goal of STRIP is to **detect suspiciou
 
 The figures below visualize this phenomenon using log-scale y-axis to clearly show both high and low ASR values. Red bars indicate scenarios where the backdoor attack remains effective, while green bars indicate successful defense.
 
-| CIFAR10-ResNet18 | CIFAR10-VGG19 |
+| CIFAR10-ResNet18-BadNets | CIFAR10-VGG19-BadNets |
 |:---:|:---:|
 | ![](imgs/dis_strip/CIFAR10_ResNet18_BadNets.png) | ![](imgs/dis_strip/CIFAR10_VGG19_BadNets.png) |
 
-| CIFAR10-DenseNet | GTSRB-ResNet18 |
+| CIFAR10-DenseNet-BadNets | GTSRB-ResNet18-BadNets |
 |:---:|:---:|
 | ![](imgs/dis_strip/CIFAR10_DenseNet_BadNets.png) | ![](imgs/dis_strip/GTSRB_ResNet18_BadNets.png) |
 
-| GTSRB-VGG19 | GTSRB-DenseNet |
+| GTSRB-VGG19-BadNets | GTSRB-DenseNet-BadNets |
 |:---:|:---:|
 | ![](imgs/dis_strip/GTSRB_VGG19_BadNets.png) | ![](imgs/dis_strip/GTSRB_DenseNet_BadNets.png) |
 
-| ImageNet-ResNet18 | ImageNet-DenseNet |
+| ImageNet-ResNet18-BadNets | ImageNet-DenseNet-BadNets |
 |:---:|:---:|
 | ![](imgs/dis_strip/ImageNet_ResNet18_BadNets.png) | ![](imgs/dis_strip/ImageNet_DenseNet_BadNets.png) |
 
