@@ -14,6 +14,14 @@
 
 ## Supplementary discussion and verification of the inconsistency between STRIP's "sample selection performance" and "final defense effect".
 
+We conducted a control experiment to examine the relationship between Poisoned sample Number (PN) and Attack Success Rate (ASR). By gradually reducing the PN in the STRIP selection subset (approximately halving it each time), we observed a trend in ASR changes.
+
+The experiment shows that STRIP's ASR often **"drops sharply"** after PN falls below a certain threshold, but it may remain at a high level before then. For example, in GTSRB-ResNet18, the ASR remains high (~0.95) even when PN drops from 65 to 9, then suddenly drops to ~0.003 at PN=5. This "threshold effect" is consistently observed across different datasets and model architectures.
+
+We believe the reason is that the primary goal of STRIP is to **detect suspicious samples/inputs**, not specifically designed for "backdoor elimination at the model level by filtering the training set." Therefore, the phenomenon of **"PN being low but ASR not decreasing synchronously"** may occur. This highlights an important distinction between sample-level detection performance and model-level defense effectiveness.
+
+The figures below visualize this phenomenon using log-scale y-axis to clearly show both high and low ASR values. Red bars indicate scenarios where the backdoor attack remains effective (flag=0), while green bars indicate successful defense (flag=1).
+
 | CIFAR10-ResNet18 | CIFAR10-VGG19 |
 |:---:|:---:|
 | ![](imgs/dis_strip/CIFAR10_ResNet18_BadNets.png) | ![](imgs/dis_strip/CIFAR10_VGG19_BadNets.png) |
