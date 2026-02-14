@@ -24,18 +24,18 @@ The figures below visualize this phenomenon using log-scale y-axis to clearly sh
 
 | CIFAR10-ResNet18-BadNets | CIFAR10-VGG19-BadNets |
 |:---:|:---:|
-| ![](imgs/dis_strip/CIFAR10_ResNet18_BadNets.png) | ![](imgs/dis_strip/CIFAR10_VGG19_BadNets.png) |
+| ![](imgs/strip/CIFAR10_ResNet18_BadNets.png) | ![](imgs/strip/CIFAR10_VGG19_BadNets.png) |
 
 | CIFAR10-DenseNet-BadNets | GTSRB-ResNet18-BadNets |
 |:---:|:---:|
-| ![](imgs/dis_strip/CIFAR10_DenseNet_BadNets.png) | ![](imgs/dis_strip/GTSRB_ResNet18_BadNets.png) |
+| ![](imgs/strip/CIFAR10_DenseNet_BadNets.png) | ![](imgs/strip/GTSRB_ResNet18_BadNets.png) |
 
 | GTSRB-VGG19-BadNets | GTSRB-DenseNet-BadNets |
 |:---:|:---:|
-| ![](imgs/dis_strip/GTSRB_VGG19_BadNets.png) | ![](imgs/dis_strip/GTSRB_DenseNet_BadNets.png) |
+| ![](imgs/strip/GTSRB_VGG19_BadNets.png) | ![](imgs/strip/GTSRB_DenseNet_BadNets.png) |
 
 | ImageNet-ResNet18-BadNets | ImageNet-DenseNet-BadNets |
 |:---:|:---:|
-| ![](imgs/dis_strip/ImageNet_ResNet18_BadNets.png) | ![](imgs/dis_strip/ImageNet_DenseNet_BadNets.png) |
+| ![](imgs/strip/ImageNet_ResNet18_BadNets.png) | ![](imgs/strip/ImageNet_DenseNet_BadNets.png) |
 
 
