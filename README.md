@@ -20,7 +20,7 @@ The experiment shows that STRIP's ASR often **"drops sharply"** after PN falls b
 
 We believe the reason is that the primary goal of STRIP is to **detect suspicious samples/inputs**, not specifically designed for "backdoor elimination at the model level by filtering the training set." Therefore, the phenomenon of **"PN being low but ASR not decreasing synchronously"** may occur. This highlights an important distinction between sample-level detection performance and model-level defense effectiveness.
 
-The figures below visualize this phenomenon using log-scale y-axis to clearly show both high and low ASR values. Red bars indicate scenarios where the backdoor attack remains effective (flag=0), while green bars indicate successful defense (flag=1).
+The figures below visualize this phenomenon using log-scale y-axis to clearly show both high and low ASR values. Red bars indicate scenarios where the backdoor attack remains effective, while green bars indicate successful defense.
 
 | CIFAR10-ResNet18 | CIFAR10-VGG19 |
 |:---:|:---:|
