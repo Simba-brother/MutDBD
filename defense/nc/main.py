@@ -554,6 +554,7 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
     finetune_loader = DataLoader(finetune_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 
     # ==================== 模型Unlearning ====================
+    '''
     print("\n开始模型Unlearning（微调）...")
     for param in backdoor_model.parameters():
         param.requires_grad = True
@@ -565,8 +566,10 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
                early_stop=args["finetune"]["early_stop"]
                 )
     defense_model = best_defense_model
-
     '''
+
+
+
     backdoor_model.train()
     optimizer = optim.SGD(backdoor_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
     criterion = nn.CrossEntropyLoss()
@@ -594,8 +597,6 @@ def one_scence(dataset_name, model_name, attack_name, save_dir=None):
         train_acc = 100. * correct / total
         print(f"Epoch {epoch+1}/{finetune_epochs}, Loss: {total_loss/len(finetune_loader):.4f}, TrainAcc: {train_acc:.2f}%")
     defense_model = backdoor_model
-    '''
-    
     print("模型微调完成")
     
 

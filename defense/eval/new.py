@@ -41,7 +41,7 @@ def read_nc_result(dataset_name,model_name,attack_name):
 
 def read_strip_result(dataset_name,model_name,attack_name):
     # 读取strip
-    
+    '''
     cifa10_gtsrb_json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut",
                                         "defenseTrain", "results_2026-02-11_10:51:06.json")
     with open(cifa10_gtsrb_json_path,mode="r") as f:
@@ -51,14 +51,22 @@ def read_strip_result(dataset_name,model_name,attack_name):
                                         "defenseTrain", "results_2026-02-11_10:52:01.json")
     with open(imagenet_json_path,mode="r") as f:
         imagenet_res = json.load(f)
-    
+    '''
+    json_path = os.path.join(exp_root_dir,"Defense","Strip_hardCut",
+                                        "defenseTrain", "results.json")
+    with open(json_path,mode="r") as f:
+        res = json.load(f)
     
     strip_asr_list = []
     strip_acc_list = []
     strip_pn_list = []
 
 
-    for r_seed in range(1,7):
+    for r_seed in range(1,11):
+        asr = res[dataset_name][model_name][attack_name][str(r_seed)]["best_asr"]
+        acc = res[dataset_name][model_name][attack_name][str(r_seed)]["best_acc"]
+        pn = res[dataset_name][model_name][attack_name][str(r_seed)]["PN"]
+        '''
         if dataset_name in ["CIFAR10","GTSRB"]:
             asr = cifa10_gtsrb_res[dataset_name][model_name][attack_name][str(r_seed)]["best_asr"]
             acc = cifa10_gtsrb_res[dataset_name][model_name][attack_name][str(r_seed)]["best_acc"]
@@ -67,6 +75,7 @@ def read_strip_result(dataset_name,model_name,attack_name):
             asr = imagenet_res[dataset_name][model_name][attack_name][str(r_seed)]["best_asr"]
             acc = imagenet_res[dataset_name][model_name][attack_name][str(r_seed)]["best_acc"]
             pn = imagenet_res[dataset_name][model_name][attack_name][str(r_seed)]["PN"]
+        '''
         strip_asr_list.append(asr)
         strip_acc_list.append(acc)
         strip_pn_list.append(pn)
